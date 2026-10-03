@@ -166,11 +166,16 @@ function normalize(raw, pass) {
 }
 
 // يرجّع عدد الوظائف الجديدة. onProgress(label) لتحديث الحالة في الواجهة.
-async function run(onProgress) {
+async function run(onProgress, force = false) {
   const d = store.load();
   let added = 0;
   let passesOk = 0;
+  const stopped = () => store.load().problems.some((p) => !p.resolved && /^claude-(missing|auth|limit)$/.test(p.key));
+  const fresh = d.config.searchEveryHours * 3600000 * 0.5; // جولة خلصت قريب (قبل ما ينقطع البحث) ما نعيدها
+  d.state.passDone = d.state.passDone || {};
   for (const pass of PASSES) {
+    if (stopped()) break;
+    if (!force && Date.now() - (d.state.passDone[pass.key] || 0) < fresh) continue;
     onProgress && onProgress('يبحث: ' + pass.label);
     const known = d.jobs.slice(0, 80).map((j) => `${j.company} — ${j.title}`);
     try {
@@ -180,6 +185,7 @@ async function run(onProgress) {
         mockKey: 'discover:' + pass.key,
       });
       passesOk++;
+      d.state.passDone[pass.key] = Date.now();
       const list = Array.isArray(res.jobs) ? res.jobs : [];
       let n = 0;
       for (const raw of list) {
@@ -195,12 +201,11 @@ async function run(onProgress) {
       store.save();
     } catch (e) {
       ai.reportAiError(e, 'البحث في «' + pass.label + '»');
-      if (store.load().problems.some((p) => !p.resolved && /^claude-(missing|auth)$/.test(p.key))) break; // ما في فايدة نكمل باقي الجولات
+      if (stopped()) break; // ما في فايدة نكمل باقي الجولات
     }
   }
   // مسح كل الشركات: طلبات عامة (بدون إعلان وظيفة) لكل شركة لها إيميل، والباقي يتحول لتقديم يدوي
-  const blocked = () => store.load().problems.some((p) => !p.resolved && /^claude-(missing|auth|limit)$/.test(p.key));
-  for (let i = 0; i < DIRECTORY_PASSES_PER_CYCLE && !blocked(); i++) {
+  for (let i = 0; i < DIRECTORY_PASSES_PER_CYCLE && !stopped(); i++) {
     const idx = (d.state.dirIndex || 0) % SEGMENTS.length;
     const label = `مسح شركات عُمان (${idx + 1}/${SEGMENTS.length})`;
     onProgress && onProgress(label);
@@ -210,6 +215,7 @@ async function run(onProgress) {
         tools: ['WebSearch', 'WebFetch'],
         timeoutMs: 20 * 60 * 1000,
         mockKey: 'directory',
+        fast: true, // جمع قائمة شركات وإيميلاتها: الموديل الأخف يكفي ويوفّر من حصة الاشتراك
       });
       passesOk++;
       d.state.dirIndex = idx + 1;
@@ -247,7 +253,8 @@ async function run(onProgress) {
     store.clearProblem('claude-limit');
     store.clearProblem('claude-error');
   }
-  d.state.lastSearch = Date.now();
+  // لو انقطع البحث بسبب حد الاستخدام أو الدخول: ما نحسبها دورة كاملة، فيكمّل الباقي أول ما يرجع
+  if (!stopped()) d.state.lastSearch = Date.now();
   store.save();
   return added;
 }

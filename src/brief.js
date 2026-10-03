@@ -64,7 +64,7 @@ Reply with ONLY a JSON object in a \`\`\`json block: {"script":"the spoken text"
 }
 
 // يكتب نص «ايش الجديد» من تاريخ معيّن. يرجّع { text, nothing }.
-async function compose(since) {
+async function compose(since, fast = false) {
   const d = store.load();
   const c = collect(d, since);
   const name = callName(d.config);
@@ -72,7 +72,7 @@ async function compose(since) {
   let text = '';
   if (!nothing) {
     try {
-      const r = await ai.askJson(prompt(name, c), { tools: [], timeoutMs: 3 * 60 * 1000, mockKey: 'brief' });
+      const r = await ai.askJson(prompt(name, c), { tools: [], timeoutMs: 3 * 60 * 1000, mockKey: 'brief', fast });
       text = String(r.script || '').replace(/https?:\/\/\S+/g, '').replace(/[*_#`<>\[\]]/g, '').trim().slice(0, 1800);
     } catch (e) {
       ai.reportAiError(e, 'تجهيز الموجز');

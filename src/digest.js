@@ -19,7 +19,7 @@ async function run(force) {
     const d = store.load();
     const cfg = d.config;
     const since = d.state.lastDigest || 0;
-    const { text, nothing, counts } = await brief.compose(since);
+    const { text, nothing, counts } = await brief.compose(since, true);
     d.state.lastDigest = Date.now();
     store.save();
     if (nothing && !force) return false; // ما في جديد: ما نزعجك برسالة فاضية

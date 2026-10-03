@@ -1,7 +1,7 @@
 {
-  "build": 11,
+  "build": 12,
   "date": "2026-10-03",
-  "notes": "الشاشة الكبيرة: الخط والمحادثة يكبرون مع حجم النافذة",
+  "notes": "لما يوصل حد استخدام Claude: راصد يوقف لحاله ويكمّل أول ما يرجع، ومسح الشركات صار أخف على الحصة",
   "files": {
     "package.json": "5de6eee528f3d817e065377265060c5b84ff74b28f5ec03acdb7d0267ca18545",
     "README.md": "7820a04aa88bf1ecad85a5526275eaf0369de6a6eb018e44290d5b0aa1856198",
@@ -10,19 +10,19 @@
     "install.ps1": "40d674502d05a7de79a0e536ec42b29cf1ad26fd0fd19d06d5e3602a8369b673",
     "rasid.ico": "e2b47fd026137d7de9b9dd0cf286ce87513de6d87399aeced96a83805064a68b",
     "src/actions.js": "0394d94833f0e9089cd3c3314d93997ddb045d7ae002b7373cf8f88627b97c8b",
-    "src/ai.js": "8800fe0b8d0502caf4ecfc7847827293dee5fe2f391e0a3740428705a614bb2b",
-    "src/brief.js": "8daa3eb90ddeab05addfffcafc4245eb36a42d08a3be81aee778f63404aa5e94",
-    "src/chat.js": "4fd8a4a2fad7027bd8732111de68ddc8dadddd7c7aa0467873f1474ae2e45b1b",
-    "src/digest.js": "72cb08f33740d20964f162104e94c0b423b63f3d2c2a6c739557642e336c0b75",
-    "src/discover.js": "21b86b761920c0e9f12e6760c7548bf4fcbe19d350329b0a02a4390f225d2e0e",
+    "src/ai.js": "db3675efe61f3cbb8ab2ba40c189801f8fa28e9f733629660a7b75f98de24ec9",
+    "src/brief.js": "900de3a0717e1116c68acddcad58aeb829ff7259697f76ee57555a07c474dece",
+    "src/chat.js": "cc73d4a9d66c9c13b844428669a4ae15501eda5ecf6b618226b1072d9a027bb7",
+    "src/digest.js": "8430de6bbb988bf30cdf773ba6a538ce5d27d4bccf755ac889e9c0c70bd2871a",
+    "src/discover.js": "9be8856e19a4186a436cd0ff8941b1b92a219956543fb8b807a5e1d045e41f2d",
     "src/draft.js": "efef0a053ca3520d52c2096f1dfe723f6da2679026eec60ce0b0a0bb742ff4cc",
     "src/inbox.js": "550cec7051c801393a7f9762c0a8e08f37f60085d3980f642f02c009e34330a3",
     "src/launch.js": "969b2df5d8d673e9dae0119e4505e7e21c5cbfcc64b7654f410f3debd4819db5",
     "src/mailbox.js": "a2f194d02515f262303168b2cdeb2e2ec26f6aa10dfe98c15de53471f0919898",
     "src/mailer.js": "04e0983d0e2d5648d49f25a93e024c77a3e53401c2983ac130a0d8862a458f09",
     "src/mcp.js": "f363d2d27d1ab0d2ea6a7654e864bc6ae8d0f6c973c65410f2952dda43d8604c",
-    "src/pipeline.js": "8fb9e072ab418d0afad2289f97e5573c31c1dca535ef4d2a15dd090601ea2d65",
-    "src/server.js": "0ac9a51e7a743787af3570391da6bbd3435bd0a646836518463ead2057c894b0",
+    "src/pipeline.js": "63c09f7df1236fc9325b9acf07082d7648bebf7743ba82200f132516a0ba4a90",
+    "src/server.js": "1ffac35f1b0b3a97a72d32f79722c8386799d9fdd051632ee5c3b104b8a2a1da",
     "src/store.js": "81fffd3bf8cfaabc2e17781869afc25e200da993c732e8127fbfa5a8f6334458",
     "src/tooldefs.js": "6eaadc044bea87669b51cea5208d094ec3187a256e2a94791f452a9eb901b3ee",
     "src/tools.js": "e4f62189656087d7654c22e885b4ce5ae2777667ba1024ab0d0e92b31878e58a",
@@ -36,6 +36,6 @@
     "scripts/release.js": "3898cac6fb2cc9447e72d8b9cfb931747ac30cd92c20333d0d26af5b27697d49",
     "test/mailfix.js": "777512b8d558dcc3d1b3d9e6a367ff36c48f2deea0b5edcd0d23f0c590fa6617",
     "test/mock.js": "4b52d97086083c177a7b65767b67b053cad34e75d9d124f0bc475412a7b0c3af",
-    "test/smoke.js": "db32cfffd7edef77040e47e33cb73a34e607a74f973add9489f5fee1022a2c5e"
+    "test/smoke.js": "94202af16bfa6b047d04f29f135a7ef6e084227abcd2b1da10c73b01af9e2ffa"
   }
 }

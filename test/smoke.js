@@ -182,6 +182,21 @@ const ok = (name, cond) => {
   d.config.digestEveryHours = 0;
   ok('digest off when set to 0', digest.due() === false);
 
+  // حد استخدام الاشتراك
+  const at = new Date(2026, 9, 3, 9, 17).getTime();
+  const lim = new Date(ai.limitUntil("CLAUDE_ERROR: You've hit your session limit · resets 12:10pm (Asia/Muscat)", at));
+  ok('limit reset time is read from the message', lim.getHours() === 12 && lim.getMinutes() === 12 && lim.getDate() === 3);
+  ok('reset time already passed today → tomorrow; unreadable → one hour', new Date(ai.limitUntil('resets 8am', at)).getDate() === 4 && ai.limitUntil('limit reached', at) === at + 3600000);
+  ai.reportAiError(new Error("CLAUDE_ERROR: You've hit your session limit · resets 11:59pm (Asia/Muscat)"), 'البحث');
+  ok('session limit → one clear limit problem (not a generic error) and a pause', d.problems.some((p) => p.key === 'claude-limit' && !p.resolved && /يرجع الساعة/.test(p.text)) && !d.problems.some((p) => p.key === 'claude-error' && !p.resolved) && ai.paused() > 0);
+  await assert.rejects(ai.askJson('x', { mockKey: 'selftest' }), /CLAUDE_LIMIT_PAUSED/);
+  await assert.rejects(say('ايش الجديد', []), /حد استخدام Claude/);
+  const searchedAt = d.state.lastSearch;
+  r = await pipeline.cycle();
+  ok('while paused: search does nothing and is not counted as done, so it resumes later', r.found === 0 && d.state.lastSearch === searchedAt);
+  d.state.aiPausedUntil = Date.now() - 1000;
+  ok('pause ends by itself and clears the problem', ai.paused() === 0 && !d.problems.some((p) => p.key === 'claude-limit' && !p.resolved));
+
   // تشخيص أخطاء Claude
   ai.reportAiError(new Error('CLAUDE_ERROR: Not logged in · Please run /login'), 'البحث');
   ok('real auth error → auth problem with raw text', d.problems.some((p) => p.key === 'claude-auth' && !p.resolved && p.detail.includes('Not logged in')));

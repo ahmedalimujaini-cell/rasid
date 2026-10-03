@@ -73,7 +73,7 @@ function chatDeps() {
     briefDirty: brief.dirty,
     busy: () => pipeline.status.main,
     run: {
-      search: () => pipeline.cycle().catch((e) => store.event('error', String(e.message).slice(0, 200))),
+      search: () => pipeline.cycle(true).catch((e) => store.event('error', String(e.message).slice(0, 200))),
       news: () => pipeline.news().catch((e) => store.event('error', String(e.message).slice(0, 200))),
       inbox: () => pipeline.checkInbox(),
     },
@@ -207,7 +207,7 @@ async function api(req, res, url) {
 
   if (route === 'POST /api/run/search') {
     if (pipeline.status.main) return json(res, 409, { error: 'مشغول الحين: ' + pipeline.status.main });
-    pipeline.cycle().catch((e) => store.event('error', String(e.message).slice(0, 200)));
+    pipeline.cycle(true).catch((e) => store.event('error', String(e.message).slice(0, 200)));
     return json(res, 200, { ok: true });
   }
   if (route === 'POST /api/run/news') {
@@ -306,6 +306,13 @@ function openBrowser() {
 
 if (require.main === module) {
   store.load();
+  // ترقية: خطأ «حد الاستخدام» اللي انسجّل قبل كخطأ عام يتحول لتوقف مؤقت لين وقت الرجوع المكتوب فيه
+  for (const p of store.load().problems) {
+    if (p.key === 'claude-error' && !p.resolved && /hit your .{0,24}limit|session limit|usage limit/i.test(p.detail || '') && Date.now() - p.t < 6 * 3600000) {
+      p.resolved = true;
+      ai.reportAiError(new Error(p.detail), 'البحث');
+    }
+  }
   // يشتغل ٢٤ ساعة: أي خطأ غير متوقع ينسجّل ويكمّل بدل ما يطفي البرنامج
   process.on('uncaughtException', (e) => {
     console.error(new Date().toISOString(), 'uncaughtException', e);

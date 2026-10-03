@@ -50,10 +50,11 @@ async function autoSend() {
   return n;
 }
 
-function cycle() {
+// force = طلبته أنت بنفسك: يعيد كل الجولات حتى لو خلصت قريب
+function cycle(force = false) {
   return withMain('يبحث عن وظائف', async () => {
     store.event('info', 'بدأت دورة بحث جديدة.');
-    const found = await discover.run((l) => (status.main = l));
+    const found = await discover.run((l) => (status.main = l), force);
     const drafted = await draft.draftPending((l) => (status.main = l));
     const sent = await autoSend();
     store.event('ok', `خلصت الدورة: ${found} وظيفة جديدة، ${drafted} رسالة جاهزة، ${sent} تقديم انرسل.`);
@@ -165,9 +166,10 @@ function startScheduler() {
     const now = Date.now();
     if (now - d.state.lastInbox > c.inboxEveryMinutes * 60000) checkInbox().catch((e) => store.event('error', 'فحص الوارد: ' + e.message));
     // نجهّز الموجز الصوتي مسبقاً عشان يكون حاضر أول ما تفتح البرنامج
-    if (d.state.briefDirty && c.voice) brief.generate().catch(() => {});
+    if (d.state.briefDirty && c.voice && !ai.paused()) brief.generate().catch(() => {});
     if (digest.due()) digest.run().catch(() => {});
     if (status.main) return;
+    if (ai.paused()) return; // حد الاستخدام: ننتظر لين يرجع بدل ما نحاول ونفشل
     try {
       if (now - d.state.lastSearch > c.searchEveryHours * 3600000) await cycle();
       else if (now - d.state.lastNews > c.newsEveryHours * 3600000) await news();

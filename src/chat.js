@@ -94,7 +94,8 @@ async function handle(text, deps, { spoken = false } = {}) {
   } catch (e) {
     live.busy = false;
     ai.reportAiError(e, 'المحادثة');
-    throw new Error('ما قدرت أوصل Claude الحين. شوف صفحة المشاكل.');
+    const wait = ai.paused();
+    throw new Error(wait ? `وصلت حد استخدام Claude في اشتراكك. يرجع الساعة ${new Date(Date.now() + wait).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}، وبعدها كلّمني.` : 'ما قدرت أوصل Claude الحين. شوف صفحة المشاكل.');
   }
   live.busy = false;
   live.tool = '';

@@ -139,8 +139,39 @@ function spawnClaude(prompt, { tools, timeoutMs, cwd, fast, onText, onTool, mcpC
   });
 }
 
+const LIMIT_RE = /hit your .{0,24}limit|session limit|usage limit|weekly limit|rate.?limit|limit reached|\b429\b/i;
+
+// من نص مثل "resets 12:10pm" نحسب متى يرجع الاستخدام (بتوقيت الجهاز). لو ما قدرنا نقراه: ساعة.
+function limitUntil(message, now = Date.now()) {
+  const m = String(message).match(/resets?\s+(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i);
+  if (!m) return now + 60 * 60000;
+  let h = Number(m[1]) % 12;
+  if (/pm/i.test(m[3])) h += 12;
+  const t = new Date(now);
+  t.setHours(h, Number(m[2] || 0), 0, 0);
+  if (t.getTime() <= now) t.setDate(t.getDate() + 1);
+  return t.getTime() + 2 * 60000; // دقيقتين احتياط
+}
+
+// كم باقي على رجوع الاستخدام (٠ = شغّال). لما يخلص الوقت تنمسح المشكلة لحالها.
+function paused() {
+  const d = store.load();
+  const until = d.state.aiPausedUntil || 0;
+  if (!until) return 0;
+  if (Date.now() >= until) {
+    d.state.aiPausedUntil = 0;
+    store.clearProblem('claude-limit');
+    store.event('ok', 'رجع استخدام Claude. أكمّل الشغل.');
+    return 0;
+  }
+  return until - Date.now();
+}
+const clock = (t) => new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+const pausedError = () => new Error('CLAUDE_LIMIT_PAUSED: وصلت حد استخدام Claude. يرجع الساعة ' + clock(store.load().state.aiPausedUntil));
+
 // يرجّع كائن JSON. tools: [] = بدون أدوات، أو ['WebSearch','WebFetch']. fast: استخدم الموديل السريع.
 async function askJson(prompt, { tools = [], timeoutMs = 5 * 60 * 1000, mockKey, cwd, fast = false, onText } = {}) {
+  if (paused()) throw pausedError();
   if (process.env.RASID_MOCK) return require('../test/mock').reply(mockKey, prompt);
   for (;;) {
     try {
@@ -159,6 +190,7 @@ async function askJson(prompt, { tools = [], timeoutMs = 5 * 60 * 1000, mockKey,
 
 // وكيل بأدوات: Claude يشتغل على الطلب، يستخدم أدوات راصد والويب قد ما يحتاج، ويرجّع الرد النهائي نص.
 async function runAgent(prompt, { tools = [], mcpConfig, mcpTools = [], timeoutMs = 10 * 60 * 1000, onText, onTool, mock } = {}) {
+  if (paused()) throw pausedError();
   if (process.env.RASID_MOCK) return mock();
   for (;;) {
     try {
@@ -187,8 +219,17 @@ function reportAiError(e, what) {
     );
   } else if (/not logged in|run \/login|invalid api key|authentication_error|failed to authenticate|oauth|unauthorized|\b401\b/i.test(m)) {
     store.problem('claude-auth', 'Claude Code مو مسجّل دخول.', 'افتح PowerShell وشغّل claude، اكتب /login وسجّل دخولك، بعدين اضغط «جرّب Claude الحين».', raw);
-  } else if (/rate.?limit|usage limit|\b429\b/i.test(m)) {
-    store.problem('claude-limit', 'وصلت حد الاستخدام في Claude — ' + what + ' توقف مؤقتاً.', 'بيرجع يحاول تلقائياً في الدورة الجاية.', raw);
+  } else if (m.includes('CLAUDE_LIMIT_PAUSED')) {
+    // معروفة ومسجّلة: ما نكرر التنبيه
+  } else if (LIMIT_RE.test(m)) {
+    const d = store.load();
+    d.state.aiPausedUntil = limitUntil(m);
+    store.problem(
+      'claude-limit',
+      `وصلت حد استخدام Claude في اشتراكك. يرجع الساعة ${clock(d.state.aiPausedUntil)}، وراصد يكمّل لحاله بعدها.`,
+      'هذا حد الاشتراك مو خلل. لين يرجع: البحث والمحادثة وكتابة الرسائل موقفة، ومتابعة الردود والإرسال شغّالة. عشان يكفيك أكثر: كبّر «يبحث كل (ساعة)» في الإعدادات.',
+      raw
+    );
   } else {
     store.problem('claude-error', 'Claude Code رجّع خطأ — ' + what + ' ما اشتغل.', 'اضغط «جرّب Claude الحين». لو تكرر، انسخ نص الخطأ اللي تحت.', raw);
   }
@@ -206,4 +247,4 @@ async function selfTest() {
   for (const k of ['claude-missing', 'claude-auth', 'claude-limit', 'claude-error']) store.clearProblem(k);
 }
 
-module.exports = { askJson, runAgent, extractJson, reportAiError, selfTest, buildArgs, getLevel: () => level, setLevel: (n) => (level = n) };
+module.exports = { paused, limitUntil, askJson, runAgent, extractJson, reportAiError, selfTest, buildArgs, getLevel: () => level, setLevel: (n) => (level = n) };

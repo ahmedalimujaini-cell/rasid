@@ -1,0 +1,20 @@
+{
+  "name": "rasid",
+  "version": "1.0.0",
+  "description": "راصد — برنامج شخصي يبحث عن وظائف عُمان، يقدّم من جيميلك، ويتابع الردود",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node test/smoke.js"
+  },
+  "dependencies": {
+    "imapflow": "^1.0.164",
+    "mailparser": "^3.7.1",
+    "nodemailer": "^6.9.14",
+    "pdf-parse": "1.1.1"
+  },
+  "devDependencies": {
+    "smtp-server": "^3.13.4"
+  }
+}

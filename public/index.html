@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>راصد</title>
+<link rel="icon" href="icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#10212E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- الخطوط تتحمّل بدون ما توقف ظهور الصفحة -->
+<link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;600;800&family=Readex+Pro:wght@300;400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- الإعداد أول مرة -->
+<section id="wizard" hidden>
+  <div class="wz">
+    <header class="wz-head">
+      <span class="mark">راصد</span>
+      <ol class="wz-steps" id="wzSteps">
+        <li>الجيميل</li><li>السيرة الذاتية</li><li>معلوماتك</li><li>طريقة الشغل</li>
+      </ol>
+    </header>
+
+    <form class="wz-pane" data-step="0" novalidate>
+      <h1>أي جيميل تبغاني أقدّم منه؟</h1>
+      <p class="lead">الرسائل بتطلع من هالحساب باسمك، والردود أقراها منه. كل شي يبقى على جهازك.</p>
+      <label>عنوان الجيميل
+        <input type="email" id="wzUser" dir="ltr" placeholder="name@gmail.com" autocomplete="off" required>
+      </label>
+      <label>كلمة مرور التطبيقات <small>١٦ حرف — مو كلمة السر العادية</small>
+        <input type="password" id="wzPass" dir="ltr" placeholder="xxxx xxxx xxxx xxxx" autocomplete="off" required>
+      </label>
+      <details class="how">
+        <summary>من وين أجيبها؟</summary>
+        <ol>
+          <li>فعّل «التحقق بخطوتين» في حساب جوجل (لو مو مفعّل).</li>
+          <li>افتح <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener" dir="ltr">myaccount.google.com/apppasswords</a></li>
+          <li>اكتب اسم مثل Rasid واضغط إنشاء، وانسخ الـ١٦ حرف هنا.</li>
+        </ol>
+        <p>جوجل ترفض كلمة السر العادية من أي برنامج خارجي. كلمة مرور التطبيقات تشتغل للبريد فقط، وتقدر تلغيها بضغطة بدون ما تغيّر كلمة سرك.</p>
+      </details>
+      <p class="msg" id="wzMsg0"></p>
+      <div class="wz-nav"><button class="btn primary" type="submit">تحقق من الاتصال وكمّل</button></div>
+    </form>
+
+    <form class="wz-pane" data-step="1" hidden novalidate>
+      <h1>ارفع سيرتك الذاتية</h1>
+      <p class="lead">نفس الملف بينرفق مع كل تقديم. ولو كان PDF بقراه وأعبّي معلوماتك منه بدل ما تكتبها.</p>
+      <label class="drop" id="wzDrop">
+        <input type="file" id="wzCv" accept=".pdf,.doc,.docx" hidden>
+        <strong id="wzCvName">اختر ملف السيرة</strong>
+        <span>PDF (الأفضل) أو Word — حتى ١٠ ميجا</span>
+      </label>
+      <p class="msg" id="wzMsg1"></p>
+      <div class="wz-nav">
+        <button class="btn ghost" type="button" data-back>رجوع</button>
+        <button class="btn primary" type="submit">كمّل</button>
+      </div>
+    </form>
+
+    <form class="wz-pane" data-step="2" hidden novalidate>
+      <h1>معلوماتك</h1>
+      <p class="lead" id="wzLead2">هذي اللي أبحث على أساسها وأكتب منها رسائل التقديم. ما أكتب عنك شي مو موجود هنا أو في سيرتك.</p>
+      <div class="grid2">
+        <label>الاسم كما يظهر في الرسائل <input id="pf_name" dir="auto" required></label>
+        <label>ايش أناديك؟ <small>الاسم اللي أكلمك به في الموجز الصوتي</small> <input id="pf_nickname" dir="auto" placeholder="أحمد"></label>
+        <label>رقم الهاتف <input id="pf_phone" dir="ltr" placeholder="+968"></label>
+        <label>المدينة <input id="pf_location" dir="auto" placeholder="المدينة، عُمان"></label>
+        <label>الجنسية <input id="pf_nationality" dir="auto"></label>
+        <label>تاريخ الميلاد <small>اختياري — تطلبه مواقع التقديم</small> <input id="pf_birthDate" dir="ltr" placeholder="2003-05-21"></label>
+        <label class="wide">رابط لينكدإن <small>اختياري</small> <input id="pf_linkedin" dir="ltr"></label>
+        <label class="wide">مسماك المهني <input id="pf_headline" dir="auto" placeholder="مثال: Quantity Surveyor"></label>
+        <label class="wide">نبذة عن خبرتك <textarea id="pf_summary" rows="4" dir="auto"></textarea></label>
+        <label class="wide">الوظائف اللي تبغاها <small>مسميات، مجالات، شركات تفضّلها</small> <textarea id="pf_targets" rows="2" dir="auto" required></textarea></label>
+        <label class="wide">اللي ما تبغاه <small>اختياري — مثلاً: مبيعات، خارج عُمان، دوام ٢٨/٢٨</small> <textarea id="pf_avoid" rows="2" dir="auto"></textarea></label>
+        <label>فترة الإشعار <small>اختياري</small> <input id="pf_noticePeriod" dir="auto" placeholder="شهر"></label>
+        <label>ملاحظات ثانية <small>اختياري</small> <input id="pf_extra" dir="auto"></label>
+      </div>
+      <p class="msg" id="wzMsg2"></p>
+      <div class="wz-nav">
+        <button class="btn ghost" type="button" data-back>رجوع</button>
+        <button class="btn primary" type="submit">كمّل</button>
+      </div>
+    </form>
+
+    <form class="wz-pane" data-step="3" hidden novalidate>
+      <h1>كيف تبغاني أشتغل؟</h1>
+      <div class="choice">
+        <label><input type="radio" name="wzMode" value="auto" checked>
+          <span><strong>صلاحية كاملة — أرسل تلقائياً</strong> أي وظيفة فوق حد التطابق ولها إيميل تقديم أقدّم عليها من جيميلك على طول، وأخبرك بعدين في الموجز. تقدر توقفه أي وقت من الإعدادات.</span></label>
+        <label><input type="radio" name="wzMode" value="review">
+          <span><strong>أجهّز وأنت توافق</strong> أبحث وأكتب الرسالة، وما ينرسل شي إلا لما تضغط «أرسل».</span></label>
+      </div>
+      <div class="grid2">
+        <label>أقل نسبة تطابق أقدّم عليها <input type="number" id="wzFit" min="0" max="100" value="70" dir="ltr"></label>
+        <label>أقصى عدد تقديمات في اليوم <input type="number" id="wzCap" min="1" max="30" value="8" dir="ltr"></label>
+      </div>
+      <p class="note">الوظائف اللي تقديمها من موقع الشركة (بوابات التوظيف) ما أقدر أعبّي نماذجها. أجهّز لك نص الرسالة والرابط وتقدّم أنت.</p>
+      <p class="msg" id="wzMsg3"></p>
+      <div class="wz-nav">
+        <button class="btn ghost" type="button" data-back>رجوع</button>
+        <button class="btn primary" type="submit">ابدأ البحث</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<!-- اللوحة -->
+<div id="app" hidden>
+  <nav class="rail" aria-label="الأقسام">
+    <span class="mark">راصد</span>
+    <button data-view="brief" class="on">الموجز</button>
+    <button data-view="chat">كلّم راصد</button>
+    <button data-view="jobs">الوظائف <b id="cJobs"></b></button>
+    <button data-view="replies">الردود <b id="cReplies"></b></button>
+    <button data-view="news">الأخبار</button>
+    <button data-view="problems">المشاكل <b id="cProblems" class="bad"></b></button>
+    <button data-view="settings">الإعدادات</button>
+    <div class="rail-foot">
+      <p id="live" class="live"></p>
+      <button class="btn primary sm" id="runSearch">ابحث الحين</button>
+      <button class="btn ghost sm" id="runInbox">افحص الردود</button>
+    </div>
+  </nav>
+  <main id="main" tabindex="-1"></main>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="app.js"></script>
+</body>
+</html>

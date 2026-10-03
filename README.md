@@ -2,7 +2,13 @@
 
 برنامج شخصي يشتغل على جهازك: يبحث عن وظائف عُمان اللي تناسبك، يكتب رسالة التقديم، يرسلها من جيميلك مع السيرة، ويتابع الردود.
 
-## التشغيل (PowerShell)
+## التركيب أو التحديث بسطر واحد (PowerShell)
+
+    irm https://raw.githubusercontent.com/ahmedalimujaini-cell/rasid/main/install.ps1 | iex
+
+ينزّل آخر نسخة، يركّبها في `%USERPROFILE%\rasid` (بياناتك تبقى)، يشغّلها مع ويندوز، ويحط أيقونة Rasid على سطح المكتب.
+
+## التشغيل اليدوي (PowerShell)
 
 أول مرة:
 

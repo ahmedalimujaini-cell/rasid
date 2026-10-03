@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const ROOT = path.join(__dirname, '..');
-const SHIP = ['package.json', 'README.md', 'start.ps1', 'autostart.ps1', 'rasid.ico', 'src', 'public', 'scripts', 'test'];
+const SHIP = ['package.json', 'README.md', 'start.ps1', 'autostart.ps1', 'install.ps1', 'rasid.ico', 'src', 'public', 'scripts', 'test'];
 const files = {};
 const walk = (rel) => {
   const abs = path.join(ROOT, rel);

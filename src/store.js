@@ -28,7 +28,7 @@ const DEFAULTS = {
     cv: { file: '', originalName: '', text: '' },
     mode: 'auto', // auto = يرسل تلقائياً | review = تراجع قبل الإرسال
     voice: true, // الموجز الصوتي عند فتح البرنامج
-    digestEveryHours: 12, // ملخص على الإيميل كل كم ساعة (0 = لا)
+    digestEveryHours: 6, // ملخص على الإيميل كل كم ساعة (0 = لا)
     notifyEmail: '', // وين يروح الملخص (فاضي = نفس الجيميل)
     minFit: 70,
     dailyCap: 8,
@@ -82,6 +82,11 @@ function load() {
     }
   }
   db = deepMerge(JSON.parse(JSON.stringify(DEFAULTS)), raw);
+  // طلب صاحب البرنامج: الملخص كل ٦ ساعات (ترقية لمرة وحدة؛ بعدها يغيّره من الإعدادات براحته)
+  if (!db.state.digest6) {
+    if (db.config.digestEveryHours === 12) db.config.digestEveryHours = 6;
+    db.state.digest6 = true;
+  }
   // ترقية من النسخة الأولى: جولاتها كانت ثابتة على شركات النفط. اللي ما انرسل منها يتجاهل.
   for (const j of db.jobs) {
     if ((j.pass === 'operators' || j.pass === 'services') && !j.sentAt && j.status !== 'skipped') {

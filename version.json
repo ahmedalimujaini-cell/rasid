@@ -1,7 +1,7 @@
 {
-  "build": 8,
+  "build": 9,
   "date": "2026-10-03",
-  "notes": "تركيب وتحديث بسطر واحد",
+  "notes": "الملخص على الإيميل صار كل ٦ ساعات",
   "files": {
     "package.json": "5de6eee528f3d817e065377265060c5b84ff74b28f5ec03acdb7d0267ca18545",
     "README.md": "0076e81478fae4cbf872a8a64f8ac86900f13d6b188d2240487814cece192c27",
@@ -20,7 +20,7 @@
     "src/mailer.js": "04e0983d0e2d5648d49f25a93e024c77a3e53401c2983ac130a0d8862a458f09",
     "src/pipeline.js": "8fb9e072ab418d0afad2289f97e5573c31c1dca535ef4d2a15dd090601ea2d65",
     "src/server.js": "d561736bb5abef7be1a6ee46779b9c96c37bf619931ae051eb82e993bfb4cce0",
-    "src/store.js": "94a1463a2134a2f0e426a2cdd916c9d66e788a60565aae592428e9d1c1090d20",
+    "src/store.js": "81fffd3bf8cfaabc2e17781869afc25e200da993c732e8127fbfa5a8f6334458",
     "src/update.js": "9149a9fd732d3611702963c0d8dfa503da0fd7162f78eba7a2a225a0e8c59a4d",
     "src/window.js": "0209e1210df5fd017b9a4664492ce150fed22bdf1fbf8405996a9d640fa98563",
     "public/app.js": "6bedbf66630d020d3381a773514d572f876404f2456d47359a5053c9b62f0e3a",

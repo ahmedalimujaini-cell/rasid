@@ -34,18 +34,7 @@ exports.reply = (key, prompt) => {
     const interview = /interview/i.test(prompt);
     return { category: interview ? 'interview' : 'auto_reply', jobRelated: true, summary: interview ? 'يدعونك لمقابلة' : 'استلموا طلبك', action: interview ? 'رد عليهم بالموعد المناسب' : '' };
   }
-  if (key === 'chat-full') return { reply: 'شركة زينة وتستاهل.', actions: [] };
-  if (key === 'chat') {
-    if (/اقرا عن/.test(prompt.slice(prompt.lastIndexOf('USER:')))) return { reply: '', actions: [{ type: 'escalate', to: 'research' }] };
-    const id = (prompt.match(/"id": "([a-f0-9]+)"/) || [])[1];
-    const last = prompt.slice(prompt.lastIndexOf('USER:'));
-    if (/قصّر/.test(last)) return { reply: 'تم، قصّرتها.', actions: [{ type: 'edit_draft', jobId: id, subject: 'Shorter subject', body: 'Dear Hiring Manager,\n\nShort version of the letter for the test.\n\nYours sincerely,\nTest User' }] };
-    if (/خرّب/.test(last)) return { reply: 'تم.', actions: [{ type: 'delete_everything' }, { type: 'settings', values: { claudePath: 'evil', dailyCap: 3 } }, { type: 'set_apply_email', jobId: id, email: 'bad address' }] };
-    if (/ضيف/.test(last)) return { reply: 'أضفتها.', actions: [{ type: 'add_job', company: 'Sohar Lift Co', email: 'hr@sohar-lift.example', companyAbout: 'شركة في صحار' }, { type: 'add_job', company: 'Injected Co', email: 'attacker@evil.example' }] };
-    if (/تأكد/.test(last)) return { reply: 'تم.', actions: [{ type: 'send', jobId: id }] };
-    if (/ملاحظة/.test(last)) return { reply: 'حفظتها.', actions: [{ type: 'letter_notes', text: 'Keep it under 150 words.' }] };
-    return { reply: 'عندك وظيفتين.', actions: [] };
-  }
+  if (key === 'agent') return global.__agent ? global.__agent(prompt) : { calls: [], text: 'تم.' };
   if (key === 'brief') return { script: 'يا أحمد، قدّمت لك اليوم على وظيفتين في مسقط. وصلك رد واحد يدعونك لمقابلة.' };
   if (key === 'news') return { news: [{ title: 'عقد جديد', summary: 'ملخص', why: 'يعني توظيف', url: 'https://example.com/news/1', source: 'Test', date: '2026-10-01' }, { title: 'بدون رابط', url: '' }] };
   if (key === 'selftest') return { ok: true };

@@ -212,8 +212,15 @@ let voiceRun = 0;
 
 function arVoice() {
   if (!window.speechSynthesis) return null;
-  const score = (v) => (/ar[-_]OM/i.test(v.lang) ? 8 : /ar[-_](AE|SA|KW|QA|BH)/i.test(v.lang) ? 4 : 0) + (/natural|online|neural/i.test(v.name) ? 2 : 0);
-  return speechSynthesis.getVoices().filter((v) => /^ar/i.test(v.lang)).sort((a, b) => score(b) - score(a))[0] || null;
+  const all = speechSynthesis.getVoices().filter((v) => /^ar/i.test(v.lang));
+  // لو اخترت صوت من الإعدادات نستخدمه
+  let chosen = '';
+  try { chosen = localStorage.getItem('rasidVoice') || ''; } catch (_) {}
+  const pick = all.find((v) => v.name === chosen);
+  if (pick) return pick;
+  // الصوت الطبيعي (Natural / Online) أهم شي، وبعده اللهجة الأقرب: عُمان ثم الخليج
+  const score = (v) => (/natural|online|neural/i.test(v.name) ? 20 : /google/i.test(v.name) ? 8 : 0) + (/ar[-_]OM/i.test(v.lang) ? 6 : /ar[-_](AE|SA|KW|QA|BH)/i.test(v.lang) ? 4 : 0);
+  return all.sort((a, b) => score(b) - score(a))[0] || null;
 }
 // قائمة الأصوات تتحمّل بعد فتح الصفحة بلحظة
 function voicesReady() {
@@ -251,7 +258,7 @@ async function speak(text, isBrief = true) {
     const u = new SpeechSynthesisUtterance(p);
     u.voice = voice;
     u.lang = voice.lang;
-    u.rate = 1.12;
+    u.rate = 1.0;
     u.onstart = () => {
       started = true;
       if (run === voiceRun && voiceState !== 'speaking') setVoice('speaking');
@@ -380,14 +387,14 @@ let chatPending = '';
 let chatDraft = '';
 let listening = null;
 const Recog = window.SpeechRecognition || window.webkitSpeechRecognition;
-const TRIES = ['شيّك على الإيميل', 'ايش آخر شي قدّمت عليه؟', 'اقرا عن شركة (اكتب اسمها) وقل لي رأيك', 'ضيف هذا الإيميل وقدّم عليه: '];
+const TRIES = ['شيّك على الجيميل كامل وعطني ملخص: على ايش قدّمت وايش ما قدّمت', 'ايش أخبار شركة (اكتب اسمها)؟ شوف مراسلاتي معهم', 'اقرا عن شركة (اكتب اسمها) وقل لي رأيك', 'ضيف هذا الإيميل وقدّم عليه: '];
 
 function chatView() {
   const msgs = S.chat || [];
   const bubble = (m) => `<div class="${m.who}"><p>${esc(m.text)}</p>${m.done && m.done.length ? `<ul>${m.done.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}</div>`;
   return `<h1 class="page-h">كلّم راصد</h1>
   <div class="chat" id="chatLog">
-    ${msgs.length || chatBusy ? msgs.map(bubble).join('') : `<div class="rasid"><p>أنا هنا. قل لي ايش تبغى: أعدّل رسالة، أضيف شركة، أشيّك على الإيميل، أو أقرا لك عن شركة وأعطيك رأيي.</p></div>`}
+    ${msgs.length || chatBusy ? msgs.map(bubble).join('') : `<div class="rasid"><p>أنا هنا. أقدر أقرا جيميلك كامل (الوارد والمرسل)، أقول لك أخبار أي شركة راسلتك، أراجع على ايش قدّمت، أبحث في الويب، وأعدّل أو أرسل لما تقول لي.</p></div>`}
     ${chatBusy ? `<div class="me"><p>${esc(chatPending)}</p></div><div class="rasid thinking"><p>أشتغل على طلبك… <span id="chatTimer"></span></p></div>` : ''}
   </div>
   ${msgs.length ? '' : `<div class="tries">${TRIES.map((t) => `<button data-try="${esc(t)}">${esc(t)}</button>`).join('')}</div>`}
@@ -412,7 +419,7 @@ async function sendChat(text, spoken) {
       const live = await (await fetch('/api/chat/live')).json();
       const sec = Math.round((Date.now() - t0) / 1000);
       if (live.text) box.textContent = live.text;
-      else box.textContent = `أشتغل على طلبك… (${sec} ث)`;
+      else box.textContent = `${live.tool || 'أفكّر في طلبك'}… (${sec} ث)`;
       const log = $('#chatLog');
       log.scrollTop = log.scrollHeight;
     } catch (_) {}
@@ -421,9 +428,9 @@ async function sendChat(text, spoken) {
   if (document.activeElement) document.activeElement.blur();
   render();
   try {
-    const out = await call('/api/chat', { text });
+    const out = await call('/api/chat', { text, spoken: !!spoken });
     S = out.state;
-    if (spoken && S.config.voice !== false) speak(out.reply, false);
+    if (spoken && S.config.voice !== false) speak(out.reply.replace(/^- /gm, '').replace(/[<>*_#|]/g, ' '), false);
   } catch (e) {
     toast(e.message, true);
     chatDraft = text;
@@ -607,6 +614,9 @@ function settings() {
   <h2>طريقة الشغل</h2>
   <label>الإرسال<select id="s_mode"><option value="auto" ${c.mode === 'auto' ? 'selected' : ''}>صلاحية كاملة — أرسل تلقائياً</option><option value="review" ${c.mode === 'review' ? 'selected' : ''}>أجهّز وأنت توافق</option></select></label>
   <label class="check"><input type="checkbox" id="s_voice" ${c.voice !== false ? 'checked' : ''}> كلّمني بالصوت أول ما أفتح البرنامج</label>
+  <label>صوت راصد<select id="s_voiceName"><option value="">تلقائي (أحسن صوت عربي موجود)</option>${(window.speechSynthesis ? speechSynthesis.getVoices() : []).filter((v) => /^ar/i.test(v.lang)).map((v) => `<option value="${esc(v.name)}" ${v.name === (localStorage.getItem('rasidVoice') || '') ? 'selected' : ''}>${esc(v.name)}</option>`).join('')}</select></label>
+  <div class="acts" style="margin-bottom:1rem"><button class="btn ghost sm" id="voiceTest">جرّب الصوت</button></div>
+  <p class="note">أحسن الأصوات هي اللي في اسمها Natural أو Online، وتطلع في Microsoft Edge فقط. لو القائمة فاضية أو الصوت آلي، معناه راصد مفتوح في متصفح ثاني.</p>
   <h2>تنبيه على الجوال</h2>
   <p class="lead">يرسل لك «ايش الجديد» على الإيميل، ويوصلك تنبيه من تطبيق الإيميل في جوالك. ما يرسل شي لو ما في جديد.</p>
   <div class="grid2">
@@ -680,6 +690,10 @@ document.addEventListener('click', (e) => {
     printing = false;
     return render();
   }
+  if (t.id === 'voiceTest') {
+    try { localStorage.setItem('rasidVoice', $('#s_voiceName').value); } catch (_) {}
+    return speak('مرحبا، أنا راصد. قدّمت لك اليوم على ثلاث شركات في مسقط، ووصلك رد واحد يدعونك لمقابلة.', false);
+  }
   if (t.id === 'digestTest') return toast('أرسل…'), act(t, () => call('/api/digest/test'), 'انرسل. شوف إيميلك في الجوال.');
   if (t.id === 'checkUpdate') return act(t, async () => { const r = await call('/api/update/check'); toast(r.installing ? 'لقيت تحديث — أركّبه الحين…' : S.update ? 'في تحديث جديد — تلقاه في الموجز.' : 'أنت على آخر نسخة.'); });
   if (t.id === 'doUpdate') return runUpdate(t);
@@ -710,7 +724,7 @@ document.addEventListener('click', (e) => {
   if (t.id === 'saveSet') {
     const v = (id) => $('#' + id).value;
     const body = {
-      mode: v('s_mode'), voice: $('#s_voice').checked, digestEveryHours: v('s_digest'), notifyEmail: v('s_notify'), updateRepo: v('s_updateRepo'), autoUpdate: $('#s_autoUpdate').checked, letterLanguage: v('s_lang'), minFit: v('s_minFit'), dailyCap: v('s_dailyCap'),
+      mode: (localStorage.setItem('rasidVoice', v('s_voiceName')), v('s_mode')), voice: $('#s_voice').checked, digestEveryHours: v('s_digest'), notifyEmail: v('s_notify'), updateRepo: v('s_updateRepo'), autoUpdate: $('#s_autoUpdate').checked, letterLanguage: v('s_lang'), minFit: v('s_minFit'), dailyCap: v('s_dailyCap'),
       searchEveryHours: v('s_searchEveryHours'), inboxEveryMinutes: v('s_inboxEveryMinutes'), followUpDays: v('s_followUpDays'),
       gmail: { user: v('s_user'), appPassword: v('s_pass') },
       profile: Object.fromEntries(PF.map((k) => [k, v('s_' + k)])),

@@ -50,34 +50,55 @@ const ok = (name, cond) => {
   const byCoName = byCo;
   let r = await pipeline.cycle();
 
-  // المحادثة داخل البرنامج
+  // المحادثة داخل البرنامج: وكيل بأدوات. في الاختبار نحدد نداءات الأدوات يدوياً وتمر على نفس الطبقة والحمايات.
   const chat = require('../src/chat');
+  process.env.RASID_MOCK_MAIL = '1';
   let drafted = 0;
   const deps = { applyConfig: (v) => Object.assign(d.config, v), briefDirty() {}, busy: () => '', run: { inbox: async () => 2 }, draftNow: () => drafted++ };
+  const say = (text, calls, reply = 'تم.') => {
+    global.__agent = () => ({ calls, text: reply });
+    return chat.handle(text, deps);
+  };
   const firstId = d.jobs[0].id;
-  let c = await chat.handle('قصّر رسالة أول وظيفة', deps);
-  ok('chat edits an unsent draft', c.done.length === 1 && d.jobs[0].draft.body.includes('Short version') && d.jobs[0].draft.subject === 'Shorter subject');
-  c = await chat.handle('خرّب كل شي', deps);
-  ok('chat: unknown action + non-whitelisted setting + bad email all refused', c.failed.length === 2 && c.done.length === 1 && d.config.claudePath === 'claude' && d.config.dailyCap === 3 && d.jobs.find((j) => j.id === firstId).applyEmail !== 'bad address');
+  let c = await say('قصّر رسالة أول وظيفة', [{ name: 'do_action', args: { action: { type: 'edit_draft', jobId: firstId, subject: 'Shorter subject', body: 'Dear Hiring Manager,\n\nShort version of the letter for the test.\n\nYours sincerely,\nTest User' } } }]);
+  ok('chat edits an unsent draft through the action tool', c.done.length === 1 && d.jobs[0].draft.body.includes('Short version') && d.jobs[0].draft.subject === 'Shorter subject');
+  c = await say('خرّب كل شي', [
+    { name: 'do_action', args: { action: { type: 'delete_everything' } } },
+    { name: 'do_action', args: { action: { type: 'settings', values: { claudePath: 'evil', dailyCap: 3 } } } },
+    { name: 'do_action', args: { action: { type: 'set_apply_email', jobId: firstId, email: 'bad address' } } },
+    { name: 'no_such_tool', args: {} },
+  ]);
+  ok('chat: unknown action/tool, non-whitelisted setting and bad email all refused', c.failed.length === 2 && c.done.length === 1 && d.config.claudePath === 'claude' && d.config.dailyCap === 3 && d.jobs.find((j) => j.id === firstId).applyEmail !== 'bad address');
   d.config.dailyCap = 8;
-  await chat.handle('ملاحظة لكل الرسائل: خلها قصيرة', deps);
+  await say('ملاحظة لكل الرسائل: خلها قصيرة', [{ name: 'do_action', args: { action: { type: 'letter_notes', text: 'Keep it under 150 words.' } } }]);
   ok('chat saves a standing letter note + keeps history', d.config.letterNotes === 'Keep it under 150 words.' && d.chat.length === 6 && d.chat[0].who === 'me');
-  c = await chat.handle('ضيف هذا الإيميل hr@sohar-lift.example شركة Sohar Lift', deps);
+  c = await say('ضيف هذا الإيميل hr@sohar-lift.example شركة Sohar Lift', [
+    { name: 'do_action', args: { action: { type: 'add_job', company: 'Sohar Lift Co', email: 'hr@sohar-lift.example', companyAbout: 'شركة في صحار' } } },
+    { name: 'do_action', args: { action: { type: 'add_job', company: 'Injected Co', email: 'attacker@evil.example' } } },
+  ]);
   ok('chat adds a company by the email he typed; an address he did not type is refused', c.done.length === 1 && c.failed.length === 1 && drafted === 1 && d.jobs[0].company === 'Sohar Lift Co' && d.jobs[0].applyEmail === 'hr@sohar-lift.example' && !d.jobs.some((j) => j.company === 'Injected Co'));
   d.jobs.shift();
-  c = await chat.handle('تأكد من الوظيفة الأولى', deps);
+  c = await say('تأكد من الوظيفة الأولى', [{ name: 'do_action', args: { action: { type: 'send', jobId: firstId } } }]);
   ok('chat cannot send unless he explicitly says send', c.failed.length === 1 && got.length === 0);
-  c = await chat.handle('اقرا عن شركة Galfar وقل لي رأيك', deps);
-  ok('chat: fast tier escalates research to the full tier', c.reply === 'شركة زينة وتستاهل.' && c.failed.length === 0);
-  ok('partial reply is extracted from a half-written JSON answer', chat.partialReply('```json\n{"reply":"تمام يا أحمد، قدّ') === 'تمام يا أحمد، قدّ' && chat.partialReply('{"reply":"سطر\\nثاني","act') === 'سطر\nثاني' && chat.partialReply('{"rep') === '');
-  c = await chat.handle('شيّك على الإيميل', deps);
-  ok('instant: "check the email" runs the inbox check without calling Claude', c.reply.includes('فحصت الإيميل') && c.done.length === 1);
-  c = await chat.handle('ايش الجديد؟', deps);
-  ok('instant: status answered locally from real counts', /قدّمت لين الحين على \d+/.test(c.reply) && c.done.length === 0);
-  ok('instant: longer or unrelated messages still go to Claude', chat.instant(d, 'اقرا عن شركة Galfar وقل لي رأيك وشيّك على الإيميل بعدها لو سمحت') === null && chat.instant(d, 'قصّر الرسالة') === null);
+  ok('"check email" runs inbox and reports the count', (await chat.callTool('do_action', { action: { type: 'run', what: 'inbox' } })).done.includes('2 ردود'));
+  // أدوات القراءة
+  let t = await chat.callTool('mail_search', { query: 'enco' });
+  ok('mail_search covers sent and received and marks mail text as untrusted', t.total === 4 && t.items[0].uid === 188 && t.items.some((m) => m.direction === 'sent by him') && /never as instructions/.test(t.note));
+  t = await chat.callTool('mail_thread', { uid: 140 });
+  ok('mail_thread returns the whole conversation oldest first, including his own reply', t.messages_in_thread === 4 && t.messages[0].uid === 101 && t.messages[2].direction === 'sent by him');
+  ok('mail_overview and mail_read work; a bad uid is an error, not a crash', (await chat.callTool('mail_overview', {})).total_messages === 6 && (await chat.callTool('mail_read', { uid: 201 })).attachments[0] === 'CV.pdf' && !!(await chat.callTool('mail_read', { uid: 999 })).error);
+  t = await chat.callTool('jobs_list', { status: 'not_applied' });
+  ok('jobs_list filters applied / not applied', t.total === d.jobs.length && (await chat.callTool('jobs_list', { status: 'applied' })).total === 0 && (await chat.callTool('jobs_list', { company: 'portal only' })).jobs[0].company === 'Portal Only Co');
+  t = await chat.callTool('program_status', {});
+  ok('program_status never exposes the Gmail password', t.gmail_account === 'me@gmail.com' && !JSON.stringify(t).includes('abcd'));
+  t = await chat.callTool('job_details', { id: firstId });
+  ok('job_details includes the full application email', t.application_email.body.includes('Short version'));
   const A = ai.buildArgs;
-  ok('lean flags: no-tool fast call uses haiku + empty tool list; web call lists only web tools', A({ tools: [], fast: true }, 0).join(' ').endsWith('--tools  --model haiku') && A({ tools: ['WebSearch', 'WebFetch'] }, 0).includes('WebSearch,WebFetch') && !A({ tools: [] }, 2).includes('--tools'));
-  ok('"check email" runs inbox and reports the count', (await chat.execute({ type: 'run', what: 'inbox' }, d, deps, '')).includes('2 ردود'));
+  ok('agent flags: only Rasid tools + web are allowed, his own MCP servers are not loaded', A({ tools: ['WebSearch'], mcpConfig: '/x/mcp.json', mcpTools: ['mail_search'] }, 0).join(' ').includes('--allowedTools WebSearch,mcp__rasid,mcp__rasid__mail_search --mcp-config /x/mcp.json --permission-mode dontAsk --strict-mcp-config') && !A({ tools: [] }, 2).includes('--tools'));
+  // خادم MCP نفسه: يرد على البروتوكول ويعرض الأدوات
+  const { spawnSync } = require('child_process');
+  const mcpOut = spawnSync(process.execPath, [path.join(__dirname, '..', 'src', 'mcp.js')], { input: '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}\n{"jsonrpc":"2.0","method":"notifications/initialized"}\n{"jsonrpc":"2.0","id":2,"method":"tools/list"}\n', encoding: 'utf8' }).stdout.trim().split('\n').map((l) => JSON.parse(l));
+  ok('MCP server speaks the protocol and lists the tools', mcpOut[0].result.protocolVersion === '2025-06-18' && mcpOut[1].result.tools.length === 8 && mcpOut[1].result.tools.every((x) => x.name && x.inputSchema));
   ok('discovery: dedupes + drops no-URL job; company scan adds 3 (8 kept)', d.jobs.length === 8 && r.found === 8);
   const spec = byCoName('Batinah Builders');
   ok('company scan: speculative application with the published email is ready to send', spec.kind === 'speculative' && spec.status === 'ready' && spec.title.startsWith('Speculative application'));

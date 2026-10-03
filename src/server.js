@@ -66,6 +66,30 @@ function publicState() {
   };
 }
 
+// ما يحتاجه منفّذ أوامر المحادثة من باقي البرنامج
+function chatDeps() {
+  return {
+    applyConfig,
+    briefDirty: brief.dirty,
+    busy: () => pipeline.status.main,
+    run: {
+      search: () => pipeline.cycle().catch((e) => store.event('error', String(e.message).slice(0, 200))),
+      news: () => pipeline.news().catch((e) => store.event('error', String(e.message).slice(0, 200))),
+      inbox: () => pipeline.checkInbox(),
+    },
+    // يكتب رسالة الوظيفة المضافة الحين (وفي الوضع التلقائي يرسلها)؛ لو مشغول تنكتب في الدورة الجاية
+    draftNow: () => {
+      if (pipeline.status.main) return;
+      pipeline
+        .withMain('يكتب رسالة التقديم', async () => {
+          await draft.draftPending((l) => (pipeline.status.main = l));
+          if (await pipeline.autoSend()) brief.dirty();
+        })
+        .catch((e) => store.event('error', String(e.message).slice(0, 200)));
+    },
+  };
+}
+
 const num = (v, lo, hi, dflt) => (Number.isFinite(Number(v)) ? Math.max(lo, Math.min(hi, Math.round(Number(v)))) : dflt);
 
 function applyConfig(body) {
@@ -103,7 +127,7 @@ async function api(req, res, url) {
     if (url.searchParams.get('sig') === signature()) return json(res, 200, { same: true });
     return json(res, 200, publicState());
   }
-  if (route === 'GET /api/chat/live') return json(res, 200, { text: chat.live.text, busy: chat.live.busy });
+  if (route === 'GET /api/chat/live') return json(res, 200, { text: chat.live.text, tool: chat.live.tool, busy: chat.live.busy });
 
   // حماية: أي تعديل لازم يجي من صفحة راصد نفسها (ترويسة خاصة + نفس العنوان)
   const host = String(req.headers.host || '');
@@ -166,27 +190,11 @@ async function api(req, res, url) {
       return json(res, 400, { error: 'Claude ما رد: ' + String(e.message).replace(/\s+/g, ' ').slice(0, 220) });
     }
   }
+  // أدوات المحادثة: يناديها خادم MCP اللي يشغّله Claude أثناء «كلّم راصد»
+  const tm = url.pathname.match(/^\/api\/tool\/(\w+)$/);
+  if (tm && req.method === 'POST') return json(res, 200, await chat.callTool(tm[1], body));
   if (route === 'POST /api/chat') {
-    const out = await chat.handle(body.text, {
-      applyConfig,
-      briefDirty: brief.dirty,
-      busy: () => pipeline.status.main,
-      run: {
-        search: () => pipeline.cycle().catch((e) => store.event('error', String(e.message).slice(0, 200))),
-        news: () => pipeline.news().catch((e) => store.event('error', String(e.message).slice(0, 200))),
-        inbox: () => pipeline.checkInbox(),
-      },
-      // يكتب رسالة الوظيفة المضافة الحين (وفي الوضع التلقائي يرسلها)؛ لو مشغول تنكتب في الدورة الجاية
-      draftNow: () => {
-        if (pipeline.status.main) return;
-        pipeline
-          .withMain('يكتب رسالة التقديم', async () => {
-            await draft.draftPending((l) => (pipeline.status.main = l));
-            if (await pipeline.autoSend()) brief.dirty();
-          })
-          .catch((e) => store.event('error', String(e.message).slice(0, 200)));
-      },
-    });
+    const out = await chat.handle(body.text, chatDeps(), { spoken: !!body.spoken });
     return json(res, 200, { ...out, state: publicState() });
   }
   if (route === 'POST /api/brief/open') return json(res, 200, { brief: await brief.onOpen() });

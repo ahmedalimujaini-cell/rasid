@@ -34,11 +34,14 @@ function extractJson(text) {
 let level = 0;
 const SYSTEM = 'You are the engine of a personal job-application assistant. Follow the instructions in the user message exactly and reply only in the format it asks for. Use only the tools you are given.';
 
-function buildArgs({ tools, fast, stream }, lvl) {
+function buildArgs({ tools, fast, stream, mcpConfig, mcpTools }, lvl) {
   // stream: الرد يوصل كلمة كلمة (للمحادثة) بدل ما ننتظر لين يخلص
   const args = stream && lvl < 2 ? ['-p', '--output-format', 'stream-json', '--verbose', '--include-partial-messages'] : ['-p', '--output-format', 'json'];
   const list = tools && tools.length ? tools.join(',') : '';
-  if (list) args.push('--allowedTools', list);
+  // أدوات راصد نفسه (MCP) تنضاف للمسموح، وأدوات Claude Code المدمجة تبقى محصورة في القائمة
+  const allowed = [...(tools || []), ...(mcpConfig ? ['mcp__rasid', ...(mcpTools || []).map((t) => 'mcp__rasid__' + t)] : [])].join(',');
+  if (allowed) args.push('--allowedTools', allowed);
+  if (mcpConfig) args.push('--mcp-config', mcpConfig);
   if (lvl <= 1) args.push('--permission-mode', 'dontAsk', '--strict-mcp-config');
   if (lvl === 0) {
     args.push('--disable-slash-commands', '--no-session-persistence', '--system-prompt', SYSTEM, '--tools', list);
@@ -47,12 +50,12 @@ function buildArgs({ tools, fast, stream }, lvl) {
   return args;
 }
 
-function spawnClaude(prompt, { tools, timeoutMs, cwd, fast, onText }, lvl) {
+function spawnClaude(prompt, { tools, timeoutMs, cwd, fast, onText, onTool, mcpConfig, mcpTools }, lvl) {
   const cfg = store.load().config;
   const dir = cwd || SANDBOX;
   fs.mkdirSync(dir, { recursive: true });
   const streaming = !!onText && lvl < 2;
-  const args = buildArgs({ tools, fast, stream: streaming }, lvl);
+  const args = buildArgs({ tools, fast, stream: streaming, mcpConfig, mcpTools }, lvl);
 
   return new Promise((resolve, reject) => {
     let child;
@@ -98,6 +101,10 @@ function spawnClaude(prompt, { tools, timeoutMs, cwd, fast, onText }, lvl) {
           acc += ev.event.delta.text;
           try {
             onText(acc);
+          } catch (_) {}
+        } else if (ev.type === 'stream_event' && ev.event && ev.event.type === 'content_block_start' && ev.event.content_block && /tool_use/.test(ev.event.content_block.type || '')) {
+          try {
+            onTool && onTool(ev.event.content_block.name);
           } catch (_) {}
         } else if (ev.type === 'stream_event' && ev.event && ev.event.type === 'message_start') {
           acc = ''; // رسالة جديدة بعد استخدام أداة: نبدأ النص من جديد
@@ -150,6 +157,23 @@ async function askJson(prompt, { tools = [], timeoutMs = 5 * 60 * 1000, mockKey,
   }
 }
 
+// وكيل بأدوات: Claude يشتغل على الطلب، يستخدم أدوات راصد والويب قد ما يحتاج، ويرجّع الرد النهائي نص.
+async function runAgent(prompt, { tools = [], mcpConfig, mcpTools = [], timeoutMs = 10 * 60 * 1000, onText, onTool, mock } = {}) {
+  if (process.env.RASID_MOCK) return mock();
+  for (;;) {
+    try {
+      return await spawnClaude(prompt, { tools, timeoutMs, onText: onText || (() => {}), onTool, mcpConfig, mcpTools }, level);
+    } catch (e) {
+      const flagProblem = /CLAUDE_EXIT_/.test(e.message) && !/authenticat|oauth|login|rate.?limit|usage limit/i.test(e.message);
+      if (flagProblem && level < 2) {
+        level++;
+        continue;
+      }
+      throw e;
+    }
+  }
+}
+
 // يحوّل أخطاء التشغيل إلى مشكلة مفهومة تظهر في اللوحة.
 function reportAiError(e, what) {
   const m = String(e.message || e);
@@ -182,4 +206,4 @@ async function selfTest() {
   for (const k of ['claude-missing', 'claude-auth', 'claude-limit', 'claude-error']) store.clearProblem(k);
 }
 
-module.exports = { askJson, extractJson, reportAiError, selfTest, buildArgs, getLevel: () => level, setLevel: (n) => (level = n) };
+module.exports = { askJson, runAgent, extractJson, reportAiError, selfTest, buildArgs, getLevel: () => level, setLevel: (n) => (level = n) };

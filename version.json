@@ -1,7 +1,7 @@
 {
-  "build": 10,
+  "build": 11,
   "date": "2026-10-03",
-  "notes": "كلّم راصد صار أذكى: يقرا جيميلك كامل ويعطيك ملخص، ويقول لك أخبار أي شركة راسلتك، وينفّذ بالحرف. والصوت تقدر تختاره من الإعدادات",
+  "notes": "الشاشة الكبيرة: الخط والمحادثة يكبرون مع حجم النافذة",
   "files": {
     "package.json": "5de6eee528f3d817e065377265060c5b84ff74b28f5ec03acdb7d0267ca18545",
     "README.md": "7820a04aa88bf1ecad85a5526275eaf0369de6a6eb018e44290d5b0aa1856198",
@@ -32,7 +32,7 @@
     "public/icon.png": "a27ffc08faf19536305057d034bea4629202bdae047b146b2904f201033555f9",
     "public/index.html": "0c6043e90e8439c38083271e78b8510d3efb5619a5e187cb6e9a0fed8bbd90e1",
     "public/manifest.webmanifest": "b0fed68868432465758d4204e723717f7227f1dd667246d612dcc9c3e736e956",
-    "public/style.css": "8d06855443af8e78843c3269e8ed30c8a0d3e9f4dbb81ac987b0732810a30052",
+    "public/style.css": "6c1feddb817183f67021ae462087f1a863cce9c51bae94e64d39aa29e364ea38",
     "scripts/release.js": "3898cac6fb2cc9447e72d8b9cfb931747ac30cd92c20333d0d26af5b27697d49",
     "test/mailfix.js": "777512b8d558dcc3d1b3d9e6a367ff36c48f2deea0b5edcd0d23f0c590fa6617",
     "test/mock.js": "4b52d97086083c177a7b65767b67b053cad34e75d9d124f0bc475412a7b0c3af",

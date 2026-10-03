@@ -40,6 +40,7 @@ const DEFAULTS = {
     letterNotes: '', // ملاحظة دائمة لكل الرسائل (تنضاف من المحادثة)
     claudePath: 'claude',
     updateRepo: '', // مصدر التحديث: owner/repo على GitHub
+    autoUpdate: true, // يركّب التحديث لحاله أول ما ينزل
     smtp: null, // للاختبار فقط
   },
   jobs: [],

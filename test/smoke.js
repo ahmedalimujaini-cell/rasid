@@ -220,6 +220,14 @@ const ok = (name, cond) => {
     const out = await update.install();
     ok('good update installs only the changed file, bumps build, keeps a backup', out.updated && out.files === 1 && update.local().build === mine.build + 1 && fs.readFileSync(path.join(ROOT, 'README.md')).equals(newReadme) && fs.existsSync(path.join(tmp, 'backup', String(mine.build), 'README.md')) && d.state.update === null);
     ok('already up to date → no-op', (await update.install()).updated === false);
+    // التحديث التلقائي
+    fs.writeFileSync(path.join(ROOT, 'README.md'), original);
+    fs.writeFileSync(path.join(ROOT, 'version.json'), savedVersion);
+    ok('auto-update waits while a search or send is running', (await update.auto(() => 'يبحث')).waiting === true && update.local().build === mine.build);
+    d.config.autoUpdate = false;
+    ok('auto-update off → only flags it', (await update.auto(() => '')).pending === true && update.local().build === mine.build && d.state.update.build === mine.build + 1);
+    d.config.autoUpdate = true;
+    ok('auto-update installs by itself when idle', (await update.auto(() => '')).updated === true && update.local().build === mine.build + 1);
   } finally {
     fs.writeFileSync(path.join(ROOT, 'README.md'), original);
     fs.writeFileSync(path.join(ROOT, 'version.json'), savedVersion);

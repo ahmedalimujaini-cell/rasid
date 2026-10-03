@@ -623,7 +623,8 @@ function settings() {
     <label>لغة الرسائل<select id="s_lang"><option value="auto" ${c.letterLanguage === 'auto' ? 'selected' : ''}>حسب لغة الإعلان</option><option value="en" ${c.letterLanguage === 'en' ? 'selected' : ''}>إنجليزي دايماً</option><option value="ar" ${c.letterLanguage === 'ar' ? 'selected' : ''}>عربي دايماً</option></select></label>
   </div>
   <h2>تحديث البرنامج</h2>
-  <p class="lead">النسخة الحالية ${S.version}. يشيّك على التحديثات لحاله كل ساعة، ولما يلقى تحديث يطلع لك زر «حدّث الحين» في الموجز.</p>
+  <p class="lead">النسخة الحالية ${S.version}. يشيّك على التحديثات لحاله كل ربع ساعة ويركّبها بدون ما تسوي شي.</p>
+  <label class="check"><input type="checkbox" id="s_autoUpdate" ${c.autoUpdate !== false ? 'checked' : ''}> ركّب التحديثات لحالك أول ما تنزل</label>
   <label>مصدر التحديث<input id="s_updateRepo" dir="ltr" placeholder="ahmedalimujaini-cell/rasid" value="${esc(c.updateRepo || '')}"></label>
   <div class="acts" style="margin-bottom:1.4rem"><button class="btn ghost sm" id="checkUpdate">شيّك على تحديث الحين</button></div>
   <h2>الجيميل</h2>
@@ -680,7 +681,7 @@ document.addEventListener('click', (e) => {
     return render();
   }
   if (t.id === 'digestTest') return toast('أرسل…'), act(t, () => call('/api/digest/test'), 'انرسل. شوف إيميلك في الجوال.');
-  if (t.id === 'checkUpdate') return act(t, async () => { await call('/api/update/check'); toast(S.update ? 'في تحديث جديد — تلقاه في الموجز.' : 'أنت على آخر نسخة.'); });
+  if (t.id === 'checkUpdate') return act(t, async () => { const r = await call('/api/update/check'); toast(r.installing ? 'لقيت تحديث — أركّبه الحين…' : S.update ? 'في تحديث جديد — تلقاه في الموجز.' : 'أنت على آخر نسخة.'); });
   if (t.id === 'doUpdate') return runUpdate(t);
   if (t.id === 'copyReport') {
     const errs = S.events.filter((e) => e.level === 'error').slice(0, 15).map((e) => `- ${new Date(e.t).toISOString().slice(0, 16)} ${e.text}`);
@@ -709,7 +710,7 @@ document.addEventListener('click', (e) => {
   if (t.id === 'saveSet') {
     const v = (id) => $('#' + id).value;
     const body = {
-      mode: v('s_mode'), voice: $('#s_voice').checked, digestEveryHours: v('s_digest'), notifyEmail: v('s_notify'), updateRepo: v('s_updateRepo'), letterLanguage: v('s_lang'), minFit: v('s_minFit'), dailyCap: v('s_dailyCap'),
+      mode: v('s_mode'), voice: $('#s_voice').checked, digestEveryHours: v('s_digest'), notifyEmail: v('s_notify'), updateRepo: v('s_updateRepo'), autoUpdate: $('#s_autoUpdate').checked, letterLanguage: v('s_lang'), minFit: v('s_minFit'), dailyCap: v('s_dailyCap'),
       searchEveryHours: v('s_searchEveryHours'), inboxEveryMinutes: v('s_inboxEveryMinutes'), followUpDays: v('s_followUpDays'),
       gmail: { user: v('s_user'), appPassword: v('s_pass') },
       profile: Object.fromEntries(PF.map((k) => [k, v('s_' + k)])),
@@ -760,6 +761,16 @@ async function refresh(force) {
   const res = await fetch('/api/state' + (S && !force ? '?sig=' + encodeURIComponent(S.sig) : ''));
   const data = await res.json();
   if (data.same) return false;
+  // البرنامج تحدّث لحاله في الخلفية: نعيد تحميل الصفحة عشان تاخذ الواجهة الجديدة (مو وأنت تكتب)
+  if (S && data.version !== S.version) {
+    const a = document.activeElement;
+    if (!chatBusy && !(a && /INPUT|TEXTAREA/.test(a.tagName))) {
+      try { sessionStorage.setItem('rasidUpdated', String(data.version)); } catch (_) {}
+      location.reload();
+      return false;
+    }
+    return false;
+  }
   S = data;
   return true;
 }
@@ -771,6 +782,10 @@ async function refresh(force) {
     document.body.innerHTML = '<p style="padding:3rem;font-family:sans-serif">راصد مو شغّال. شغّله من PowerShell بالأمر: npm start</p>';
     return;
   }
+  try {
+    const v = sessionStorage.getItem('rasidUpdated');
+    if (v) sessionStorage.removeItem('rasidUpdated'), setTimeout(() => toast('تحدّث راصد للنسخة ' + v + '.'), 600);
+  } catch (_) {}
   if (S.config.setupDone) showApp();
   else {
     $('#wizard').hidden = false;

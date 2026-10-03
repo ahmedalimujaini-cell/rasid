@@ -1,7 +1,7 @@
 {
-  "build": 6,
+  "build": 7,
   "date": "2026-10-03",
-  "notes": "التحديث صار يوصلك داخل البرنامج تلقائياً",
+  "notes": "يركّب التحديثات لحاله بدون ما تضغط شي",
   "files": {
     "package.json": "5de6eee528f3d817e065377265060c5b84ff74b28f5ec03acdb7d0267ca18545",
     "README.md": "c1d8ce628cf993dcbb8e12596ba841037e8b51fb45d42bc9aa2a6bf780b48511",
@@ -18,17 +18,17 @@
     "src/launch.js": "969b2df5d8d673e9dae0119e4505e7e21c5cbfcc64b7654f410f3debd4819db5",
     "src/mailer.js": "04e0983d0e2d5648d49f25a93e024c77a3e53401c2983ac130a0d8862a458f09",
     "src/pipeline.js": "8fb9e072ab418d0afad2289f97e5573c31c1dca535ef4d2a15dd090601ea2d65",
-    "src/server.js": "dfb03a6b9e9cae2d6bb612b9902c3f46a4c753481f14daa3545309a79e372bb1",
-    "src/store.js": "05e2750c6f7f201a4d155357417aca8d52e59f404066c9f9b3492cf10726283a",
-    "src/update.js": "50e88b34fb2c8244bdfee4e60866d884e5b98fca610ef8a83e81b3eba501d696",
+    "src/server.js": "d561736bb5abef7be1a6ee46779b9c96c37bf619931ae051eb82e993bfb4cce0",
+    "src/store.js": "94a1463a2134a2f0e426a2cdd916c9d66e788a60565aae592428e9d1c1090d20",
+    "src/update.js": "9149a9fd732d3611702963c0d8dfa503da0fd7162f78eba7a2a225a0e8c59a4d",
     "src/window.js": "0209e1210df5fd017b9a4664492ce150fed22bdf1fbf8405996a9d640fa98563",
-    "public/app.js": "89c8864b9a9d991b10d774ed2b88460395d150520e0aea6fd05740f82d542a15",
+    "public/app.js": "6bedbf66630d020d3381a773514d572f876404f2456d47359a5053c9b62f0e3a",
     "public/icon.png": "a27ffc08faf19536305057d034bea4629202bdae047b146b2904f201033555f9",
     "public/index.html": "0c6043e90e8439c38083271e78b8510d3efb5619a5e187cb6e9a0fed8bbd90e1",
     "public/manifest.webmanifest": "b0fed68868432465758d4204e723717f7227f1dd667246d612dcc9c3e736e956",
     "public/style.css": "8d06855443af8e78843c3269e8ed30c8a0d3e9f4dbb81ac987b0732810a30052",
     "scripts/release.js": "4e0e3c93f7ad478271a8140ea51005027ec18859b590a4e199bcd799010a1289",
     "test/mock.js": "d75921ddda752a6fca16f47c2051d231f976d834b683cbe319f9ff5064bf8671",
-    "test/smoke.js": "bd80ff32d6c74cd0859271ea2ec9c91a59c2dd546a6bcd68a2e4b1690d337435"
+    "test/smoke.js": "1ddc00d9a0a202f605479140938840649061e9b36324d78ec874d00304de2e85"
   }
 }

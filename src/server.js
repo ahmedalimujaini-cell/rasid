@@ -78,6 +78,7 @@ function applyConfig(body) {
   if (body.mode === 'review' || body.mode === 'auto') c.mode = body.mode;
   if (['auto', 'en', 'ar'].includes(body.letterLanguage)) c.letterLanguage = body.letterLanguage;
   if (typeof body.voice === 'boolean') c.voice = body.voice;
+  if (typeof body.autoUpdate === 'boolean') c.autoUpdate = body.autoUpdate;
   if ('digestEveryHours' in body) c.digestEveryHours = [0, 6, 12, 24].includes(Number(body.digestEveryHours)) ? Number(body.digestEveryHours) : c.digestEveryHours;
   if (typeof body.notifyEmail === 'string' && (body.notifyEmail.trim() === '' || /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(body.notifyEmail.trim()))) c.notifyEmail = body.notifyEmail.trim();
   if (typeof body.updateRepo === 'string') c.updateRepo = body.updateRepo.trim().replace(/^https?:\/\/github\.com\//i, '').replace(/\.git$|\/$/g, '').slice(0, 120);
@@ -146,8 +147,8 @@ async function api(req, res, url) {
   }
   if (route === 'POST /api/update/check') {
     if (!update.base()) return json(res, 400, { error: 'مصدر التحديث مو محدد بعد.' });
-    await update.check();
-    return json(res, 200, publicState());
+    const out = await update.auto(() => pipeline.status.main || chat.live.busy);
+    return json(res, 200, { ...publicState(), installing: !!out.updated });
   }
   if (route === 'POST /api/update/install') {
     if (pipeline.status.main) return json(res, 409, { error: 'مشغول الحين: ' + pipeline.status.main + ' — حدّث بعد ما يخلص.' });
@@ -318,10 +319,10 @@ if (require.main === module) {
   server.listen(PORT, '127.0.0.1', () => {
     console.log('\n  Rasid is running:  http://127.0.0.1:' + PORT + '\n  Stop with Ctrl+C.\n');
     pipeline.startScheduler();
-    // يشيّك على التحديثات عند التشغيل وكل ساعة
-    const upd = () => update.check().catch(() => {});
+    // يشيّك على التحديثات عند التشغيل وكل ١٥ دقيقة، ويركّبها لحاله (لو مو وسط بحث أو إرسال)
+    const upd = () => update.auto(() => pipeline.status.main || chat.live.busy).catch(() => {});
     setTimeout(upd, 8000);
-    setInterval(upd, 3600000).unref?.();
+    setInterval(upd, 15 * 60000).unref?.();
     if (!process.env.RASID_NO_OPEN) openBrowser();
   });
   const bye = () => {

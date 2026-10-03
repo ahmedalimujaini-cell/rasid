@@ -97,4 +97,14 @@ function restart() {
   setTimeout(() => process.exit(0), 400);
 }
 
-module.exports = { check, install, restart, local, base };
+// يشيّك، ولو في تحديث والتحديث التلقائي شغّال والبرنامج مو مشغول: يركّبه ويعيد التشغيل لحاله.
+async function auto(isBusy) {
+  const found = await check();
+  if (!found || store.load().config.autoUpdate === false) return { updated: false, pending: !!found };
+  if (isBusy && isBusy()) return { updated: false, pending: true, waiting: true }; // وسط بحث أو إرسال: ننتظر للمرة الجاية
+  const out = await install();
+  if (out.updated) restart();
+  return out;
+}
+
+module.exports = { check, install, restart, local, base, auto };

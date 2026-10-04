@@ -166,6 +166,14 @@ function paused() {
   }
   return until - Date.now();
 }
+// الوقت المكتوب تخمين: الحد ممكن ينفك قبله. لما تأمر أنت (بحث، محادثة، اختبار) نجرّب فعلياً؛ لو لسا الحد موجود يرجع يوقف لحاله.
+function resume() {
+  const d = store.load();
+  if (!d.state.aiPausedUntil) return;
+  d.state.aiPausedUntil = 0;
+  store.clearProblem('claude-limit');
+  store.save();
+}
 const clock = (t) => new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 const pausedError = () => new Error('CLAUDE_LIMIT_PAUSED: وصلت حد استخدام Claude. يرجع الساعة ' + clock(store.load().state.aiPausedUntil));
 
@@ -237,6 +245,7 @@ function reportAiError(e, what) {
 
 // فحص سريع: هل Claude Code يرد؟ ينظّف مشاكل Claude لو اشتغل.
 async function selfTest() {
+  resume();
   try {
     const r = await askJson('Reply with ONLY this JSON object in a ```json block: {"ok":true}', { tools: [], timeoutMs: 120000, mockKey: 'selftest', fast: true });
     if (!r || r.ok !== true) throw new Error('رد غير متوقع من Claude');
@@ -247,4 +256,4 @@ async function selfTest() {
   for (const k of ['claude-missing', 'claude-auth', 'claude-limit', 'claude-error']) store.clearProblem(k);
 }
 
-module.exports = { paused, limitUntil, askJson, runAgent, extractJson, reportAiError, selfTest, buildArgs, getLevel: () => level, setLevel: (n) => (level = n) };
+module.exports = { paused, resume, limitUntil, askJson, runAgent, extractJson, reportAiError, selfTest, buildArgs, getLevel: () => level, setLevel: (n) => (level = n) };

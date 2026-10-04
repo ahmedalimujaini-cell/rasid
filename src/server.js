@@ -195,11 +195,15 @@ async function api(req, res, url) {
   const tm = url.pathname.match(/^\/api\/tool\/(\w+)$/);
   if (tm && req.method === 'POST') return json(res, 200, await chat.callTool(tm[1], body));
   if (route === 'POST /api/chat') {
+    ai.resume();
     const out = await chat.handle(body.text, chatDeps(), { spoken: !!body.spoken });
     return json(res, 200, { ...out, state: publicState() });
   }
   if (route === 'POST /api/brief/open') return json(res, 200, { brief: await brief.onOpen() });
-  if (route === 'POST /api/brief/refresh') return json(res, 200, { brief: await brief.generate(true) });
+  if (route === 'POST /api/brief/refresh') {
+    ai.resume();
+    return json(res, 200, { brief: await brief.generate(true) });
+  }
   if (route === 'POST /api/brief/heard') {
     brief.heard();
     return json(res, 200, publicState());
@@ -208,11 +212,13 @@ async function api(req, res, url) {
 
   if (route === 'POST /api/run/search') {
     if (pipeline.status.main) return json(res, 409, { error: 'مشغول الحين: ' + pipeline.status.main });
+    ai.resume();
     pipeline.cycle(true).catch((e) => store.event('error', String(e.message).slice(0, 200)));
     return json(res, 200, { ok: true });
   }
   if (route === 'POST /api/run/news') {
     if (pipeline.status.main) return json(res, 409, { error: 'مشغول الحين: ' + pipeline.status.main });
+    ai.resume();
     pipeline.news().catch((e) => store.event('error', String(e.message).slice(0, 200)));
     return json(res, 200, { ok: true });
   }

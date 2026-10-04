@@ -1,7 +1,7 @@
 {
-  "build": 14,
+  "build": 15,
   "date": "2026-10-04",
-  "notes": "البحث صار بأمرك فقط: راصد ما يستخدم Claude إلا لما تضغط «ابحث الحين» أو تكلمه",
+  "notes": "أصلحت مشكلة «وصلت الحد» العالقة: لما تضغط ابحث الحين أو تكلمني أجرّب فعلياً بدل ما أنتظر الساعة المكتوبة.",
   "files": {
     "package.json": "5de6eee528f3d817e065377265060c5b84ff74b28f5ec03acdb7d0267ca18545",
     "README.md": "7820a04aa88bf1ecad85a5526275eaf0369de6a6eb018e44290d5b0aa1856198",
@@ -10,7 +10,7 @@
     "install.ps1": "40d674502d05a7de79a0e536ec42b29cf1ad26fd0fd19d06d5e3602a8369b673",
     "rasid.ico": "e2b47fd026137d7de9b9dd0cf286ce87513de6d87399aeced96a83805064a68b",
     "src/actions.js": "86a28cd14719aa9656f06bd568335ecdc1afa6c9830df471448b6f31175dc7d4",
-    "src/ai.js": "db3675efe61f3cbb8ab2ba40c189801f8fa28e9f733629660a7b75f98de24ec9",
+    "src/ai.js": "805ef4fed166b657bdc3e05603855eff5771d48511e862b1b622cd3e734db978",
     "src/brief.js": "6a662e7fde79bf37609a9bd752a3aae138bdc39ec711dee2616aa77f597134c0",
     "src/chat.js": "cc73d4a9d66c9c13b844428669a4ae15501eda5ecf6b618226b1072d9a027bb7",
     "src/digest.js": "8430de6bbb988bf30cdf773ba6a538ce5d27d4bccf755ac889e9c0c70bd2871a",
@@ -22,7 +22,7 @@
     "src/mailer.js": "04e0983d0e2d5648d49f25a93e024c77a3e53401c2983ac130a0d8862a458f09",
     "src/mcp.js": "f363d2d27d1ab0d2ea6a7654e864bc6ae8d0f6c973c65410f2952dda43d8604c",
     "src/pipeline.js": "00920398ad0c7df2a9fddd9b1248a3c33f44601315562fec762c709b0c23ff76",
-    "src/server.js": "2dad7ea9558a0c4c2e8db991be39c2e2493e54c94f843a4340a795b3791629ac",
+    "src/server.js": "b6478092c2a43143b6ff4a62b6a86ecbe6bc4e7cc108c938137dfa1c3d1f9b1a",
     "src/store.js": "99b847f54c01d71ed45e82895d494b94b33406271e1e2ebad5695e22f8df8544",
     "src/tooldefs.js": "18eeed0d2be318c7dc09b978ca319750026d4a3ea32510af9df39b1b2e75c9ed",
     "src/tools.js": "e4f62189656087d7654c22e885b4ce5ae2777667ba1024ab0d0e92b31878e58a",
@@ -36,6 +36,6 @@
     "scripts/release.js": "3898cac6fb2cc9447e72d8b9cfb931747ac30cd92c20333d0d26af5b27697d49",
     "test/mailfix.js": "777512b8d558dcc3d1b3d9e6a367ff36c48f2deea0b5edcd0d23f0c590fa6617",
     "test/mock.js": "599e2572df8c1271c6c352d70f6b5ae2c2e75063113de588a01e41343d696aa4",
-    "test/smoke.js": "b9185379927021fc048869abbbc79e58457073940b3fb160330e42deea907dc0"
+    "test/smoke.js": "51ce3fae51ef30a7369a2dd6ff54c9fa3ba01a54b126e3d277a917c5b5599c71"
   }
 }

@@ -226,6 +226,13 @@ const ok = (name, cond) => {
   d.state.aiPausedUntil = Date.now() - 1000;
   ok('pause ends by itself and clears the problem', ai.paused() === 0 && !d.problems.some((p) => p.key === 'claude-limit' && !p.resolved));
 
+  // الحد انفك قبل الوقت المكتوب: أمر منك يجرّب فعلياً ولا ينتظر
+  ai.reportAiError(new Error("CLAUDE_ERROR: You've hit your session limit · resets 11:59pm (Asia/Muscat)"), 'البحث');
+  ok('paused before your command', ai.paused() > 0);
+  ai.resume();
+  ok('your command lifts a stale pause and its problem', ai.paused() === 0 && !d.problems.some((p) => p.key === 'claude-limit' && !p.resolved));
+  await ai.askJson('x', { mockKey: 'selftest' });
+
   // تشخيص أخطاء Claude
   ai.reportAiError(new Error('CLAUDE_ERROR: Not logged in · Please run /login'), 'البحث');
   ok('real auth error → auth problem with raw text', d.problems.some((p) => p.key === 'claude-auth' && !p.resolved && p.detail.includes('Not logged in')));

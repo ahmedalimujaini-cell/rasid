@@ -216,6 +216,7 @@ async function api(req, res, url) {
     pipeline.cycle(true).catch((e) => store.event('error', String(e.message).slice(0, 200)));
     return json(res, 200, { ok: true });
   }
+  if (route === 'POST /api/run/stop') return json(res, 200, { ok: true, stopped: pipeline.stop() });
   if (route === 'POST /api/run/news') {
     if (pipeline.status.main) return json(res, 409, { error: 'مشغول الحين: ' + pipeline.status.main });
     ai.resume();

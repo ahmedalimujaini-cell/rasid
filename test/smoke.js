@@ -233,6 +233,28 @@ const ok = (name, cond) => {
   ok('your command lifts a stale pause and its problem', ai.paused() === 0 && !d.problems.some((p) => p.key === 'claude-limit' && !p.resolved));
   await ai.askJson('x', { mockKey: 'selftest' });
 
+  // زر «وقّف»: يقتل Claude الشغّال فوراً، وما يطلع كمشكلة
+  {
+    const fake = path.join(process.env.RASID_DATA, 'slowclaude.sh');
+    fs.writeFileSync(fake, '#!/bin/sh\nsleep 30\n', { mode: 0o755 });
+    const oldPath = d.config.claudePath;
+    d.config.claudePath = fake;
+    delete process.env.RASID_MOCK;
+    const t0 = Date.now();
+    const run = ai.askJson('x', { tools: [], timeoutMs: 60000 });
+    setTimeout(() => ai.stopAll(), 300);
+    await assert.rejects(run, /CLAUDE_STOPPED/);
+    ok('stop kills a running Claude within seconds', Date.now() - t0 < 5000 && ai.stopRequested());
+    await assert.rejects(ai.askJson('x', {}), /CLAUDE_STOPPED/);
+    const nProb = d.problems.length;
+    ai.reportAiError(new Error('CLAUDE_STOPPED: x'), 'البحث');
+    ok('a stop is not reported as a problem', d.problems.length === nProb);
+    ai.clearStop();
+    process.env.RASID_MOCK = '1';
+    d.config.claudePath = oldPath;
+    ok('stop with nothing running does nothing', pipeline.stop() === false && !ai.stopRequested());
+  }
+
   // تشخيص أخطاء Claude
   ai.reportAiError(new Error('CLAUDE_ERROR: Not logged in · Please run /login'), 'البحث');
   ok('real auth error → auth problem with raw text', d.problems.some((p) => p.key === 'claude-auth' && !p.resolved && p.detail.includes('Not logged in')));

@@ -19,11 +19,13 @@ const setMain = (label) => {
 
 async function withMain(label, fn) {
   if (status.main) throw new Error('مشغول الحين: ' + status.main);
+  ai.clearStop();
   setMain(label);
   try {
     return await fn();
   } finally {
     setMain('');
+    ai.clearStop();
   }
 }
 
@@ -33,6 +35,7 @@ async function autoSend() {
   const queue = d.jobs.filter((j) => j.status === 'ready' && j.applyEmail && !j.sentAt).sort((a, b) => b.fit - a.fit);
   let n = 0;
   for (const job of queue) {
+    if (ai.stopRequested()) break;
     if (mailer.sentToday(d) >= d.config.dailyCap) {
       store.event('info', `وصلت حد الإرسال اليومي (${d.config.dailyCap}). الباقي بكرة.`);
       break;
@@ -55,12 +58,21 @@ function cycle(force = false) {
   return withMain('يبحث عن وظائف', async () => {
     store.event('info', 'بدأت دورة بحث جديدة.');
     const found = await discover.run((l) => (status.main = l), force);
-    const drafted = await draft.draftPending((l) => (status.main = l));
-    const sent = await autoSend();
-    store.event('ok', `خلصت الدورة: ${found} وظيفة جديدة، ${drafted} رسالة جاهزة، ${sent} تقديم انرسل.`);
+    const drafted = ai.stopRequested() ? 0 : await draft.draftPending((l) => (status.main = l));
+    const sent = ai.stopRequested() ? 0 : await autoSend();
+    if (ai.stopRequested()) store.event('info', `وقّفت الدورة بأمرك: ${found} وظيفة جديدة انحفظت، والباقي يكمّل المرة الجاية.`);
+    else store.event('ok', `خلصت الدورة: ${found} وظيفة جديدة، ${drafted} رسالة جاهزة، ${sent} تقديم انرسل.`);
     if (found || drafted || sent) brief.dirty();
     return { found, drafted, sent };
   });
+}
+
+// زر «وقّف»: يوقف البحث أو الأخبار اللي شغّالة الحين
+function stop() {
+  if (!status.main) return false;
+  ai.stopAll();
+  status.main = 'يوقف…';
+  return true;
 }
 
 function news() {
@@ -190,4 +202,4 @@ function startScheduler() {
   setTimeout(tick, 3000);
 }
 
-module.exports = { status, cycle, news, checkInbox, readCv, autoSend, withMain, startScheduler, due };
+module.exports = { status, stop, cycle, news, checkInbox, readCv, autoSend, withMain, startScheduler, due };

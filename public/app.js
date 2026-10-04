@@ -332,6 +332,7 @@ function render(railOnly) {
   live.className = 'live' + (S.status.main ? ' busy' : '');
   live.textContent = S.status.main || `آخر بحث ${ago(S.state.lastSearch)} · آخر فحص للردود ${ago(S.state.lastInbox)}`;
   $('#runSearch').disabled = !!S.status.main;
+  $('#stopRun').hidden = !S.status.main || S.status.main === 'يوقف…';
   $$('.rail>button').forEach((b) => b.classList.toggle('on', b.dataset.view === view));
   if (railOnly) return;
   // ما نعيد الرسم وأنت تكتب
@@ -682,6 +683,7 @@ document.addEventListener('click', (e) => {
   if (ds.tab && !ds.go) return (jobTab = ds.tab), (openJob = null), render();
   if (ds.open) return (openJob = openJob === ds.open ? null : ds.open), document.activeElement.blur(), render();
   if (t.id === 'runSearch') return act(t, () => call('/api/run/search').then(refresh), 'بدأ البحث. تاخذ الدورة عادة ١٠–٣٠ دقيقة.');
+  if (t.id === 'stopRun') return act(t, () => call('/api/run/stop').then(refresh), 'وقّفت. اللي لقيته انحفظ.');
   if (t.id === 'runNews') return act(t, () => call('/api/run/news').then(refresh), 'يجمع الأخبار…');
   if (t.id === 'runInbox') return act(t, async () => toast((await call('/api/run/inbox')).fresh ? 'وصلت ردود جديدة.' : 'ما في ردود جديدة.'));
   if (ds.copytext !== undefined) return navigator.clipboard.writeText(ds.copytext).then(() => toast('انسخ.'), () => toast('ما قدرت أنسخ.', true));

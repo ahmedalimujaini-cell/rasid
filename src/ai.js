@@ -50,7 +50,24 @@ function buildArgs({ tools, fast, stream, mcpConfig, mcpTools }, lvl) {
   return args;
 }
 
+// زر «وقّف»: نقتل كل عمليات Claude الشغّالة، وأي طلب جديد يرفض لين تخلص الدورة
+const active = new Map(); // العملية ← دالة ترفض الوعد فوراً (ما ننتظر إغلاق القنوات)
+let stopFlag = false;
+const stopRequested = () => stopFlag;
+const clearStop = () => (stopFlag = false);
+function stopAll() {
+  stopFlag = true;
+  for (const [c, abort] of active) {
+    abort();
+    try {
+      if (process.platform === 'win32' && c.pid) spawn('taskkill', ['/pid', String(c.pid), '/T', '/F'], { windowsHide: true, stdio: 'ignore' }).on('error', () => {});
+      else c.kill();
+    } catch (_) {}
+  }
+}
+
 function spawnClaude(prompt, { tools, timeoutMs, cwd, fast, onText, onTool, mcpConfig, mcpTools }, lvl) {
+  if (stopFlag) return Promise.reject(new Error('CLAUDE_STOPPED: أوقفته أنت'));
   const cfg = store.load().config;
   const dir = cwd || SANDBOX;
   fs.mkdirSync(dir, { recursive: true });
@@ -72,6 +89,10 @@ function spawnClaude(prompt, { tools, timeoutMs, cwd, fast, onText, onTool, mcpC
     } catch (e) {
       return reject(new Error('CLAUDE_NOT_FOUND: ' + e.message));
     }
+    active.set(child, () => {
+      clearTimeout(timer);
+      reject(new Error('CLAUDE_STOPPED: أوقفته أنت'));
+    });
     let out = '';
     let err = '';
     const timer = setTimeout(() => {
@@ -114,10 +135,13 @@ function spawnClaude(prompt, { tools, timeoutMs, cwd, fast, onText, onTool, mcpC
     child.stderr.on('data', (d) => (err += d.toString('utf8')));
     child.on('error', (e) => {
       clearTimeout(timer);
+      active.delete(child);
       reject(new Error((e.code === 'ENOENT' ? 'CLAUDE_NOT_FOUND: ' : '') + e.message));
     });
     child.on('close', (code) => {
       clearTimeout(timer);
+      active.delete(child);
+      if (stopFlag) return reject(new Error('CLAUDE_STOPPED: أوقفته أنت'));
       if (/is not recognized|command not found|not found/i.test(err) && !out.trim()) {
         return reject(new Error('CLAUDE_NOT_FOUND: ' + err.trim().slice(0, 200)));
       }
@@ -179,6 +203,7 @@ const pausedError = () => new Error('CLAUDE_LIMIT_PAUSED: وصلت حد استخ
 
 // يرجّع كائن JSON. tools: [] = بدون أدوات، أو ['WebSearch','WebFetch']. fast: استخدم الموديل السريع.
 async function askJson(prompt, { tools = [], timeoutMs = 5 * 60 * 1000, mockKey, cwd, fast = false, onText } = {}) {
+  if (stopFlag) throw new Error('CLAUDE_STOPPED: أوقفته أنت');
   if (paused()) throw pausedError();
   if (process.env.RASID_MOCK) return require('../test/mock').reply(mockKey, prompt);
   for (;;) {
@@ -198,6 +223,7 @@ async function askJson(prompt, { tools = [], timeoutMs = 5 * 60 * 1000, mockKey,
 
 // وكيل بأدوات: Claude يشتغل على الطلب، يستخدم أدوات راصد والويب قد ما يحتاج، ويرجّع الرد النهائي نص.
 async function runAgent(prompt, { tools = [], mcpConfig, mcpTools = [], timeoutMs = 10 * 60 * 1000, onText, onTool, mock } = {}) {
+  if (stopFlag) throw new Error('CLAUDE_STOPPED: أوقفته أنت');
   if (paused()) throw pausedError();
   if (process.env.RASID_MOCK) return mock();
   for (;;) {
@@ -217,6 +243,7 @@ async function runAgent(prompt, { tools = [], mcpConfig, mcpTools = [], timeoutM
 // يحوّل أخطاء التشغيل إلى مشكلة مفهومة تظهر في اللوحة.
 function reportAiError(e, what) {
   const m = String(e.message || e);
+  if (m.includes('CLAUDE_STOPPED')) return; // أنت أوقفته: مو مشكلة
   const raw = m.replace(/\s+/g, ' ').slice(0, 300); // نص الخطأ الأصلي يظهر في صفحة المشاكل
   if (m.includes('CLAUDE_NOT_FOUND')) {
     store.problem(
@@ -256,4 +283,4 @@ async function selfTest() {
   for (const k of ['claude-missing', 'claude-auth', 'claude-limit', 'claude-error']) store.clearProblem(k);
 }
 
-module.exports = { paused, resume, limitUntil, askJson, runAgent, extractJson, reportAiError, selfTest, buildArgs, getLevel: () => level, setLevel: (n) => (level = n) };
+module.exports = { stopAll, stopRequested, clearStop, paused, resume, limitUntil, askJson, runAgent, extractJson, reportAiError, selfTest, buildArgs, getLevel: () => level, setLevel: (n) => (level = n) };

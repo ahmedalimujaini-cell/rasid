@@ -170,7 +170,7 @@ async function run(onProgress, force = false) {
   const d = store.load();
   let added = 0;
   let passesOk = 0;
-  const stopped = () => store.load().problems.some((p) => !p.resolved && /^claude-(missing|auth|limit)$/.test(p.key));
+  const stopped = () => ai.stopRequested() || store.load().problems.some((p) => !p.resolved && /^claude-(missing|auth|limit)$/.test(p.key));
   const fresh = d.config.searchEveryHours * 3600000 * 0.5; // جولة خلصت قريب (قبل ما ينقطع البحث) ما نعيدها
   d.state.passDone = d.state.passDone || {};
   for (const pass of PASSES) {

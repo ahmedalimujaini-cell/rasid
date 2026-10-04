@@ -160,6 +160,7 @@ async function draftPending(onProgress) {
         job.id
       );
     } catch (e) {
+      if (/CLAUDE_STOPPED/.test(e.message)) break;
       job.lastError = String(e.message).slice(0, 200);
       ai.reportAiError(e, `كتابة رسالة «${job.title}»`);
       if (/CLAUDE_NOT_FOUND|login|auth|limit/i.test(e.message)) break;

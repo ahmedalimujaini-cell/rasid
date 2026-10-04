@@ -1,7 +1,7 @@
 {
-  "build": 12,
-  "date": "2026-10-03",
-  "notes": "لما يوصل حد استخدام Claude: راصد يوقف لحاله ويكمّل أول ما يرجع، ومسح الشركات صار أخف على الحصة",
+  "build": 13,
+  "date": "2026-10-04",
+  "notes": "التقديم على الشركات صار ياخذ من حصة Claude أقل بكثير: رسالة وحدة لكل مسمى وتنعبّى باسم كل شركة",
   "files": {
     "package.json": "5de6eee528f3d817e065377265060c5b84ff74b28f5ec03acdb7d0267ca18545",
     "README.md": "7820a04aa88bf1ecad85a5526275eaf0369de6a6eb018e44290d5b0aa1856198",
@@ -15,14 +15,14 @@
     "src/chat.js": "cc73d4a9d66c9c13b844428669a4ae15501eda5ecf6b618226b1072d9a027bb7",
     "src/digest.js": "8430de6bbb988bf30cdf773ba6a538ce5d27d4bccf755ac889e9c0c70bd2871a",
     "src/discover.js": "9be8856e19a4186a436cd0ff8941b1b92a219956543fb8b807a5e1d045e41f2d",
-    "src/draft.js": "efef0a053ca3520d52c2096f1dfe723f6da2679026eec60ce0b0a0bb742ff4cc",
+    "src/draft.js": "375d6c5ed4d934e15a3349e4548f4b4361445609e3b63ea982478e6444b8f8c3",
     "src/inbox.js": "550cec7051c801393a7f9762c0a8e08f37f60085d3980f642f02c009e34330a3",
     "src/launch.js": "969b2df5d8d673e9dae0119e4505e7e21c5cbfcc64b7654f410f3debd4819db5",
     "src/mailbox.js": "a2f194d02515f262303168b2cdeb2e2ec26f6aa10dfe98c15de53471f0919898",
     "src/mailer.js": "04e0983d0e2d5648d49f25a93e024c77a3e53401c2983ac130a0d8862a458f09",
     "src/mcp.js": "f363d2d27d1ab0d2ea6a7654e864bc6ae8d0f6c973c65410f2952dda43d8604c",
     "src/pipeline.js": "63c09f7df1236fc9325b9acf07082d7648bebf7743ba82200f132516a0ba4a90",
-    "src/server.js": "1ffac35f1b0b3a97a72d32f79722c8386799d9fdd051632ee5c3b104b8a2a1da",
+    "src/server.js": "dff64ef52cf38dc748ddaaa49f57ff76c6788b37ebcb0e6a07fc1380b87e3c7c",
     "src/store.js": "81fffd3bf8cfaabc2e17781869afc25e200da993c732e8127fbfa5a8f6334458",
     "src/tooldefs.js": "6eaadc044bea87669b51cea5208d094ec3187a256e2a94791f452a9eb901b3ee",
     "src/tools.js": "e4f62189656087d7654c22e885b4ce5ae2777667ba1024ab0d0e92b31878e58a",
@@ -35,7 +35,7 @@
     "public/style.css": "6c1feddb817183f67021ae462087f1a863cce9c51bae94e64d39aa29e364ea38",
     "scripts/release.js": "3898cac6fb2cc9447e72d8b9cfb931747ac30cd92c20333d0d26af5b27697d49",
     "test/mailfix.js": "777512b8d558dcc3d1b3d9e6a367ff36c48f2deea0b5edcd0d23f0c590fa6617",
-    "test/mock.js": "4b52d97086083c177a7b65767b67b053cad34e75d9d124f0bc475412a7b0c3af",
-    "test/smoke.js": "94202af16bfa6b047d04f29f135a7ef6e084227abcd2b1da10c73b01af9e2ffa"
+    "test/mock.js": "599e2572df8c1271c6c352d70f6b5ae2c2e75063113de588a01e41343d696aa4",
+    "test/smoke.js": "1c3eb4ee01f15f2510a5df1ab782829340736bb7c98b75efcecbaa6f25b269a3"
   }
 }

@@ -251,7 +251,7 @@ async function api(req, res, url) {
     } else if (act === 'draft') {
       await pipeline.withMain(`يكتب رسالة: ${job.title}`, async () => {
         try {
-          job.draft = await draft.draftJob(job);
+          job.draft = await draft.draftJob(job, 'application', { fresh: true });
           if (['new', 'low', 'failed'].includes(job.status)) job.status = job.applyEmail ? 'ready' : 'manual';
         } catch (e) {
           ai.reportAiError(e, 'كتابة الرسالة');

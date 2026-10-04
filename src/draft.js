@@ -60,13 +60,83 @@ About the company: ${job.companyAbout || ''}
 Reply with ONLY a JSON object in a \`\`\`json block: {"subject":"email subject line","body":"full email text","language":"${lang}"}`;
 }
 
-async function draftJob(job, kind = 'application') {
+// ---- الطلبات العامة (مسح الشركات): رسالة أساس وحدة لكل مسمى وظيفي، تنكتب مرة وحدة بـClaude
+// وبعدها تنعبّى باسم كل شركة بدون أي استهلاك من حصة الاشتراك.
+const crypto = require('crypto');
+const COMPANY = '{{COMPANY}}';
+const fill = (text, company) => text.split(COMPANY).join(company);
+const specRole = (job) => job.title.replace(/^Speculative application\s*[–-]\s*/i, '').trim() || 'a suitable role';
+
+function specKey(cfg, role, lang) {
+  const p = cfg.profile;
+  const basis = [role.toLowerCase(), lang, cfg.letterNotes, p.name, p.phone, p.linkedin, p.headline, p.summary, cfg.gmail.user, cfg.cv.text].join('|');
+  return crypto.createHash('sha1').update(basis).digest('hex').slice(0, 16);
+}
+
+function specPrompt(cfg, role, lang) {
+  return `Write a formal speculative application email that accompanies the attached CV. It will be sent to many companies that have NOT advertised a vacancy: he is introducing himself and asking to be considered for a suitable current or upcoming opening, graduate or trainee programme.
+
+Write the literal token ${COMPANY} wherever the company's name belongs (at least once, in the opening). Say nothing specific about the company, because the same text goes to different companies.
+
+Structure (120-170 words):
+1. Salutation: "Dear Hiring Manager," (Arabic: "السادة المحترمون في إدارة الموارد البشرية،").
+2. Opening: who he is in one line and that he would like to be considered for a ${role} role at ${COMPANY}. Do not claim a vacancy exists.
+3. Body: the two or three most relevant facts from his background for that role, stated concretely.
+4. Close: ask to be considered for any suitable opening or training programme, offer an interview, thank them, then "Yours sincerely," (Arabic: "وتفضلوا بقبول فائق الاحترام والتقدير،").
+Subject line: "${role} – <candidate name> – CV for your consideration".
+Tone: formal, courteous, brief and confident; respectful without flattery or begging.
+
+Rules:
+- Language: ${lang === 'ar' ? 'Arabic (formal, modern standard)' : 'English (professional, plain)'}.
+- Use ONLY facts in <candidate>. Never invent experience, certificates, numbers, or employers. Never point out gaps or weaknesses.
+- The only placeholder allowed is ${COMPANY}. No markdown. Plain text with blank lines between paragraphs.
+- No empty buzzwords ("passionate", "dynamic", "team player", "hard-working"). Polished, grammatical, formal.
+- End with exactly this signature block:
+${signature(cfg)}${cfg.letterNotes ? `\n- Standing preference from the candidate, apply it: ${cfg.letterNotes}` : ''}
+
+<candidate>
+${profileBlock(cfg)}
+</candidate>
+
+Reply with ONLY a JSON object in a \`\`\`json block: {"subject":"email subject line","body":"full email text"}`;
+}
+
+// يرجّع رسالة الأساس لهالمسمى: من المحفوظ لو موجودة، وإلا يكتبها Claude مرة وحدة ويحفظها.
+async function specBase(role, lang) {
+  const d = store.load();
+  d.state.specLetters = d.state.specLetters || {};
+  const key = specKey(d.config, role, lang);
+  if (d.state.specLetters[key]) return d.state.specLetters[key];
+  const res = await ai.askJson(specPrompt(d.config, role, lang), { tools: [], timeoutMs: 4 * 60 * 1000, mockKey: 'draft:specbase' });
+  const subject = String(res.subject || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 200);
+  const body = String(res.body || '').trim();
+  if (!subject || body.length < 40 || !body.includes(COMPANY)) throw new Error('رسالة الأساس رجعت ناقصة');
+  if (/\[[^\]]{2,30}\]/.test(body)) throw new Error('الصياغة فيها فراغات ما انملت [..]');
+  const keys = Object.keys(d.state.specLetters);
+  if (keys.length >= 20) delete d.state.specLetters[keys.sort((a, b) => d.state.specLetters[a].at - d.state.specLetters[b].at)[0]];
+  d.state.specLetters[key] = { role, subject, body, language: lang, at: Date.now() };
+  store.save();
+  return d.state.specLetters[key];
+}
+
+// fresh = اكتب لهالشركة بالذات رسالة خاصة بـClaude (زر «أعد الكتابة»)، مو من رسالة الأساس.
+async function draftJob(job, kind = 'application', { fresh = false } = {}) {
   const cfg = store.load().config;
+  if (kind === 'application' && job.kind === 'speculative' && !fresh) {
+    const lang = cfg.letterLanguage === 'ar' ? 'ar' : 'en';
+    try {
+      const base = await specBase(specRole(job), lang);
+      return { subject: fill(base.subject, job.company), body: fill(base.body, job.company), language: lang, at: Date.now(), fromBase: true };
+    } catch (e) {
+      // حد الاستخدام أو الدخول: ما في فايدة نحاول بطريقة ثانية. غير كذا (رسالة الأساس رجعت ناقصة): نكتب لهالشركة رسالتها الخاصة.
+      if (/CLAUDE_(NOT_FOUND|ERROR|LIMIT_PAUSED)|TIMEOUT/.test(e.message)) throw e;
+    }
+  }
   const res = await ai.askJson(prompt(cfg, job, kind), { tools: [], timeoutMs: 4 * 60 * 1000, mockKey: 'draft:' + kind });
   const subject = String(res.subject || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 200);
   const body = String(res.body || '').trim();
   if (!subject || body.length < 40) throw new Error('الصياغة رجعت ناقصة');
-  if (/\[[^\]]{2,30}\]/.test(body)) throw new Error('الصياغة فيها فراغات ما انملت [..]');
+  if (/\[[^\]]{2,30}\]/.test(body) || body.includes('{{')) throw new Error('الصياغة فيها فراغات ما انملت [..]');
   return { subject, body, language: res.language === 'ar' ? 'ar' : 'en', at: Date.now() };
 }
 
@@ -102,4 +172,4 @@ async function draftPending(onProgress) {
   return done;
 }
 
-module.exports = { draftJob, draftPending };
+module.exports = { draftJob, draftPending, specBase };

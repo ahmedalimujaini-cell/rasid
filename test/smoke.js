@@ -102,6 +102,14 @@ const ok = (name, cond) => {
   ok('discovery: dedupes + drops no-URL job; company scan adds 3 (8 kept)', d.jobs.length === 8 && r.found === 8);
   const spec = byCoName('Batinah Builders');
   ok('company scan: speculative application with the published email is ready to send', spec.kind === 'speculative' && spec.status === 'ready' && spec.title.startsWith('Speculative application'));
+  const mockCalls = require('./mock').calls;
+  ok('speculative letters: one base letter per role (3 companies, 2 roles → 2 AI calls), filled with each company name', mockCalls['draft:specbase'] === 2 && spec.draft.fromBase && spec.draft.body.includes('role at Batinah Builders') && byCo('Form Only Co').draft.body.includes('role at Form Only Co') && byCo('Guessed Email Co').draft.fromBase && !spec.draft.body.includes('{{') && Object.keys(d.state.specLetters).length === 2);
+  const realAsk = ai.askJson;
+  ai.askJson = async (pr, o) => (o.mockKey === 'draft:specbase' ? { subject: 's', body: 'A base letter that forgot the company placeholder entirely, long enough.' } : realAsk(pr, o));
+  d.state.specLetters = {};
+  const fb = await require('../src/draft').draftJob({ title: 'Speculative application – Estimator', company: 'Fallback Co', kind: 'speculative', requirements: '', location: '' });
+  ai.askJson = realAsk;
+  ok('a bad base letter falls back to a letter written for that company', !fb.fromBase && fb.body.length > 40);
   ok('company scan: no email → manual with apply steps; unverified email discarded; already-emailed company skipped', byCoName('Form Only Co').status === 'manual' && byCoName('Form Only Co').applySteps.includes('Careers') && byCoName('Guessed Email Co').applyEmail === '' && d.jobs.filter((j) => j.company === 'Test Operator LLC').length === 1 && d.state.dirIndex === 2);
   ok('email job drafted → ready', byCo('Test Operator LLC').status === 'ready');
   ok('portal job drafted → manual', byCo('Portal Only Co').status === 'manual' && byCo('Portal Only Co').draft);

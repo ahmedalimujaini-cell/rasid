@@ -64,13 +64,14 @@ Reply with ONLY a JSON object in a \`\`\`json block: {"script":"the spoken text"
 }
 
 // يكتب نص «ايش الجديد» من تاريخ معيّن. يرجّع { text, nothing }.
-async function compose(since, fast = false) {
+// useAI=false: نص جاهز من الأرقام بدون ما نصرف من الحصة
+async function compose(since, fast = false, useAI = store.load().config.autoAI === true) {
   const d = store.load();
   const c = collect(d, since);
   const name = callName(d.config);
   const nothing = !c.sent.length && !c.waiting.length && !c.replies.length && !c.problems.length;
   let text = '';
-  if (!nothing) {
+  if (!nothing && useAI) {
     try {
       const r = await ai.askJson(prompt(name, c), { tools: [], timeoutMs: 3 * 60 * 1000, mockKey: 'brief', fast });
       text = String(r.script || '').replace(/https?:\/\/\S+/g, '').replace(/[*_#`<>\[\]]/g, '').trim().slice(0, 1800);
@@ -82,9 +83,9 @@ async function compose(since, fast = false) {
   return { text, nothing, counts: { sent: c.sent.length, waiting: c.waiting.length, replies: c.replies.length, problems: c.problems.length } };
 }
 
-async function build() {
+async function build(force) {
   const d = store.load();
-  const { text, nothing } = await compose(d.state.lastBriefHeard || 0);
+  const { text, nothing } = await compose(d.state.lastBriefHeard || 0, false, force || d.config.autoAI === true);
   d.brief = { text, at: Date.now(), heard: false, empty: nothing };
   d.state.briefDirty = false;
   store.save();
@@ -92,8 +93,9 @@ async function build() {
 }
 
 // يمنع تشغيل مرتين في نفس الوقت.
-function generate() {
-  if (!busy) busy = build().finally(() => (busy = null));
+// force = ضغطت «موجز جديد» بنفسك: يكتبه Claude
+function generate(force = false) {
+  if (!busy) busy = build(force).finally(() => (busy = null));
   return busy;
 }
 

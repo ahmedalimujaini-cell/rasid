@@ -103,6 +103,7 @@ function applyConfig(body) {
   if (['auto', 'en', 'ar'].includes(body.letterLanguage)) c.letterLanguage = body.letterLanguage;
   if (typeof body.voice === 'boolean') c.voice = body.voice;
   if (typeof body.autoUpdate === 'boolean') c.autoUpdate = body.autoUpdate;
+  if (typeof body.autoAI === 'boolean') c.autoAI = body.autoAI;
   if ('digestEveryHours' in body) c.digestEveryHours = [0, 6, 12, 24].includes(Number(body.digestEveryHours)) ? Number(body.digestEveryHours) : c.digestEveryHours;
   if (typeof body.notifyEmail === 'string' && (body.notifyEmail.trim() === '' || /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(body.notifyEmail.trim()))) c.notifyEmail = body.notifyEmail.trim();
   if (typeof body.updateRepo === 'string') c.updateRepo = body.updateRepo.trim().replace(/^https?:\/\/github\.com\//i, '').replace(/\.git$|\/$/g, '').slice(0, 120);
@@ -198,7 +199,7 @@ async function api(req, res, url) {
     return json(res, 200, { ...out, state: publicState() });
   }
   if (route === 'POST /api/brief/open') return json(res, 200, { brief: await brief.onOpen() });
-  if (route === 'POST /api/brief/refresh') return json(res, 200, { brief: await brief.generate() });
+  if (route === 'POST /api/brief/refresh') return json(res, 200, { brief: await brief.generate(true) });
   if (route === 'POST /api/brief/heard') {
     brief.heard();
     return json(res, 200, publicState());

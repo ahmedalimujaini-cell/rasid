@@ -41,6 +41,7 @@ const DEFAULTS = {
     claudePath: 'claude',
     updateRepo: '', // مصدر التحديث: owner/repo على GitHub
     autoUpdate: true, // يركّب التحديث لحاله أول ما ينزل
+    autoAI: false, // false = ما يستخدم Claude إلا بأمرك (بحث، محادثة، كتابة). true = يبحث ويلخّص لحاله كل فترة
     smtp: null, // للاختبار فقط
   },
   jobs: [],

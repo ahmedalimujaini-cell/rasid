@@ -36,6 +36,8 @@ const ok = (name, cond) => {
   const d = store.load();
   Object.assign(d.config, { setupDone: true, smtp: { host: '127.0.0.1', port: 2526, secure: false, ignoreTLS: true } });
   d.config.gmail = { user: 'me@gmail.com', appPassword: 'abcd efgh ijkl mnop' };
+  ok('new installs do not use Claude on their own', d.config.autoAI === false && pipeline.due(Object.assign({}, d, { config: { ...d.config, setupDone: true } })) === null);
+  d.config.autoAI = true;
   d.config.profile.name = 'Test User';
   d.config.mode = 'review';
   const brief = require('../src/brief');
@@ -189,6 +191,25 @@ const ok = (name, cond) => {
   d.problems.shift();
   d.config.digestEveryHours = 0;
   ok('digest off when set to 0', digest.due() === false);
+
+  // الوضع اليدوي: ما في أي نداء لـClaude بدون أمر
+  const MC = require('./mock').calls;
+  d.config.autoAI = false;
+  d.state.lastSearch = 0;
+  d.state.lastNews = 0;
+  ok('manual mode: the scheduler starts no search and no news', pipeline.due(d) === null);
+  d.config.autoAI = true;
+  ok('automatic mode: the search is due', pipeline.due(d) === 'cycle');
+  d.config.autoAI = false;
+  const before2 = { classify: MC.classify || 0, brief: MC.brief || 0 };
+  await inbox.processMessages([{ messageId: '<m9@x>', inReplyTo: '', references: [], from: 'hr@test-operator.example', fromName: 'HR', subject: 'Interview invitation', date: Date.now(), text: 'We would like to invite you to an interview on Monday.' }]);
+  ok('manual mode: a new reply is classified by keywords without calling Claude', (MC.classify || 0) === before2.classify && d.messages[0].category === 'interview' && d.messages[0].summary.includes('interview on Monday'));
+  d.state.lastBriefHeard = 0;
+  const auto1 = await brief.compose(0);
+  const forced = await brief.compose(0, false, true);
+  ok('manual mode: brief and email summary are built from the numbers; asking for a fresh brief uses Claude', (MC.brief || 0) === before2.brief + 1 && !auto1.nothing && auto1.text.length > 20 && forced.text.includes('يا أحمد'));
+  d.messages[0].seen = true;
+  d.config.autoAI = true;
 
   // حد استخدام الاشتراك
   const at = new Date(2026, 9, 3, 9, 17).getTime();

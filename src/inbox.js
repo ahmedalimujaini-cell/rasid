@@ -89,7 +89,9 @@ async function processMessages(list) {
     if (!job && !looksJobby) continue;
 
     let info = { category: heuristic(msg.from + ' ' + msg.subject + ' ' + msg.text.slice(0, 3000)), jobRelated: true, summary: '', action: '' };
-    if (info.category !== 'bounce') {
+    if (info.category !== 'bounce' && !d.config.autoAI) {
+      info.summary = msg.text.replace(/\s+/g, ' ').slice(0, 240);
+    } else if (info.category !== 'bounce') {
       try {
         info = await summarize(msg, job);
       } catch (e) {

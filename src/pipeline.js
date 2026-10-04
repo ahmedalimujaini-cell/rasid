@@ -158,6 +158,15 @@ async function readCv() {
   });
 }
 
+// ايش يبدأ الحين من نفسه؟ (مفصولة عشان تنختبر)
+function due(d, now = Date.now()) {
+  const c = d.config;
+  if (!c.setupDone || !c.autoAI || ai.paused()) return null; // الوضع اليدوي: ما نصرف من حصة Claude إلا بأمر صاحب البرنامج
+  if (now - d.state.lastSearch > c.searchEveryHours * 3600000) return 'cycle';
+  if (now - d.state.lastNews > c.newsEveryHours * 3600000) return 'news';
+  return null;
+}
+
 function startScheduler() {
   const tick = async () => {
     const d = store.load();
@@ -166,13 +175,13 @@ function startScheduler() {
     const now = Date.now();
     if (now - d.state.lastInbox > c.inboxEveryMinutes * 60000) checkInbox().catch((e) => store.event('error', 'فحص الوارد: ' + e.message));
     // نجهّز الموجز الصوتي مسبقاً عشان يكون حاضر أول ما تفتح البرنامج
-    if (d.state.briefDirty && c.voice && !ai.paused()) brief.generate().catch(() => {});
+    if (d.state.briefDirty && c.voice && c.autoAI && !ai.paused()) brief.generate().catch(() => {});
     if (digest.due()) digest.run().catch(() => {});
     if (status.main) return;
-    if (ai.paused()) return; // حد الاستخدام: ننتظر لين يرجع بدل ما نحاول ونفشل
     try {
-      if (now - d.state.lastSearch > c.searchEveryHours * 3600000) await cycle();
-      else if (now - d.state.lastNews > c.newsEveryHours * 3600000) await news();
+      const next = due(d, now);
+      if (next === 'cycle') await cycle();
+      else if (next === 'news') await news();
     } catch (e) {
       store.event('error', String(e.message).slice(0, 200));
     }
@@ -181,4 +190,4 @@ function startScheduler() {
   setTimeout(tick, 3000);
 }
 
-module.exports = { status, cycle, news, checkInbox, readCv, autoSend, withMain, startScheduler };
+module.exports = { status, cycle, news, checkInbox, readCv, autoSend, withMain, startScheduler, due };

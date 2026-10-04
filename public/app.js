@@ -374,7 +374,7 @@ function brief() {
     ${upd}
     ${voicePanel()}
     <h1 class="say">${sentence()}</h1>
-    <p class="sub">${S.config.mode === 'auto' ? 'الإرسال التلقائي شغّال' : 'ما ينرسل شي إلا بموافقتك'} · انرسل اليوم ${S.sentToday} من ${S.config.dailyCap} · يبحث كل ${S.config.searchEveryHours} ساعة ويفحص الردود كل ${S.config.inboxEveryMinutes} دقيقة${replay}</p>
+    <p class="sub">${S.config.mode === 'auto' ? 'الإرسال التلقائي شغّال' : 'ما ينرسل شي إلا بموافقتك'} · انرسل اليوم ${S.sentToday} من ${S.config.dailyCap} · ${S.config.autoAI ? `يبحث لحاله كل ${S.config.searchEveryHours} ساعة` : 'البحث بأمرك فقط: اضغط «ابحث الحين»'} · يفحص الردود كل ${S.config.inboxEveryMinutes} دقيقة${replay}</p>
     <h2>يحتاجك</h2>
     ${need.length ? `<ul class="need">${need.join('')}</ul>` : '<p class="empty">ما في شي ينتظرك الحين.</p>'}
     <h2>ايش صار <span>الأحدث فوق</span></h2>
@@ -613,6 +613,8 @@ function settings() {
   return `<h1 class="page-h">الإعدادات</h1><div class="set">
   <h2>طريقة الشغل</h2>
   <label>الإرسال<select id="s_mode"><option value="auto" ${c.mode === 'auto' ? 'selected' : ''}>صلاحية كاملة — أرسل تلقائياً</option><option value="review" ${c.mode === 'review' ? 'selected' : ''}>أجهّز وأنت توافق</option></select></label>
+  <label class="check"><input type="checkbox" id="s_autoAI" ${c.autoAI ? 'checked' : ''}> ابحث لحالك كل فترة (ياخذ من حصة Claude حتى لو ما طلبت)</label>
+  <p class="note">وهي مطفية: راصد ما يستخدم Claude إلا لما تأمره — «ابحث الحين»، المحادثة، أو كتابة رسالة. متابعة الردود والإرسال يشتغلون عادي بدون حصة.</p>
   <label class="check"><input type="checkbox" id="s_voice" ${c.voice !== false ? 'checked' : ''}> كلّمني بالصوت أول ما أفتح البرنامج</label>
   <label>صوت راصد<select id="s_voiceName"><option value="">تلقائي (أحسن صوت عربي موجود)</option>${(window.speechSynthesis ? speechSynthesis.getVoices() : []).filter((v) => /^ar/i.test(v.lang)).map((v) => `<option value="${esc(v.name)}" ${v.name === (localStorage.getItem('rasidVoice') || '') ? 'selected' : ''}>${esc(v.name)}</option>`).join('')}</select></label>
   <div class="acts" style="margin-bottom:1rem"><button class="btn ghost sm" id="voiceTest">جرّب الصوت</button></div>
@@ -724,7 +726,7 @@ document.addEventListener('click', (e) => {
   if (t.id === 'saveSet') {
     const v = (id) => $('#' + id).value;
     const body = {
-      mode: (localStorage.setItem('rasidVoice', v('s_voiceName')), v('s_mode')), voice: $('#s_voice').checked, digestEveryHours: v('s_digest'), notifyEmail: v('s_notify'), updateRepo: v('s_updateRepo'), autoUpdate: $('#s_autoUpdate').checked, letterLanguage: v('s_lang'), minFit: v('s_minFit'), dailyCap: v('s_dailyCap'),
+      mode: (localStorage.setItem('rasidVoice', v('s_voiceName')), v('s_mode')), voice: $('#s_voice').checked, autoAI: $('#s_autoAI').checked, digestEveryHours: v('s_digest'), notifyEmail: v('s_notify'), updateRepo: v('s_updateRepo'), autoUpdate: $('#s_autoUpdate').checked, letterLanguage: v('s_lang'), minFit: v('s_minFit'), dailyCap: v('s_dailyCap'),
       searchEveryHours: v('s_searchEveryHours'), inboxEveryMinutes: v('s_inboxEveryMinutes'), followUpDays: v('s_followUpDays'),
       gmail: { user: v('s_user'), appPassword: v('s_pass') },
       profile: Object.fromEntries(PF.map((k) => [k, v('s_' + k)])),

@@ -2,7 +2,7 @@
 const store = require('./store');
 const ai = require('./ai');
 
-let busy = null;
+const busy = new Map(); // لكل حساب موجزه
 
 function callName(cfg) {
   return (cfg.profile.nickname || cfg.profile.name.split(/\s+/)[0] || '').trim();
@@ -12,7 +12,8 @@ function collect(d, since = d.state.lastBriefHeard || 0) {
   return {
     since,
     sent: d.jobs.filter((j) => j.status === 'sent' && j.sentAt > since),
-    waiting: d.jobs.filter((j) => (j.status === 'ready' || j.status === 'manual') && j.foundAt > since),
+    // اللي يحتاجك فعلاً: التقديم من موقع الشركة، أو الجاهز لو الإرسال ينتظر موافقتك (في الوضع التلقائي الجاهز ينرسل لحاله)
+    waiting: d.jobs.filter((j) => (j.status === 'manual' || (j.status === 'ready' && d.config.mode !== 'auto')) && j.foundAt > since),
     replies: d.messages.filter((m) => m.date > since || !m.seen),
     problems: d.problems.filter((p) => !p.resolved),
     news: d.news.filter((n) => n.t > since).slice(0, 3),
@@ -40,7 +41,7 @@ function prompt(name, c) {
   const data = {
     applied: c.sent.slice(0, 8).map((j) => ({ role: j.title, company: j.company, city: j.location, about_company: j.companyAbout, why_it_fits: j.why })),
     applied_total: c.sent.length,
-    waiting_for_him: c.waiting.slice(0, 6).map((j) => ({ role: j.title, company: j.company, needs: j.status === 'manual' ? 'he must apply on the company website himself' : 'his approval to send' })),
+    waiting_for_him: c.waiting.slice(0, 6).map((j) => ({ role: j.title, company: j.company, needs: j.status === 'manual' ? 'he must apply on the company website himself' : 'queued: it will be sent automatically within the daily limit' })),
     waiting_total: c.waiting.length,
     replies: c.replies.slice(0, 6).map((m) => ({ type: m.label, from: m.fromName || m.from, summary: m.summary, what_he_should_do: m.action })),
     problems: c.problems.slice(0, 4).map((p) => ({ problem: p.text, fix: p.fix })),
@@ -64,8 +65,8 @@ Reply with ONLY a JSON object in a \`\`\`json block: {"script":"the spoken text"
 }
 
 // يكتب نص «ايش الجديد» من تاريخ معيّن. يرجّع { text, nothing }.
-// useAI=false: نص جاهز من الأرقام بدون ما نصرف من الحصة
-async function compose(since, fast = false, useAI = store.load().config.autoAI === true) {
+// useAI=false (الافتراضي): نص جاهز من الأرقام بدون ما نصرف من حصة Claude. Claude يكتبه بس لما تضغط «موجز جديد».
+async function compose(since, fast = false, useAI = false) {
   const d = store.load();
   const c = collect(d, since);
   const name = callName(d.config);
@@ -73,7 +74,7 @@ async function compose(since, fast = false, useAI = store.load().config.autoAI =
   let text = '';
   if (!nothing && useAI) {
     try {
-      const r = await ai.askJson(prompt(name, c), { tools: [], timeoutMs: 3 * 60 * 1000, mockKey: 'brief', fast });
+      const r = await ai.askJson(prompt(name, c), { tools: [], timeoutMs: 3 * 60 * 1000, mockKey: 'brief', model: fast ? 'haiku' : 'sonnet', effort: 'low' });
       text = String(r.script || '').replace(/https?:\/\/\S+/g, '').replace(/[*_#`<>\[\]]/g, '').trim().slice(0, 1800);
     } catch (e) {
       ai.reportAiError(e, 'تجهيز الموجز');
@@ -85,7 +86,7 @@ async function compose(since, fast = false, useAI = store.load().config.autoAI =
 
 async function build(force) {
   const d = store.load();
-  const { text, nothing } = await compose(d.state.lastBriefHeard || 0, false, force || d.config.autoAI === true);
+  const { text, nothing } = await compose(d.state.lastBriefHeard || 0, false, force);
   d.brief = { text, at: Date.now(), heard: false, empty: nothing };
   d.state.briefDirty = false;
   store.save();
@@ -95,8 +96,9 @@ async function build(force) {
 // يمنع تشغيل مرتين في نفس الوقت.
 // force = ضغطت «موجز جديد» بنفسك: يكتبه Claude
 function generate(force = false) {
-  if (!busy) busy = build(force).finally(() => (busy = null));
-  return busy;
+  const acct = store.current();
+  if (!busy.has(acct)) busy.set(acct, build(force).finally(() => busy.delete(acct)));
+  return busy.get(acct);
 }
 
 // عند فتح البرنامج: يرجّع الموجز اللي ما انسمع، أو يجهّز واحد جديد لو في جديد أو مرّ وقت.

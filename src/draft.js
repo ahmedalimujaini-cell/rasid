@@ -107,7 +107,7 @@ async function specBase(role, lang) {
   d.state.specLetters = d.state.specLetters || {};
   const key = specKey(d.config, role, lang);
   if (d.state.specLetters[key]) return d.state.specLetters[key];
-  const res = await ai.askJson(specPrompt(d.config, role, lang), { tools: [], timeoutMs: 4 * 60 * 1000, mockKey: 'draft:specbase' });
+  const res = await ai.askJson(specPrompt(d.config, role, lang), { tools: [], timeoutMs: 4 * 60 * 1000, mockKey: 'draft:specbase', model: 'sonnet', effort: 'low' });
   const subject = String(res.subject || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 200);
   const body = String(res.body || '').trim();
   if (!subject || body.length < 40 || !body.includes(COMPANY)) throw new Error('رسالة الأساس رجعت ناقصة');
@@ -117,6 +117,12 @@ async function specBase(role, lang) {
   d.state.specLetters[key] = { role, subject, body, language: lang, at: Date.now() };
   store.save();
   return d.state.specLetters[key];
+}
+
+function hasBase(job) {
+  const d = store.load();
+  const lang = d.config.letterLanguage === 'ar' ? 'ar' : 'en';
+  return !!(d.state.specLetters && d.state.specLetters[specKey(d.config, specRole(job), lang)]);
 }
 
 // fresh = اكتب لهالشركة بالذات رسالة خاصة بـClaude (زر «أعد الكتابة»)، مو من رسالة الأساس.
@@ -132,7 +138,7 @@ async function draftJob(job, kind = 'application', { fresh = false } = {}) {
       if (/CLAUDE_(NOT_FOUND|ERROR|LIMIT_PAUSED)|TIMEOUT/.test(e.message)) throw e;
     }
   }
-  const res = await ai.askJson(prompt(cfg, job, kind), { tools: [], timeoutMs: 4 * 60 * 1000, mockKey: 'draft:' + kind });
+  const res = await ai.askJson(prompt(cfg, job, kind), { tools: [], timeoutMs: 4 * 60 * 1000, mockKey: 'draft:' + kind, model: 'sonnet', effort: 'low' });
   const subject = String(res.subject || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 200);
   const body = String(res.body || '').trim();
   if (!subject || body.length < 40) throw new Error('الصياغة رجعت ناقصة');
@@ -145,7 +151,9 @@ async function draftPending(onProgress) {
   const d = store.load();
   const todo = d.jobs.filter((j) => j.status === 'new' && j.fit >= d.config.minFit);
   let done = 0;
+  let limited = false;
   for (const job of todo) {
+    if (limited && !(job.kind === 'speculative' && hasBase(job))) continue;
     onProgress && onProgress(`يكتب رسالة: ${job.title} — ${job.company}`);
     try {
       job.draft = await draftJob(job);
@@ -161,9 +169,11 @@ async function draftPending(onProgress) {
       );
     } catch (e) {
       if (/CLAUDE_STOPPED/.test(e.message)) break;
-      job.lastError = String(e.message).slice(0, 200);
       ai.reportAiError(e, `كتابة رسالة «${job.title}»`);
-      if (/CLAUDE_NOT_FOUND|login|auth|limit/i.test(e.message)) break;
+      if (/CLAUDE_NOT_FOUND|login|auth/i.test(e.message)) break;
+      // حد الاستخدام: مو خلل في هالوظيفة. نكمّل بس الطلبات العامة اللي رسالة أساسها محفوظة (ما تحتاج Claude)
+      if (/limit/i.test(e.message)) limited = true;
+      else job.lastError = String(e.message).slice(0, 200);
     }
     store.save();
   }

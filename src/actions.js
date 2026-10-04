@@ -3,7 +3,7 @@ const store = require('./store');
 const mailer = require('./mailer');
 
 const EMAIL_RE = /^[^\s@<>,;]+@[^\s@<>,;]+\.[a-z]{2,}$/i;
-const SETTINGS = ['mode', 'minFit', 'dailyCap', 'searchEveryHours', 'inboxEveryMinutes', 'followUpDays', 'letterLanguage', 'voice', 'digestEveryHours', 'autoAI'];
+const SETTINGS = ['mode', 'minFit', 'dailyCap', 'searchHour', 'inboxEveryMinutes', 'followUpDays', 'letterLanguage', 'voice', 'digestEveryHours', 'autoAI'];
 const PROFILE = ['nickname', 'birthDate', 'phone', 'location', 'linkedin', 'headline', 'summary', 'targets', 'avoid', 'noticePeriod', 'extra'];
 
 // ينفّذ أمر واحد بعد التحقق منه. يرجّع وصف اللي صار، أو يرمي خطأ.

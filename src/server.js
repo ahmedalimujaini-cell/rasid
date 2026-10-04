@@ -37,10 +37,24 @@ function readBody(req, limit) {
   });
 }
 
-const signature = () => `${store.rev()}|${pipeline.status.main}|${pipeline.status.inbox}|${process.pid}`;
+const signature = () => `${store.rev()}|${pipeline.status.main}|${pipeline.status.acct}|${pipeline.inboxBusy.has(store.current())}|${pipeline.status.frozen}|${store.current()}|${process.pid}`;
+
+// اللي يشتغل الحين: لو لحساب ثاني، نذكر اسمه
+function busyLabel() {
+  const st = pipeline.status;
+  if (!st.main) return '';
+  if (!st.acct || st.acct === store.current()) return st.main;
+  const other = store.accounts().find((a) => a.id === st.acct);
+  return `${other ? other.name : 'حساب ثاني'}: ${st.main}`;
+}
+
+// يوقف كل شي قبل التحديث، ويرجّعه لو التركيب فشل
+const updateHooks = { before: () => pipeline.freeze(), after: () => pipeline.unfreeze() };
 
 function publicState() {
   const d = store.load();
+  const main = store.load(store.MAIN);
+  const run = d.state.run && d.state.run.date === pipeline.dayKey() ? d.state.run : null;
   const cfg = JSON.parse(JSON.stringify(d.config));
   cfg.gmail.hasPassword = !!cfg.gmail.appPassword;
   delete cfg.gmail.appPassword;
@@ -57,10 +71,15 @@ function publicState() {
     brief: d.brief,
     chat: d.chat.slice(-40),
     version: update.local().build,
-    update: d.state.update || null,
+    update: main.state.update || null,
+    updateError: main.state.updateError || '',
+    updating: pipeline.status.frozen,
     state: d.state,
-    status: { main: pipeline.status.main, inbox: pipeline.status.inbox, since: pipeline.status.since },
+    status: { main: busyLabel(), mine: !pipeline.status.acct || pipeline.status.acct === store.current(), inbox: pipeline.inboxBusy.has(store.current()), since: pipeline.status.since },
     sentToday: mailer.sentToday(d),
+    today: { run, nextSearch: pipeline.nextSearch(d), paused: ai.paused() },
+    account: store.current(),
+    accounts: store.accounts(),
     sig: signature(),
     now: Date.now(),
   };
@@ -102,14 +121,13 @@ function applyConfig(body) {
   if (body.mode === 'review' || body.mode === 'auto') c.mode = body.mode;
   if (['auto', 'en', 'ar'].includes(body.letterLanguage)) c.letterLanguage = body.letterLanguage;
   if (typeof body.voice === 'boolean') c.voice = body.voice;
-  if (typeof body.autoUpdate === 'boolean') c.autoUpdate = body.autoUpdate;
   if (typeof body.autoAI === 'boolean') c.autoAI = body.autoAI;
   if ('digestEveryHours' in body) c.digestEveryHours = [0, 6, 12, 24].includes(Number(body.digestEveryHours)) ? Number(body.digestEveryHours) : c.digestEveryHours;
   if (typeof body.notifyEmail === 'string' && (body.notifyEmail.trim() === '' || /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(body.notifyEmail.trim()))) c.notifyEmail = body.notifyEmail.trim();
   if (typeof body.updateRepo === 'string') c.updateRepo = body.updateRepo.trim().replace(/^https?:\/\/github\.com\//i, '').replace(/\.git$|\/$/g, '').slice(0, 120);
   if ('minFit' in body) c.minFit = num(body.minFit, 0, 100, c.minFit);
   if ('dailyCap' in body) c.dailyCap = num(body.dailyCap, 1, 30, c.dailyCap);
-  if ('searchEveryHours' in body) c.searchEveryHours = num(body.searchEveryHours, 2, 168, c.searchEveryHours);
+  if ('searchHour' in body) c.searchHour = num(body.searchHour, 0, 23, c.searchHour);
   if ('inboxEveryMinutes' in body) c.inboxEveryMinutes = num(body.inboxEveryMinutes, 2, 240, c.inboxEveryMinutes);
   if ('followUpDays' in body) c.followUpDays = num(body.followUpDays, 3, 60, c.followUpDays);
   if (body.setupDone === true) {
@@ -128,7 +146,10 @@ async function api(req, res, url) {
     if (url.searchParams.get('sig') === signature()) return json(res, 200, { same: true });
     return json(res, 200, publicState());
   }
-  if (route === 'GET /api/chat/live') return json(res, 200, { text: chat.live.text, tool: chat.live.tool, busy: chat.live.busy });
+  if (route === 'GET /api/chat/live') {
+    const lv = chat.live();
+    return json(res, 200, { text: lv.text, tool: lv.tool, busy: lv.busy });
+  }
 
   // حماية: أي تعديل لازم يجي من صفحة راصد نفسها (ترويسة خاصة + نفس العنوان)
   const host = String(req.headers.host || '');
@@ -141,7 +162,8 @@ async function api(req, res, url) {
     const buf = await readBody(req, 10 * 1024 * 1024);
     if (buf.length < 500) return json(res, 400, { error: 'الملف فاضي.' });
     const file = 'cv' + ext;
-    fs.writeFileSync(path.join(store.DATA_DIR, file), buf);
+    fs.mkdirSync(store.dir(), { recursive: true });
+    fs.writeFileSync(path.join(store.dir(), file), buf);
     d.config.cv = { file, originalName: name, text: '' };
     store.clearProblem('cv-missing');
     store.save();
@@ -170,17 +192,23 @@ async function api(req, res, url) {
     const sent = await require('./digest').run(true);
     return sent ? json(res, 200, publicState()) : json(res, 400, { error: 'ما انرسل — شوف آخر سطر في الموجز.' });
   }
-  if (route === 'POST /api/update/check') {
+  // التحديث إجباري: لو لقى نسخة أحدث، يوقف كل شي ويركّبها ويعيد التشغيل على طول
+  if (route === 'POST /api/update/check' || route === 'POST /api/update/install') {
     if (!update.base()) return json(res, 400, { error: 'مصدر التحديث مو محدد بعد.' });
-    const out = await update.auto(() => pipeline.status.main || chat.live.busy);
-    return json(res, 200, { ...publicState(), installing: !!out.updated });
+    const out = await update.auto(updateHooks);
+    return json(res, 200, { ...publicState(), installing: !!out.updated, updated: !!out.updated, build: out.build });
   }
-  if (route === 'POST /api/update/install') {
-    if (pipeline.status.main) return json(res, 409, { error: 'مشغول الحين: ' + pipeline.status.main + ' — حدّث بعد ما يخلص.' });
-    const out = await update.install();
-    json(res, 200, out);
-    if (out.updated) update.restart();
-    return;
+  if (route === 'POST /api/accounts/add') {
+    const id = store.addAccount(body.label);
+    store.within(id, () => store.event('ok', 'انفتح الحساب. كمّل الإعداد: الجيميل، السيرة، والمعلومات.'));
+    return json(res, 200, { id });
+  }
+  if (route === 'POST /api/accounts/remove') {
+    const acct = store.current();
+    if (acct === store.MAIN) return json(res, 400, { error: 'الحساب الرئيسي ما ينحذف.' });
+    if (pipeline.status.acct === acct || pipeline.inboxBusy.has(acct) || chat.live().busy) return json(res, 409, { error: 'هالحساب يشتغل الحين. وقّفه أول أو جرّب بعد شوي.' });
+    store.removeAccount(acct);
+    return json(res, 200, { ok: true });
   }
   if (route === 'POST /api/claude/test') {
     try {
@@ -195,6 +223,7 @@ async function api(req, res, url) {
   const tm = url.pathname.match(/^\/api\/tool\/(\w+)$/);
   if (tm && req.method === 'POST') return json(res, 200, await chat.callTool(tm[1], body));
   if (route === 'POST /api/chat') {
+    if (pipeline.status.frozen) return json(res, 409, { error: 'راصد يتحدّث الحين — ثواني وكلّمني.' });
     ai.resume();
     const out = await chat.handle(body.text, chatDeps(), { spoken: !!body.spoken });
     return json(res, 200, { ...out, state: publicState() });
@@ -211,14 +240,16 @@ async function api(req, res, url) {
   if (route === 'POST /api/cv/read') return json(res, 200, { profile: await pipeline.readCv() });
 
   if (route === 'POST /api/run/search') {
-    if (pipeline.status.main) return json(res, 409, { error: 'مشغول الحين: ' + pipeline.status.main });
+    if (pipeline.status.frozen) return json(res, 409, { error: 'راصد يتحدّث الحين — ثواني ويرجع.' });
+    if (pipeline.status.main) return json(res, 409, { error: 'مشغول الحين: ' + busyLabel() });
     ai.resume();
     pipeline.cycle(true).catch((e) => store.event('error', String(e.message).slice(0, 200)));
     return json(res, 200, { ok: true });
   }
   if (route === 'POST /api/run/stop') return json(res, 200, { ok: true, stopped: pipeline.stop() });
   if (route === 'POST /api/run/news') {
-    if (pipeline.status.main) return json(res, 409, { error: 'مشغول الحين: ' + pipeline.status.main });
+    if (pipeline.status.frozen) return json(res, 409, { error: 'راصد يتحدّث الحين — ثواني ويرجع.' });
+    if (pipeline.status.main) return json(res, 409, { error: 'مشغول الحين: ' + busyLabel() });
     ai.resume();
     pipeline.news().catch((e) => store.event('error', String(e.message).slice(0, 200)));
     return json(res, 200, { ok: true });
@@ -293,7 +324,12 @@ async function api(req, res, url) {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://127.0.0.1');
   try {
-    if (url.pathname.startsWith('/api/')) return await api(req, res, url);
+    if (url.pathname.startsWith('/api/')) {
+      // كل طلب يخص حساب واحد: من الترويسة أو من ?a= في الرابط. بدونها = الحساب الرئيسي.
+      const acct = String(req.headers['x-rasid-account'] || url.searchParams.get('a') || store.MAIN);
+      if (!store.exists(acct)) return json(res, 404, { error: 'هالحساب مو موجود.', noAccount: true });
+      return await store.within(acct, () => api(req, res, url));
+    }
     const rel = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
     const file = path.join(PUBLIC, path.normalize(rel));
     if (!file.startsWith(PUBLIC) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
@@ -342,10 +378,10 @@ if (require.main === module) {
   server.listen(PORT, '127.0.0.1', () => {
     console.log('\n  Rasid is running:  http://127.0.0.1:' + PORT + '\n  Stop with Ctrl+C.\n');
     pipeline.startScheduler();
-    // يشيّك على التحديثات عند التشغيل وكل ١٥ دقيقة، ويركّبها لحاله (لو مو وسط بحث أو إرسال)
-    const upd = () => update.auto(() => pipeline.status.main || chat.live.busy).catch(() => {});
+    // يشيّك على التحديثات عند التشغيل وكل ٥ دقايق. التحديث إجباري: يوقف اللي شغّال، يركّب، ويرجع يشتغل في ثواني
+    const upd = () => update.auto(updateHooks).catch((e) => console.error(new Date().toISOString(), 'update', e.message));
     setTimeout(upd, 8000);
-    setInterval(upd, 15 * 60000).unref?.();
+    setInterval(upd, 5 * 60000).unref?.();
     if (!process.env.RASID_NO_OPEN) openBrowser();
   });
   const bye = () => {

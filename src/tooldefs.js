@@ -47,7 +47,7 @@ module.exports = [
       'add_job {company, title, email, url, location, companyAbout, requirements} add a company so an application is written and sent (email only if the user typed it; empty email = manual application); ' +
       'send {jobId} send a ready application now (ONLY when the user explicitly says to send); ' +
       'skip {jobId}; restore {jobId}; mark_done {jobId} (he applied himself on the site); ' +
-      'settings {values:{mode:"auto"|"review", minFit, dailyCap, searchEveryHours, inboxEveryMinutes, followUpDays, letterLanguage:"auto"|"en"|"ar", voice, digestEveryHours, autoAI (true = search by itself every searchEveryHours; false = search only when he asks, to save his Claude usage)}}; ' +
+      'settings {values:{mode:"auto"|"review", minFit, dailyCap (daily target: the search stops once this many email applications are ready, and at most this many are sent per day), searchHour (0-23, the hour of the once-a-day search), inboxEveryMinutes, followUpDays, letterLanguage:"auto"|"en"|"ar", voice, digestEveryHours, autoAI (true = search by itself once a day at searchHour; false = search only when he asks, to save his Claude usage)}}; ' +
       'profile {values:{nickname, birthDate, phone, location, linkedin, headline, summary, targets, avoid, noticePeriod, extra}}; ' +
       'letter_notes {text} standing instruction for all future application emails; ' +
       'run {what:"search"|"inbox"|"news"} start a job search, check for new replies now, or refresh news. ' +

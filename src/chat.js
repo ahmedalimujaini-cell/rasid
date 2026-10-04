@@ -7,10 +7,17 @@ const tools = require('./tools');
 const defs = require('./tooldefs');
 const { execute } = require('./actions');
 
-// الرد وهو ينكتب + ايش يسوي الحين (الواجهة تقراه كل لحظة)
-const live = { text: '', tool: '', busy: false };
-// سياق الرسالة الحالية: الأدوات تتحقق منه (ما يرسل إلا لو قلت «أرسل»، ما يضيف إيميل ما كتبته)
-let current = { said: '', deps: null, done: [], failed: [] };
+// لكل حساب محادثته:
+// live = الرد وهو ينكتب + ايش يسوي الحين (الواجهة تقراه كل لحظة)
+// ctx = سياق الرسالة الحالية: الأدوات تتحقق منه (ما يرسل إلا لو قلت «أرسل»، ما يضيف إيميل ما كتبته)
+const lives = new Map();
+const ctxs = new Map();
+const live = () => {
+  const acct = store.current();
+  if (!lives.has(acct)) lives.set(acct, { text: '', tool: '', busy: false });
+  return lives.get(acct);
+};
+const ctx = () => ctxs.get(store.current()) || { said: '', deps: null, done: [], failed: [] };
 
 const LABELS = {
   program_status: 'أشوف حالة البرنامج',
@@ -26,9 +33,11 @@ const LABELS = {
 };
 
 function mcpConfigFile() {
-  const file = path.join(store.DATA_DIR, 'mcp.json');
-  const cfg = { mcpServers: { rasid: { command: process.execPath, args: [path.join(__dirname, 'mcp.js')], env: { RASID_PORT: String(process.env.RASID_PORT || 4747) } } } };
-  fs.mkdirSync(store.DATA_DIR, { recursive: true });
+  const folder = store.dir();
+  const file = path.join(folder, 'mcp.json');
+  const env = { RASID_PORT: String(process.env.RASID_PORT || 4747), RASID_ACCOUNT: store.current() };
+  const cfg = { mcpServers: { rasid: { command: process.execPath, args: [path.join(__dirname, 'mcp.js')], env } } };
+  fs.mkdirSync(folder, { recursive: true });
   fs.writeFileSync(file, JSON.stringify(cfg));
   return file;
 }
@@ -67,8 +76,10 @@ async function handle(text, deps, { spoken = false } = {}) {
   const d = store.load();
   text = String(text || '').trim().slice(0, 2000);
   if (!text) throw new Error('اكتب شي أول.');
-  current = { said: text, deps, done: [], failed: [] };
-  Object.assign(live, { text: '', tool: '', busy: true });
+  const current = { said: text, deps, done: [], failed: [] };
+  ctxs.set(store.current(), current);
+  const lv = live();
+  Object.assign(lv, { text: '', tool: '', busy: true });
   let reply;
   try {
     const full = prompt(d, text, spoken);
@@ -77,11 +88,13 @@ async function handle(text, deps, { spoken = false } = {}) {
       mcpConfig: mcpConfigFile(),
       mcpTools: defs.map((t) => t.name),
       timeoutMs: 15 * 60 * 1000,
-      onText: (acc) => (live.text = clean(acc)),
+      model: 'sonnet', // يكفي للمحادثة والأدوات، ويوفّر من حصة الاشتراك
+      effort: 'medium',
+      onText: (acc) => (lv.text = clean(acc)),
       onTool: (name) => {
         const key = String(name).replace(/^mcp__rasid__/, '');
-        live.tool = LABELS[key] || '';
-        live.text = '';
+        lv.tool = LABELS[key] || '';
+        lv.text = '';
       },
       // للاختبار بدون Claude: نص ثابت + نداءات أدوات تمر على نفس طبقة الأدوات والحمايات
       mock: async () => {
@@ -92,13 +105,13 @@ async function handle(text, deps, { spoken = false } = {}) {
       },
     });
   } catch (e) {
-    live.busy = false;
+    lv.busy = false;
     ai.reportAiError(e, 'المحادثة');
     const wait = ai.paused();
     throw new Error(wait ? `وصلت حد استخدام Claude في اشتراكك. يرجع الساعة ${new Date(Date.now() + wait).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}، وبعدها كلّمني.` : 'ما قدرت أوصل Claude الحين. شوف صفحة المشاكل.');
   }
-  live.busy = false;
-  live.tool = '';
+  lv.busy = false;
+  lv.tool = '';
   reply = clean(reply).slice(0, 6000) || (current.done.length ? 'تم.' : 'ما طلع لي رد. جرّب مرة ثانية.');
   const { done, failed } = current;
   d.chat.push({ who: 'me', text, t: Date.now() }, { who: 'rasid', text: reply, t: Date.now(), done });
@@ -110,10 +123,10 @@ async function handle(text, deps, { spoken = false } = {}) {
 // تُستدعى من خادم الأدوات (MCP → /api/tool) أثناء المحادثة.
 async function callTool(name, args) {
   try {
-    return await tools.call(name, args, current);
+    return await tools.call(name, args, ctx());
   } catch (e) {
     return { error: String(e.message || e).slice(0, 300) };
   }
 }
 
-module.exports = { handle, callTool, execute, live, prompt };
+module.exports = { handle, callTool, execute, live, prompt, mcpConfigFile };

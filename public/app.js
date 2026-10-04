@@ -9,13 +9,19 @@ let view = 'brief';
 let jobTab = 'wait';
 let openJob = null;
 
+// الحساب المفتوح في هالنافذة: من الرابط (?a=). بدونه = الحساب الرئيسي.
+const ACCT = /^[a-f0-9]{12}$/.test(new URLSearchParams(location.search).get('a') || '') ? new URLSearchParams(location.search).get('a') : 'main';
+const acctLink = (id) => (id === 'main' ? '/' : '/?a=' + id);
+const withAcct = (path) => (ACCT === 'main' ? path : path + (path.includes('?') ? '&' : '?') + 'a=' + ACCT);
+
 async function call(path, body, opts = {}) {
   const res = await fetch(path, {
     method: 'POST',
-    headers: { 'X-Rasid': '1', ...(opts.headers || {}) },
+    headers: { 'X-Rasid': '1', 'X-Rasid-Account': ACCT, ...(opts.headers || {}) },
     body: opts.raw ? body : JSON.stringify(body || {}),
   });
   const data = await res.json().catch(() => ({}));
+  if (data.noAccount) return (location.href = '/'), data;
   if (!res.ok) throw new Error(data.error || 'صار خطأ.');
   if (data.config) S = data;
   return data;
@@ -58,6 +64,18 @@ const clock = (t) => {
   const hm = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   return same ? hm : `${d.getDate()}/${d.getMonth() + 1} ${hm}`;
 };
+// ١٠ → «10 الصبح»
+function hourName(h) {
+  h = Number(h);
+  if (h === 0) return '12 الليل';
+  if (h < 5) return h + ' الفجر';
+  if (h < 12) return h + ' الصبح';
+  if (h === 12) return '12 الظهر';
+  if (h < 15) return h - 12 + ' الظهر';
+  if (h < 18) return h - 12 + ' العصر';
+  return h - 12 + ' الليل';
+}
+const hourOptions = (sel) => Array.from({ length: 24 }, (_, h) => `<option value="${h}" ${Number(sel) === h ? 'selected' : ''}>الساعة ${hourName(h)}</option>`).join('');
 
 /* ---------- الإعداد أول مرة ---------- */
 const PF = ['name', 'nickname', 'phone', 'location', 'nationality', 'birthDate', 'linkedin', 'headline', 'summary', 'targets', 'avoid', 'noticePeriod', 'extra'];
@@ -86,6 +104,21 @@ function initWizard() {
   $$('input[name=wzMode]').forEach((r) => (r.checked = r.value === c.mode));
   $('#wzFit').value = c.minFit;
   $('#wzCap').value = c.dailyCap;
+  $('#wzHour').innerHTML = hourOptions(c.searchHour);
+  if (ACCT !== 'main') {
+    const main = (S.accounts || []).find((a) => a.id === 'main');
+    $('#wzExits').hidden = false;
+    $('#wzExit').textContent = 'رجوع لحساب ' + (main ? main.name : 'الرئيسي');
+    $('#wzCancel').onclick = async () => {
+      if (!confirm('ألغي هالحساب الجديد؟')) return;
+      try {
+        await call('/api/accounts/remove');
+        location.href = '/';
+      } catch (err) {
+        toast(err.message, true);
+      }
+    };
+  }
   $$('[data-back]').forEach((b) => (b.onclick = () => wzGo(wzStep - 1)));
 
   $('.wz-pane[data-step="0"]').onsubmit = async (e) => {
@@ -163,7 +196,7 @@ function initWizard() {
   $('.wz-pane[data-step="3"]').onsubmit = async (e) => {
     e.preventDefault();
     try {
-      await call('/api/config', { mode: $('input[name=wzMode]:checked').value, minFit: $('#wzFit').value, dailyCap: $('#wzCap').value, setupDone: true });
+      await call('/api/config', { mode: $('input[name=wzMode]:checked').value, minFit: $('#wzFit').value, dailyCap: $('#wzCap').value, searchHour: $('#wzHour').value, autoAI: true, setupDone: true });
       call('/api/run/search').catch(() => {});
       showApp();
     } catch (err) {
@@ -195,6 +228,8 @@ const ST = {
 const applied = (j) => j.status === 'sent' || j.status === 'manual_done';
 const waiting = (j) => j.status === 'ready' || j.status === 'manual';
 const manual = (j) => j.status === 'manual';
+// اللي يحتاجك فعلاً (في الوضع التلقائي الجاهز ينرسل لحاله، فما يحتاجك)
+const needsMe = (j) => j.status === 'manual' || (j.status === 'ready' && S.config.mode !== 'auto');
 let printing = false;
 const needsFollowUp = (j) =>
   j.status === 'sent' && j.applyEmail && !j.repliedAt && !j.followUpSentAt && Date.now() - j.sentAt > S.config.followUpDays * 864e5;
@@ -322,29 +357,89 @@ function voicePanel() {
   </section>`;
 }
 
+// الحسابات في أعلى القائمة الجانبية: الحالي، والباقي، و«أضف حساب»
+let acctHtmlLast = '';
+function renderAccounts() {
+  const list = S.accounts || [];
+  const cur = list.find((a) => a.id === S.account) || { name: 'حسابي', email: '' };
+  const initial = (n) => esc(String(n || '؟').trim().charAt(0));
+  const row = (a) => `<span class="av">${initial(a.name)}</span><span class="nm">${esc(a.name)}<small>${esc(a.email || 'ما خلص إعداده')}</small></span>`;
+  const html = `<details class="acct-pick"><summary title="الحسابات">${row(cur)}</summary><div class="acct-menu">
+    ${list.filter((a) => a.id !== S.account).map((a) => `<a href="${acctLink(a.id)}">${row(a)}</a>`).join('')}
+    <button type="button" id="addAcct">+ أضف حساب ثاني</button></div></details>`;
+  if (html === acctHtmlLast) return;
+  acctHtmlLast = html;
+  $('#acct').innerHTML = html;
+  document.title = ACCT === 'main' ? 'راصد' : 'راصد — ' + cur.name;
+}
+
+let mainHtmlLast = '';
+let viewLast = '';
 function render(railOnly) {
   if (!S || $('#app').hidden) return;
+  renderAccounts();
   const unseen = S.messages.filter((m) => !m.seen).length;
-  $('#cJobs').textContent = S.jobs.filter(waiting).length || '';
+  $('#cJobs').textContent = S.jobs.filter(needsMe).length || '';
   $('#cReplies').textContent = unseen || '';
   $('#cProblems').textContent = S.problems.length || '';
   const live = $('#live');
   live.className = 'live' + (S.status.main ? ' busy' : '');
   live.textContent = S.status.main || `آخر بحث ${ago(S.state.lastSearch)} · آخر فحص للردود ${ago(S.state.lastInbox)}`;
-  $('#runSearch').disabled = !!S.status.main;
-  $('#stopRun').hidden = !S.status.main || S.status.main === 'يوقف…';
+  $('#runSearch').disabled = !!S.status.main || S.updating;
+  $('#stopRun').hidden = !S.status.main || /يوقف…$/.test(S.status.main);
   $$('.rail>button').forEach((b) => b.classList.toggle('on', b.dataset.view === view));
   if (railOnly) return;
   // ما نعيد الرسم وأنت تكتب
   const a = document.activeElement;
   if (a && $('#main').contains(a) && /INPUT|TEXTAREA|SELECT/.test(a.tagName)) return;
-  $('#main').innerHTML = { brief, chat: chatView, jobs, replies, news, problems, settings }[view]();
+  // نعيد الرسم بس لو شي تغيّر فعلاً: بدون رمشة، والقوائم المفتوحة تبقى مثل ما هي
+  const html = { brief, chat: chatView, jobs, replies, news, problems, settings }[view]();
+  if (html === mainHtmlLast && view === viewLast) return;
+  const main = $('#main');
+  const changedView = view !== viewLast;
+  mainHtmlLast = html;
+  viewLast = view;
+  main.innerHTML = html;
+  if (changedView) {
+    main.classList.remove('enter');
+    void main.offsetWidth;
+    main.classList.add('enter');
+  }
   if (view === 'chat') { const log = $('#chatLog'); log.scrollTop = log.scrollHeight; }
+}
+
+// لوحة «اليوم»: كم انرسل من الهدف، ومتى البحث
+function today() {
+  const c = S.config;
+  const t = S.today || {};
+  const cap = c.dailyCap;
+  const pct = Math.min(100, Math.round((S.sentToday / Math.max(1, cap)) * 100));
+  const run = t.run;
+  let search;
+  let cls = '';
+  if (!c.autoAI) search = 'بأمرك فقط — اضغط «ابحث الحين»';
+  else if (S.status.main && S.status.mine) (search = 'يشتغل الحين'), (cls = 'go');
+  else if (t.paused) (search = `موقف لين يرجع Claude الساعة ${clock(Date.now() + t.paused)}`), (cls = 'wait');
+  else if (run && run.done) search = `خلص اليوم ✓ · الجاي بكرة ${hourName(c.searchHour)}`;
+  else if (t.nextSearch > Date.now() + 60000) search = `اليوم الساعة ${hourName(c.searchHour)}`;
+  else (search = 'يبدأ بعد شوي'), (cls = 'go');
+  return `<section class="today">
+    <div>
+      <p class="k">اليوم</p>
+      <p class="big"><b>${S.sentToday}</b> من ${cap} تقديم انرسل</p>
+      <div class="bar ${pct >= 100 ? 'full' : ''}"><i style="--w:${pct}%"></i></div>
+    </div>
+    <ul class="today-facts">
+      <li><span>البحث اليومي</span><b class="${cls}">${esc(search)}</b></li>
+      <li><span>الإرسال</span><b>${c.mode === 'auto' ? 'تلقائي — بدون ما يرجع لك' : 'ينتظر موافقتك'}</b></li>
+      <li><span>الردود</span><b>يفحصها كل ${c.inboxEveryMinutes} دقايق</b></li>
+    </ul>
+  </section>`;
 }
 
 function sentence() {
   const done = S.jobs.filter(applied).length;
-  const wait = S.jobs.filter(waiting).length;
+  const wait = S.jobs.filter(needsMe).length;
   const unseen = S.messages.filter((m) => !m.seen).length;
   const parts = [];
   if (!S.jobs.length) return S.status.main ? 'أبحث لك عن أول دفعة وظائف. <em>تاخذ بضع دقائق.</em>' : 'ما في وظائف بعد. <em>اضغط «ابحث الحين».</em>';
@@ -369,13 +464,15 @@ function brief() {
   if (fu.length) need.push(`<li><p>${fu.length} تقديم مرّ عليه ${S.config.followUpDays} أيام بدون رد<small>تبغى أكتب لهم متابعة؟</small></p><button class="btn ghost sm" data-go="jobs" data-tab="done">شوفها</button></li>`);
 
   const replay = S.config.voice !== false && S.brief && S.brief.heard && voiceState !== 'speaking' && voiceState !== 'loading'
-    ? ' · <button class="replay" data-voice="play">اسمع الموجز مرة ثانية</button> · <button class="replay" data-voice="fresh">موجز جديد</button>' : '';
-  const upd = S.update ? `<section class="update"><p>في تحديث جديد للبرنامج (نسخة ${S.update.build})<small>${esc(S.update.notes)}</small></p><button class="btn primary" id="doUpdate">حدّث الحين</button></section>` : '';
+    ? ' · <button class="replay" data-voice="play">اسمع الموجز مرة ثانية</button> · <button class="replay" data-voice="fresh">موجز جديد بصياغة Claude</button>' : '';
+  // التحديث ينركّب لحاله؛ هذا يطلع بس لو التنزيل تعطّل (مثلاً ما في إنترنت)
+  const upd = S.update && S.updateError ? `<section class="update"><p>في نسخة جديدة (${S.update.build}) وبيحاول يركّبها لحاله كل ٥ دقايق<small>${esc(S.updateError)}</small></p><button class="btn primary" id="doUpdate">جرّب الحين</button></section>` : '';
   return `
     ${upd}
     ${voicePanel()}
     <h1 class="say">${sentence()}</h1>
-    <p class="sub">${S.config.mode === 'auto' ? 'الإرسال التلقائي شغّال' : 'ما ينرسل شي إلا بموافقتك'} · انرسل اليوم ${S.sentToday} من ${S.config.dailyCap} · ${S.config.autoAI ? `يبحث لحاله كل ${S.config.searchEveryHours} ساعة` : 'البحث بأمرك فقط: اضغط «ابحث الحين»'} · يفحص الردود كل ${S.config.inboxEveryMinutes} دقيقة${replay}</p>
+    ${replay ? `<p class="sub">${replay.replace(/^ · /, '')}</p>` : ''}
+    ${today()}
     <h2>يحتاجك</h2>
     ${need.length ? `<ul class="need">${need.join('')}</ul>` : '<p class="empty">ما في شي ينتظرك الحين.</p>'}
     <h2>ايش صار <span>الأحدث فوق</span></h2>
@@ -393,7 +490,7 @@ const TRIES = ['شيّك على الجيميل كامل وعطني ملخص: ع�
 function chatView() {
   const msgs = S.chat || [];
   const bubble = (m) => `<div class="${m.who}"><p>${esc(m.text)}</p>${m.done && m.done.length ? `<ul>${m.done.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}</div>`;
-  return `<h1 class="page-h">كلّم راصد</h1>
+  return `<div class="chat-page"><h1 class="page-h">كلّم راصد</h1>
   <div class="chat" id="chatLog">
     ${msgs.length || chatBusy ? msgs.map(bubble).join('') : `<div class="rasid"><p>أنا هنا. أقدر أقرا جيميلك كامل (الوارد والمرسل)، أقول لك أخبار أي شركة راسلتك، أراجع على ايش قدّمت، أبحث في الويب، وأعدّل أو أرسل لما تقول لي.</p></div>`}
     ${chatBusy ? `<div class="me"><p>${esc(chatPending)}</p></div><div class="rasid thinking"><p>أشتغل على طلبك… <span id="chatTimer"></span></p></div>` : ''}
@@ -403,7 +500,7 @@ function chatView() {
     <textarea id="chatText" rows="2" dir="auto" placeholder="اكتب لراصد…" ${chatBusy ? 'disabled' : ''}>${esc(chatDraft)}</textarea>
     ${Recog ? `<button type="button" class="btn ghost ${listening ? 'listening' : ''}" id="mic" ${chatBusy ? 'disabled' : ''}>${listening ? 'أسمعك…' : 'تكلّم'}</button>` : ''}
     <button class="btn primary" ${chatBusy ? 'disabled' : ''}>أرسل</button>
-  </form>`;
+  </form></div>`;
 }
 
 async function sendChat(text, spoken) {
@@ -417,7 +514,7 @@ async function sendChat(text, spoken) {
     const box = $('.chat .thinking p');
     if (!box) return;
     try {
-      const live = await (await fetch('/api/chat/live')).json();
+      const live = await (await fetch(withAcct('/api/chat/live'))).json();
       const sec = Math.round((Date.now() - t0) / 1000);
       if (live.text) box.textContent = live.text;
       else box.textContent = `${live.tool || 'أفكّر في طلبك'}… (${sec} ث)`;
@@ -486,7 +583,7 @@ function jobs() {
     <h1 class="page-h">الوظائف</h1>
     <div class="tabs">${Object.entries(TABS).map(([k, [label, f]]) => `<button data-tab="${k}" class="${k === jobTab ? 'on' : ''}">${label} (${S.jobs.filter(f).length})</button>`).join('')}</div>
     ${jobTab === 'manual' && list.length ? `<p class="lead" style="margin-bottom:1rem">هذي ما لها إيميل تقديم، فما قدرت أرسل لها. كل وحدة فيها الرابط، الخطوات، وبياناتك جاهزة للنسخ. بعد ما تقدّم اضغط «قدّمت عليها».</p><div class="acts" style="margin-bottom:1rem"><button class="btn ghost sm" id="printManual">اطبع القائمة</button></div>` : ''}
-    ${list.length ? list.map(jobRow).join('') : `<p class="empty">${jobTab === 'wait' ? 'ما في شي جاهز للإرسال.' : jobTab === 'manual' ? 'ما في شي تقدّم عليه بنفسك.' : 'ما في وظائف هنا.'}</p>`}`;
+    ${list.length ? `<div class="list">${list.map(jobRow).join('')}</div>` : `<p class="empty">${jobTab === 'wait' ? 'ما في شي جاهز للإرسال.' : jobTab === 'manual' ? 'ما في شي تقدّم عليه بنفسك.' : 'ما في وظائف هنا.'}</p>`}`;
 }
 
 function jobRow(j) {
@@ -613,9 +710,13 @@ function settings() {
   const f = (k, label, tag = 'input', extra = '') => `<label class="${tag === 'textarea' || extra.includes('wide') ? 'wide' : ''}">${label}${tag === 'textarea' ? `<textarea id="s_${k}" rows="3" dir="auto">${esc(p[k])}</textarea>` : `<input id="s_${k}" dir="auto" value="${esc(p[k])}">`}</label>`;
   return `<h1 class="page-h">الإعدادات</h1><div class="set">
   <h2>طريقة الشغل</h2>
-  <label>الإرسال<select id="s_mode"><option value="auto" ${c.mode === 'auto' ? 'selected' : ''}>صلاحية كاملة — أرسل تلقائياً</option><option value="review" ${c.mode === 'review' ? 'selected' : ''}>أجهّز وأنت توافق</option></select></label>
-  <label class="check"><input type="checkbox" id="s_autoAI" ${c.autoAI ? 'checked' : ''}> ابحث لحالك كل فترة (ياخذ من حصة Claude حتى لو ما طلبت)</label>
-  <p class="note">وهي مطفية: راصد ما يستخدم Claude إلا لما تأمره — «ابحث الحين»، المحادثة، أو كتابة رسالة. متابعة الردود والإرسال يشتغلون عادي بدون حصة.</p>
+  <label>الإرسال<select id="s_mode"><option value="auto" ${c.mode === 'auto' ? 'selected' : ''}>صلاحية كاملة — أرسل تلقائياً بدون ما ترجع لي</option><option value="review" ${c.mode === 'review' ? 'selected' : ''}>أجهّز وأنت توافق</option></select></label>
+  <label class="check"><input type="checkbox" id="s_autoAI" ${c.autoAI ? 'checked' : ''}> ابحث لحالك مرة وحدة كل يوم</label>
+  <div class="grid2">
+    <label>وقت البحث اليومي<select id="s_searchHour">${hourOptions(c.searchHour)}</select></label>
+    <label>هدف التقديمات في اليوم <small>يوقف البحث أول ما يوصله</small><input type="number" id="s_dailyCap" min="1" max="30" value="${c.dailyCap}" dir="ltr"></label>
+  </div>
+  <p class="note">كل يوم الساعة ${hourName(c.searchHour)}: يبحث، يكتب الرسائل، ويرسلها لين يوصل ${c.dailyCap} تقديم، وبعدها يوقف لين بكرة. لو وصل حد استخدام Claude، يكمّل من حيث وقف أول ما يرجع. متابعة الردود شغّالة طول الوقت.</p>
   <label class="check"><input type="checkbox" id="s_voice" ${c.voice !== false ? 'checked' : ''}> كلّمني بالصوت أول ما أفتح البرنامج</label>
   <label>صوت راصد<select id="s_voiceName"><option value="">تلقائي (أحسن صوت عربي موجود)</option>${(window.speechSynthesis ? speechSynthesis.getVoices() : []).filter((v) => /^ar/i.test(v.lang)).map((v) => `<option value="${esc(v.name)}" ${v.name === (localStorage.getItem('rasidVoice') || '') ? 'selected' : ''}>${esc(v.name)}</option>`).join('')}</select></label>
   <div class="acts" style="margin-bottom:1rem"><button class="btn ghost sm" id="voiceTest">جرّب الصوت</button></div>
@@ -629,16 +730,13 @@ function settings() {
   <div class="acts" style="margin-bottom:1.4rem"><button class="btn ghost sm" id="digestTest">جرّب: أرسل لي ملخص الحين</button></div>
   <div class="grid2">
     <label>أقل نسبة تطابق<input type="number" id="s_minFit" value="${c.minFit}" dir="ltr"></label>
-    <label>أقصى تقديمات في اليوم<input type="number" id="s_dailyCap" value="${c.dailyCap}" dir="ltr"></label>
-    <label>يبحث كل (ساعة)<input type="number" id="s_searchEveryHours" value="${c.searchEveryHours}" dir="ltr"></label>
     <label>يفحص الردود كل (دقيقة)<input type="number" id="s_inboxEveryMinutes" value="${c.inboxEveryMinutes}" dir="ltr"></label>
     <label>يذكّرك بالمتابعة بعد (يوم)<input type="number" id="s_followUpDays" value="${c.followUpDays}" dir="ltr"></label>
     <label>لغة الرسائل<select id="s_lang"><option value="auto" ${c.letterLanguage === 'auto' ? 'selected' : ''}>حسب لغة الإعلان</option><option value="en" ${c.letterLanguage === 'en' ? 'selected' : ''}>إنجليزي دايماً</option><option value="ar" ${c.letterLanguage === 'ar' ? 'selected' : ''}>عربي دايماً</option></select></label>
   </div>
   <h2>تحديث البرنامج</h2>
-  <p class="lead">النسخة الحالية ${S.version}. يشيّك على التحديثات لحاله كل ربع ساعة ويركّبها بدون ما تسوي شي.</p>
-  <label class="check"><input type="checkbox" id="s_autoUpdate" ${c.autoUpdate !== false ? 'checked' : ''}> ركّب التحديثات لحالك أول ما تنزل</label>
-  <label>مصدر التحديث<input id="s_updateRepo" dir="ltr" placeholder="ahmedalimujaini-cell/rasid" value="${esc(c.updateRepo || '')}"></label>
+  <p class="lead">النسخة الحالية ${S.version}. التحديث إجباري ولحاله: يشيّك كل ٥ دقايق، وأول ما تنزل نسخة جديدة يوقف كل شي ثواني، يركّبها، ويرجع يشتغل من أول وجديد.${S.updateError ? `<br><small style="color:var(--red)">آخر محاولة: ${esc(S.updateError)}</small>` : ''}</p>
+  ${ACCT === 'main' ? `<label>مصدر التحديث<input id="s_updateRepo" dir="ltr" placeholder="ahmedalimujaini-cell/rasid" value="${esc(c.updateRepo || '')}"></label>` : ''}
   <div class="acts" style="margin-bottom:1.4rem"><button class="btn ghost sm" id="checkUpdate">شيّك على تحديث الحين</button></div>
   <h2>الجيميل</h2>
   <label>العنوان<input id="s_user" dir="ltr" value="${esc(c.gmail.user)}"></label>
@@ -648,6 +746,7 @@ function settings() {
   <h2>معلوماتك</h2>
   <div class="grid2">${f('name', 'الاسم')}${f('nickname', 'ايش أناديك؟')}${f('phone', 'الهاتف')}${f('location', 'المدينة')}${f('nationality', 'الجنسية')}${f('birthDate', 'تاريخ الميلاد (مثال 2003-05-21)')}${f('linkedin', 'لينكدإن', 'input', 'wide')}${f('headline', 'المسمى المهني', 'input', 'wide')}${f('summary', 'نبذة عن خبرتك', 'textarea')}${f('targets', 'الوظائف اللي تبغاها', 'textarea')}${f('avoid', 'اللي ما تبغاه', 'textarea')}${f('noticePeriod', 'فترة الإشعار')}${f('extra', 'ملاحظات')}</div>
   <div class="acts"><button class="btn primary" id="saveSet">احفظ الإعدادات</button></div>
+  ${ACCT !== 'main' ? `<h2>هالحساب</h2><p class="lead">الحساب منفصل تماماً: جيميله وسيرته ووظائفه وردوده له بروحه. لو حذفته، بياناته تنحفظ على جهازك في مجلد data\\removed وما تنمسح.</p><div class="acts"><button class="btn danger" id="removeAcct">احذف هالحساب</button></div>` : ''}
   </div>`;
 }
 
@@ -663,6 +762,15 @@ document.addEventListener('click', (e) => {
     return speak(S.brief.text);
   }
   if (t.id === 'mic') return toggleMic();
+  if (t.id === 'addAcct') return addAccount(t);
+  if (t.id === 'removeAcct') {
+    const cur = (S.accounts || []).find((a) => a.id === S.account);
+    if (!confirm(`أحذف حساب «${cur ? cur.name : ''}» من راصد؟ بياناته تبقى محفوظة على جهازك.`)) return;
+    return act(t, async () => {
+      await call('/api/accounts/remove');
+      location.href = '/';
+    });
+  }
   if (ds.try) {
     chatDraft = ds.try;
     render();
@@ -699,7 +807,7 @@ document.addEventListener('click', (e) => {
     return speak('مرحبا، أنا راصد. قدّمت لك اليوم على ثلاث شركات في مسقط، ووصلك رد واحد يدعونك لمقابلة.', false);
   }
   if (t.id === 'digestTest') return toast('أرسل…'), act(t, () => call('/api/digest/test'), 'انرسل. شوف إيميلك في الجوال.');
-  if (t.id === 'checkUpdate') return act(t, async () => { const r = await call('/api/update/check'); toast(r.installing ? 'لقيت تحديث — أركّبه الحين…' : S.update ? 'في تحديث جديد — تلقاه في الموجز.' : 'أنت على آخر نسخة.'); });
+  if (t.id === 'checkUpdate') return act(t, async () => { const r = await call('/api/update/check'); toast(r.installing ? 'لقيت تحديث — أركّبه الحين…' : 'أنت على آخر نسخة.'); if (r.installing) waitForRestart(r.build); });
   if (t.id === 'doUpdate') return runUpdate(t);
   if (t.id === 'copyReport') {
     const errs = S.events.filter((e) => e.level === 'error').slice(0, 15).map((e) => `- ${new Date(e.t).toISOString().slice(0, 16)} ${e.text}`);
@@ -727,13 +835,14 @@ document.addEventListener('click', (e) => {
   }
   if (t.id === 'saveSet') {
     const v = (id) => $('#' + id).value;
+    try { localStorage.setItem('rasidVoice', v('s_voiceName')); } catch (_) {}
     const body = {
-      mode: (localStorage.setItem('rasidVoice', v('s_voiceName')), v('s_mode')), voice: $('#s_voice').checked, autoAI: $('#s_autoAI').checked, digestEveryHours: v('s_digest'), notifyEmail: v('s_notify'), updateRepo: v('s_updateRepo'), autoUpdate: $('#s_autoUpdate').checked, letterLanguage: v('s_lang'), minFit: v('s_minFit'), dailyCap: v('s_dailyCap'),
-      searchEveryHours: v('s_searchEveryHours'), inboxEveryMinutes: v('s_inboxEveryMinutes'), followUpDays: v('s_followUpDays'),
+      mode: v('s_mode'), voice: $('#s_voice').checked, autoAI: $('#s_autoAI').checked, digestEveryHours: v('s_digest'), notifyEmail: v('s_notify'), letterLanguage: v('s_lang'), minFit: v('s_minFit'), dailyCap: v('s_dailyCap'),
+      searchHour: v('s_searchHour'), inboxEveryMinutes: v('s_inboxEveryMinutes'), followUpDays: v('s_followUpDays'),
       gmail: { user: v('s_user'), appPassword: v('s_pass') },
       profile: Object.fromEntries(PF.map((k) => [k, v('s_' + k)])),
     };
-    if (body.mode === 'auto' && S.config.mode !== 'auto' && !confirm('الإرسال التلقائي: أي وظيفة فوق حد التطابق بتنرسل من جيميلك بدون ما أرجع لك. أكيد؟')) return;
+    if ($('#s_updateRepo')) body.updateRepo = v('s_updateRepo');
     return act(t, async () => {
       await call('/api/config', body);
       if (body.gmail.appPassword || body.gmail.user !== S.config.gmail.user) await call('/api/gmail/test', { gmail: body.gmail });
@@ -758,26 +867,56 @@ async function runUpdate(btn) {
   try {
     const out = await call('/api/update/install');
     if (!out.updated) return toast('أنت على آخر نسخة.'), refresh().then(() => render());
-    toast('انركّب التحديث. يعيد التشغيل…');
-    // ننتظر النسخة الجديدة تشتغل ثم نعيد تحميل الصفحة
-    for (let i = 0; i < 60; i++) {
-      await new Promise((r) => setTimeout(r, 1000));
-      try {
-        const s = await (await fetch('/api/state')).json();
-        if (s.version === out.build) return location.reload();
-      } catch (_) {}
-    }
-    toast('التحديث نزل بس البرنامج ما رجع يشتغل. افتحه من أيقونة سطح المكتب.', true);
+    waitForRestart(out.build);
   } catch (e) {
     toast(e.message, true);
     btn.disabled = false;
   }
 }
 
+// شاشة «راصد يتحدّث» لين ترجع النسخة الجديدة، وبعدها تنفتح الصفحة من جديد لحالها
+let restarting = false;
+async function waitForRestart(build) {
+  if (restarting) return;
+  restarting = true;
+  $('#updating').hidden = false;
+  for (let i = 0; i < 120; i++) {
+    await new Promise((r) => setTimeout(r, 1000));
+    try {
+      const s = await (await fetch(withAcct('/api/state'))).json();
+      if (!s.updating && (!build || s.version === build || s.version !== (S && S.version))) return location.reload();
+    } catch (_) {}
+  }
+  restarting = false;
+  $('#updating').hidden = true;
+  toast('التحديث نزل بس البرنامج ما رجع يشتغل. افتحه من أيقونة سطح المكتب.', true);
+}
+
+async function addAccount(btn) {
+  const label = prompt('اسم الحساب الجديد؟ (مثلاً: حساب أخوي)');
+  if (label === null) return;
+  await act(btn, async () => {
+    const { id } = await call('/api/accounts/add', { label: label.trim() });
+    location.href = acctLink(id);
+  });
+}
+
 // يرجّع true لو البيانات تغيّرت. لو ما تغيّر شي، الخادم يرد برد صغير وما نعيد رسم الصفحة.
+let offline = 0;
 async function refresh(force) {
-  const res = await fetch('/api/state' + (S && !force ? '?sig=' + encodeURIComponent(S.sig) : ''));
-  const data = await res.json();
+  let data;
+  try {
+    const res = await fetch(withAcct('/api/state' + (S && !force ? '?sig=' + encodeURIComponent(S.sig) : '')));
+    data = await res.json();
+  } catch (e) {
+    // البرنامج يعيد التشغيل (تحديث): نطمّنك بدل صفحة فاضية
+    if (S && ++offline >= 2) $('#updating').hidden = false;
+    throw e;
+  }
+  if (offline && !restarting) $('#updating').hidden = true;
+  offline = 0;
+  if (data.noAccount) return (location.href = '/'), false;
+  if (data.updating !== undefined) $('#updating').hidden = !data.updating && !restarting;
   if (data.same) return false;
   // البرنامج تحدّث لحاله في الخلفية: نعيد تحميل الصفحة عشان تاخذ الواجهة الجديدة (مو وأنت تكتب)
   if (S && data.version !== S.version) {
@@ -794,12 +933,21 @@ async function refresh(force) {
 }
 
 (async function boot() {
-  try {
-    await refresh();
-  } catch (e) {
-    document.body.innerHTML = '<p style="padding:3rem;font-family:sans-serif">راصد مو شغّال. شغّله من PowerShell بالأمر: npm start</p>';
-    return;
+  // لو فتحت النافذة وهو يعيد التشغيل (تحديث)، ننتظره شوي بدل ما نقول «مو شغّال» على طول
+  for (let i = 0; !S; i++) {
+    try {
+      await refresh();
+    } catch (e) {
+      if (i === 1) $('#updating').hidden = false;
+    }
+    if (S) break;
+    if (i >= 15) {
+      document.body.innerHTML = '<p style="padding:3rem;font-family:sans-serif">راصد مو شغّال. افتحه من أيقونة Rasid على سطح المكتب.</p>';
+      return;
+    }
+    await new Promise((r) => setTimeout(r, 1500));
   }
+  $('#updating').hidden = !S.updating;
   try {
     const v = sessionStorage.getItem('rasidUpdated');
     if (v) sessionStorage.removeItem('rasidUpdated'), setTimeout(() => toast('تحدّث راصد للنسخة ' + v + '.'), 600);
@@ -809,5 +957,12 @@ async function refresh(force) {
     $('#wizard').hidden = false;
     initWizard();
   }
-  setInterval(() => refresh().then((changed) => render(!changed)).catch(() => {}), 5000);
+  // يسأل كل ٥ ثواني، وأسرع لو البرنامج يتحدّث
+  const poll = () => {
+    refresh()
+      .then((changed) => render(!changed))
+      .catch(() => {})
+      .finally(() => setTimeout(poll, $('#updating').hidden ? 5000 : 1500));
+  };
+  setTimeout(poll, 5000);
 })();

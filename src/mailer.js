@@ -31,8 +31,12 @@ async function verify() {
 }
 
 function cvPath(cfg) {
-  return cfg.cv.file ? path.join(store.DATA_DIR, cfg.cv.file) : '';
+  return cfg.cv.file ? path.join(store.dir(), cfg.cv.file) : '';
 }
+
+// كم رسالة في الطريق الحين: التحديث ينتظرها تخلص قبل ما يعيد التشغيل (عشان ما نقطع رسالة في نصها)
+let inFlight = 0;
+const sending = () => inFlight > 0;
 
 function sentToday(d) {
   const start = new Date();
@@ -48,6 +52,7 @@ async function sendJob(job, kind = 'application') {
   if (!draft) throw new Error('ما في رسالة جاهزة لهالوظيفة.');
   if (!job.applyEmail) throw new Error('ما في إيميل للتقديم على هالوظيفة.');
   if (kind === 'application' && job.sentAt) throw new Error('قدّمت على هالوظيفة من قبل.');
+  if (kind === 'application' && job.sendingAt) throw new Error('هالتقديم ينرسل الحين.');
   const cv = cvPath(cfg);
   if (kind === 'application' && (!cv || !fs.existsSync(cv))) {
     store.problem('cv-missing', 'ما في سيرة ذاتية مرفوعة، وما أرسل تقديم بدونها.', 'ارفع ملف السيرة من الإعدادات.');
@@ -64,8 +69,15 @@ async function sendJob(job, kind = 'application') {
     mail.inReplyTo = job.messageId;
     mail.references = job.messageId;
   }
+  // علامة محفوظة قبل الإرسال: لو انقطع البرنامج في النص، ما نعيد الإرسال لحالنا (ما نقدّم مرتين أبداً)
+  if (kind === 'application') {
+    job.sendingAt = Date.now();
+    store.saveNow();
+  }
+  inFlight++;
   try {
     const info = await transport(cfg).sendMail(mail);
+    delete job.sendingAt;
     if (kind === 'application') {
       job.status = 'sent';
       job.sentAt = Date.now();
@@ -78,9 +90,10 @@ async function sendJob(job, kind = 'application') {
     job.lastError = '';
     store.clearProblem('gmail-auth');
     store.clearProblem('gmail-send');
-    store.save();
+    store.saveNow(); // انرسل: نثبّتها على القرص فوراً
     return info;
   } catch (e) {
+    delete job.sendingAt;
     const why = explain(e);
     job.lastError = why;
     store.save();
@@ -95,7 +108,9 @@ async function sendJob(job, kind = 'application') {
       store.save();
     }
     throw new Error(why);
+  } finally {
+    inFlight--;
   }
 }
 
-module.exports = { verify, sendJob, sentToday, cvPath, explain };
+module.exports = { verify, sendJob, sentToday, cvPath, explain, sending };

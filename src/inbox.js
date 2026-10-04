@@ -67,7 +67,7 @@ ${msg.text.slice(0, 4000)}
 
 Reply with ONLY a JSON object in a \`\`\`json block:
 {"category":"interview|offer|rejection|info_request|auto_reply|bounce|other","jobRelated":true,"summary":"one or two sentences in Arabic: what they said","action":"one sentence in Arabic: what he should do next and by when, or empty if nothing"}`;
-  const r = await ai.askJson(prompt, { tools: [], timeoutMs: 3 * 60 * 1000, mockKey: 'classify', fast: true });
+  const r = await ai.askJson(prompt, { tools: [], timeoutMs: 3 * 60 * 1000, mockKey: 'classify', model: 'haiku', effort: 'low' });
   return {
     category: LABELS[r.category] ? r.category : 'other',
     jobRelated: r.jobRelated !== false,
@@ -89,7 +89,8 @@ async function processMessages(list) {
     if (!job && !looksJobby) continue;
 
     let info = { category: heuristic(msg.from + ' ' + msg.subject + ' ' + msg.text.slice(0, 3000)), jobRelated: true, summary: '', action: '' };
-    if (info.category !== 'bounce' && !d.config.autoAI) {
+    // Claude (الموديل الأخف) يلخّص بس الردود على تقديم أرسلناه. الباقي يتصنّف بالكلمات بدون ما نصرف من الحصة.
+    if (info.category !== 'bounce' && (!job || !d.config.autoAI || ai.paused())) {
       info.summary = msg.text.replace(/\s+/g, ' ').slice(0, 240);
     } else if (info.category !== 'bounce') {
       try {

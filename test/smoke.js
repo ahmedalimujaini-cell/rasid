@@ -36,8 +36,9 @@ const ok = (name, cond) => {
   const d = store.load();
   Object.assign(d.config, { setupDone: true, smtp: { host: '127.0.0.1', port: 2526, secure: false, ignoreTLS: true } });
   d.config.gmail = { user: 'me@gmail.com', appPassword: 'abcd efgh ijkl mnop' };
-  ok('new installs do not use Claude on their own', d.config.autoAI === false && pipeline.due(Object.assign({}, d, { config: { ...d.config, setupDone: true } })) === null);
-  d.config.autoAI = true;
+  ok('new installs: send by themselves, search once a day at 10, daily target 20', d.config.autoAI === true && d.config.mode === 'auto' && d.config.searchHour === 10 && d.config.dailyCap === 20);
+  const at10 = pipeline.slot(Date.now(), 10);
+  ok('daily search: not before 10:00, due after it (and still due later the same day if the PC was off)', pipeline.due(d, at10 - 60000) === null && pipeline.due(d, at10 + 60000) === 'cycle' && pipeline.due(d, at10 + 9 * 3600000) === 'cycle');
   d.config.profile.name = 'Test User';
   d.config.mode = 'review';
   const brief = require('../src/brief');
@@ -112,7 +113,9 @@ const ok = (name, cond) => {
   const fb = await require('../src/draft').draftJob({ title: 'Speculative application – Estimator', company: 'Fallback Co', kind: 'speculative', requirements: '', location: '' });
   ai.askJson = realAsk;
   ok('a bad base letter falls back to a letter written for that company', !fb.fromBase && fb.body.length > 40);
-  ok('company scan: no email → manual with apply steps; unverified email discarded; already-emailed company skipped', byCoName('Form Only Co').status === 'manual' && byCoName('Form Only Co').applySteps.includes('Careers') && byCoName('Guessed Email Co').applyEmail === '' && d.jobs.filter((j) => j.company === 'Test Operator LLC').length === 1 && d.state.dirIndex === 2);
+  ok('company scan: no email → manual with apply steps; unverified email discarded; already-emailed company skipped', byCoName('Form Only Co').status === 'manual' && byCoName('Form Only Co').applySteps.includes('Careers') && byCoName('Guessed Email Co').applyEmail === '' && d.jobs.filter((j) => j.company === 'Test Operator LLC').length === 1 && d.state.dirIndex === 5);
+  ok('the daily run went through its whole plan (target not reached) and is done for today', d.state.run.done && d.state.run.steps.length === 9 && pipeline.due(d, at10 + 60000) === null);
+  ok('search passes use Sonnet, the company scan uses Haiku, letters use Sonnet with low effort', require('./mock').models['discover:employers'] === 'sonnet/medium' && require('./mock').models.directory === 'haiku/low' && require('./mock').models['draft:application'] === 'sonnet/low');
   ok('email job drafted → ready', byCo('Test Operator LLC').status === 'ready');
   ok('portal job drafted → manual', byCo('Portal Only Co').status === 'manual' && byCo('Portal Only Co').draft);
   ok('invalid apply email dropped, low fit not drafted', byCo('Ledger Co').applyEmail === '' && byCo('Ledger Co').status === 'low');
@@ -165,8 +168,9 @@ const ok = (name, cond) => {
   // الموجز الصوتي
   ok('default mode is auto for new installs', fs.readFileSync(path.join(__dirname, '..', 'src', 'store.js'), 'utf8').includes("mode: 'auto'"));
   ok('cycle marks brief dirty', d.state.briefDirty === true);
+  const briefCalls = require('./mock').calls.brief || 0;
   let b = await brief.onOpen();
-  ok('brief generated on open, unheard', b.text.includes('يا أحمد') && b.heard === false && d.state.briefDirty === false);
+  ok('brief generated on open from the numbers (no Claude), unheard', b.text.startsWith('يا Test،') && b.heard === false && d.state.briefDirty === false && (require('./mock').calls.brief || 0) === briefCalls);
   ok('same unheard brief returned again (no regeneration)', (await brief.onOpen()).at === b.at);
   brief.heard();
   ok('heard → remembered', d.brief.heard && d.state.lastBriefHeard === b.at);
@@ -195,11 +199,12 @@ const ok = (name, cond) => {
   // الوضع اليدوي: ما في أي نداء لـClaude بدون أمر
   const MC = require('./mock').calls;
   d.config.autoAI = false;
-  d.state.lastSearch = 0;
-  d.state.lastNews = 0;
-  ok('manual mode: the scheduler starts no search and no news', pipeline.due(d) === null);
+  const savedRun = d.state.run;
+  d.state.run = null;
+  ok('manual mode: the scheduler starts no search and no news', pipeline.due(d, at10 + 60000) === null);
   d.config.autoAI = true;
-  ok('automatic mode: the search is due', pipeline.due(d) === 'cycle');
+  ok('automatic mode: the daily search is due', pipeline.due(d, at10 + 60000) === 'cycle');
+  d.state.run = savedRun;
   d.config.autoAI = false;
   const before2 = { classify: MC.classify || 0, brief: MC.brief || 0 };
   await inbox.processMessages([{ messageId: '<m9@x>', inReplyTo: '', references: [], from: 'hr@test-operator.example', fromName: 'HR', subject: 'Interview invitation', date: Date.now(), text: 'We would like to invite you to an interview on Monday.' }]);
@@ -233,6 +238,115 @@ const ok = (name, cond) => {
   ok('your command lifts a stale pause and its problem', ai.paused() === 0 && !d.problems.some((p) => p.key === 'claude-limit' && !p.resolved));
   await ai.askJson('x', { mockKey: 'selftest' });
 
+  // البحث اليومي: يوقف أول ما يكتمل هدف اليوم، ويكمّل من حيث وقف بعد حد الاستخدام أو التحديث
+  {
+    const realAsk = ai.askJson;
+    const research = [];
+    let n = 0;
+    let failNext = '';
+    let gate = null;
+    const isResearch = (o) => o.mockKey && (o.mockKey.startsWith('discover:') || o.mockKey === 'directory');
+    ai.askJson = async (pr, o) => {
+      if (!isResearch(o)) return realAsk(pr, o);
+      research.push(o.mockKey);
+      if (gate) {
+        await gate.wait;
+        if (ai.stopRequested()) throw new Error('CLAUDE_STOPPED: x');
+      }
+      if (failNext) {
+        const m = failNext;
+        failNext = '';
+        throw new Error(m);
+      }
+      n++;
+      if (o.mockKey === 'directory') return { companies: [{ company: 'Daily Co ' + n, url: 'https://example.com/d' + n, applyEmail: `hr${n}@daily.example`, verified: true, fit: 90, suggestedRole: 'Junior Quantity Surveyor' }] };
+      return { jobs: [{ title: 'Daily Role ' + n, company: 'Daily Vacancy ' + n, url: 'https://example.com/v' + n, applyEmail: `jobs${n}@vacancy.example`, fit: 90, requirements: 'x' }] };
+    };
+    const needs = (k) => (d.config.dailyCap = d.config.dailyCap - pipeline.need(d) + k);
+    const hold = () => {
+      let open;
+      gate = { wait: new Promise((res) => (open = res)) };
+      gate.open = () => {
+        const g = gate;
+        gate = null;
+        open();
+        return g;
+      };
+    };
+    const reached = async (len) => {
+      for (let i = 0; i < 200 && research.length < len; i++) await new Promise((res) => setTimeout(res, 5));
+    };
+    d.config.mode = 'review';
+
+    d.state.run = null;
+    needs(2);
+    r = await pipeline.cycle();
+    ok('daily target reached after two search steps → stops searching, the day is done', research.length === 2 && r.found === 2 && d.state.run.done && d.state.run.steps.length === 2 && pipeline.need(d) <= 0 && pipeline.due(d, at10 + 60000) === null);
+    ok('the first search step changes every search day', research[0] === 'discover:boards' && d.state.run.rot === 1);
+
+    d.state.run = null;
+    research.length = 0;
+    needs(3);
+    failNext = "CLAUDE_ERROR: You've hit your session limit · resets 11:59pm (Asia/Muscat)";
+    r = await pipeline.cycle();
+    ok('Claude limit mid-search: it pauses, nothing is marked done, the scheduler waits', research.length === 1 && !d.state.run.done && d.state.run.steps.length === 0 && ai.paused() > 0 && pipeline.due(d, at10 + 60000) === null);
+    ai.resume();
+    ok('when the limit is back the day\'s search is due again', pipeline.due(d, at10 + 60000) === 'cycle');
+    r = await pipeline.cycle();
+    ok('...and it carries on from where it stopped until the target is reached', research.length === 4 && research[1] === research[0] && d.state.run.done && d.state.run.steps.length === 3);
+
+    // وقّفته أنت: خلاص لليوم (لو وقت البحث فات)
+    d.state.run = null;
+    research.length = 0;
+    needs(5);
+    hold();
+    let running = pipeline.cycle();
+    await reached(1);
+    ok('stop button works on a running daily search', pipeline.stop() === true);
+    gate.open();
+    await running;
+    ok('stopped by you → not restarted by itself today', !!d.state.run.userStopAt && !d.state.run.done && pipeline.due(d, at10 + 60000) === (Date.now() >= at10 ? null : 'cycle'));
+
+    // التحديث: يوقف كل شي، وما يبدأ شي جديد، وبعد ما يرجع البرنامج يكمّل البحث من حيث وقف
+    d.state.run = null;
+    research.length = 0;
+    hold();
+    running = pipeline.cycle();
+    await reached(1);
+    const frozen = pipeline.freeze(5000);
+    const g = gate.open();
+    await frozen;
+    await running;
+    ok('an update stops the search, waits for it and blocks new work', pipeline.status.frozen && !pipeline.status.main && !!g);
+    await assert.rejects(pipeline.cycle(), /يتحدّث/);
+    ok('...and the day resumes right after the restart (not counted as your stop, no wait)', !d.state.run.done && !d.state.run.userStopAt && !d.state.run.retryAt && pipeline.due(d, at10 + 60000) === 'cycle');
+    pipeline.unfreeze();
+    ok('if the install fails, the program carries on', !pipeline.status.frozen && !ai.stopRequested());
+
+    // Claude مو موجود: مشكلة وحدة واضحة، ويجرب بعد ساعة بدل كل ٣٠ ثانية
+    d.state.run = null;
+    failNext = 'CLAUDE_NOT_FOUND: spawn claude ENOENT';
+    await pipeline.cycle();
+    const rt = d.state.run.retryAt;
+    ok('Claude missing → one clear problem and a retry in an hour', d.problems.some((p) => p.key === 'claude-missing' && !p.resolved) && rt > Date.now() + 50 * 60000);
+    d.state.run.retryAt = at10 + 3600000;
+    ok('...the scheduler waits for that hour', pipeline.due(d, at10 + 60000) === null && pipeline.due(d, at10 + 3600000 + 1) === 'cycle');
+    r = await pipeline.cycle();
+    ok('the next try clears the old Claude problem by itself when Claude works again', !d.problems.some((p) => p.key === 'claude-missing' && !p.resolved) && d.state.run.done);
+
+    // الإرسال التلقائي يرسل اللي جاهز بفاصل، ويوقف عند هدف اليوم
+    ai.askJson = realAsk;
+    d.config.mode = 'auto';
+    const sentBefore = got.length;
+    d.config.dailyCap = mailer.sentToday(d) + 2;
+    const sentNow = await pipeline.autoSend();
+    ok('auto mode sends without asking, up to the daily target', sentNow === 2 && got.length === sentBefore + 2 && mailer.sentToday(d) === d.config.dailyCap);
+    const twin = { ...d.jobs.find((j) => j.status === 'ready' && j.applyEmail), sendingAt: Date.now() };
+    await assert.rejects(mailer.sendJob(twin), /ينرسل الحين/);
+    ok('the same application cannot be sent twice at the same moment', got.length === sentBefore + 2);
+    d.config.dailyCap = 8;
+  }
+
   // زر «وقّف»: يقتل Claude الشغّال فوراً، وما يطلع كمشكلة
   {
     const fake = path.join(process.env.RASID_DATA, 'slowclaude.sh');
@@ -263,6 +377,31 @@ const ok = (name, cond) => {
   await ai.selfTest();
   ok('self-test clears Claude problems', !d.problems.some((p) => /^claude-/.test(p.key) && !p.resolved));
 
+  // نسخة Claude Code قديمة ما تعرف --effort: نشيله هو بس ونبقى على الموديل الخفيف
+  {
+    const fake = path.join(process.env.RASID_DATA, 'oldclaude.sh');
+    fs.writeFileSync(
+      fake,
+      [
+        '#!/bin/sh',
+        'echo "$*" >> "$(dirname "$0")/args.log"',
+        'case "$*" in *--effort*) echo "error: unknown option \'--effort\'" >&2; exit 1;; esac',
+        'cat >/dev/null',
+        'echo \'{"type":"result","is_error":false,"result":"{\\"ok\\":true}"}\'',
+      ].join('\n') + '\n',
+      { mode: 0o755 }
+    );
+    const oldPath = d.config.claudePath;
+    d.config.claudePath = fake;
+    delete process.env.RASID_MOCK;
+    const res = await ai.askJson('x', { model: 'haiku', effort: 'low' });
+    const calls = fs.readFileSync(path.join(process.env.RASID_DATA, 'args.log'), 'utf8').trim().split('\n');
+    ok('an older Claude Code without --effort: only that flag is dropped, still on the light model', res.ok === true && calls.length === 2 && calls[1].includes('--model haiku') && !calls[1].includes('--effort') && ai.getLevel() === 0 && ai.unsupported.has('--effort'));
+    ai.unsupported.clear();
+    process.env.RASID_MOCK = '1';
+    d.config.claudePath = oldPath;
+  }
+
   // API guard
   await new Promise((res) => server.listen(4799, '127.0.0.1', res));
   const base = 'http://127.0.0.1:4799';
@@ -273,6 +412,54 @@ const ok = (name, cond) => {
   ok('config saved, values clamped, password never returned', st.config.mode === 'review' && st.config.dailyCap === 30 && !('appPassword' in st.config.gmail) && st.config.gmail.hasPassword);
   resp = await fetch(base + '/../src/store.js');
   ok('static path traversal blocked', resp.status === 404);
+  pipeline.status.frozen = true;
+  resp = await fetch(base + '/api/run/search', { method: 'POST', headers: { 'X-Rasid': '1' }, body: '{}' });
+  ok('while updating, new searches are refused politely', resp.status === 409 && /يتحدّث/.test((await resp.json()).error));
+  pipeline.unfreeze();
+
+  // حسابات منفصلة: «أضف حساب»
+  {
+    const H = (acct) => ({ 'X-Rasid': '1', 'X-Rasid-Account': acct });
+    resp = await fetch(base + '/api/accounts/add', { method: 'POST', headers: { 'X-Rasid': '1' }, body: JSON.stringify({ label: 'Second' }) });
+    const acct = (await resp.json()).id;
+    let s2 = await (await fetch(base + '/api/state?a=' + acct)).json();
+    ok('add account: a fresh, separate account that starts at the setup wizard', /^[a-f0-9]{12}$/.test(acct) && s2.account === acct && !s2.config.setupDone && s2.jobs.length === 0 && s2.accounts.length === 2 && s2.accounts[1].name === 'Second');
+    await fetch(base + '/api/config', { method: 'POST', headers: H(acct), body: JSON.stringify({ gmail: { user: 'second@gmail.com' }, profile: { name: 'Second Person' }, dailyCap: 5 }) });
+    const cvRes = await fetch(base + '/api/cv', { method: 'POST', headers: { ...H(acct), 'X-Filename': 'second.pdf' }, body: Buffer.alloc(1200, 2) });
+    s2 = await (await fetch(base + '/api/state?a=' + acct)).json();
+    const s1 = await (await fetch(base + '/api/state')).json();
+    ok('each account keeps its own Gmail, profile, settings and CV', cvRes.status === 200 && s2.config.gmail.user === 'second@gmail.com' && s2.config.dailyCap === 5 && s2.config.cv.originalName === 'second.pdf' && s1.config.gmail.user === 'me@gmail.com' && s1.config.profile.name === 'Test User' && s1.config.cv.originalName === 'Test_CV.pdf' && s1.jobs.length === d.jobs.length && fs.existsSync(path.join(tmp, 'accounts', acct, 'cv.pdf')) && store.within(acct, () => mailer.cvPath(store.load().config)) === path.join(tmp, 'accounts', acct, 'cv.pdf'));
+    store.saveNow();
+    ok('on disk: the second account lives in its own folder; the main data file never mentions it', JSON.parse(fs.readFileSync(path.join(tmp, 'accounts', acct, 'rasid.json'), 'utf8')).config.profile.name === 'Second Person' && !fs.readFileSync(path.join(tmp, 'rasid.json'), 'utf8').includes('Second Person'));
+    const t2 = JSON.parse(await (await fetch(base + '/api/tool/program_status', { method: 'POST', headers: H(acct), body: '{}' })).text());
+    ok('chat tools act on the account that is chatting', t2.gmail_account === 'second@gmail.com');
+    const mcpFile = store.within(acct, () => require('../src/chat').mcpConfigFile());
+    ok("the chat's tool bridge is told which account it serves", mcpFile === path.join(tmp, 'accounts', acct, 'mcp.json') && JSON.parse(fs.readFileSync(mcpFile, 'utf8')).mcpServers.rasid.env.RASID_ACCOUNT === acct);
+    ok('an unknown account is refused', (await fetch(base + '/api/state?a=ffffffffffff')).status === 404 && (await fetch(base + '/api/state?a=../../etc')).status === 404);
+
+    let releaseA;
+    const busyA = pipeline.withMain('A', () => new Promise((res) => (releaseA = res)));
+    await assert.rejects(store.within(acct, () => pipeline.cycle(true)), /مشغول/);
+    const seen = await (await fetch(base + '/api/state?a=' + acct)).json();
+    ok('one search at a time across accounts; the other account sees whose turn it is', seen.status.main === 'أحمد: A' && seen.status.mine === false);
+    releaseA();
+    await busyA;
+
+    store.within(acct, () => ai.reportAiError(new Error("CLAUDE_ERROR: You've hit your session limit · resets 11:59pm"), 'البحث'));
+    ok('one Claude subscription: a limit hit in one account pauses Claude for all', ai.paused() > 0 && store.within(acct, () => store.load().problems.some((p) => p.key === 'claude-limit' && !p.resolved)));
+    ai.resume();
+    ok('...and the pause clears for all', !store.within(acct, () => store.load().problems.some((p) => p.key === 'claude-limit' && !p.resolved)));
+
+    const acct3 = store.addAccount('Third');
+    fs.writeFileSync(path.join(tmp, 'accounts', acct3, 'rasid.json'), JSON.stringify({ jobs: [{ id: 'j1', title: 'T', company: 'C', status: 'ready', applyEmail: 'x@y.example', sendingAt: Date.now(), sentAt: 0, draft: { subject: 's', body: 'b' } }] }));
+    const j3 = store.within(acct3, () => store.load().jobs[0]);
+    ok('a send cut off by a restart is never resent by itself (left for you to check)', j3.status === 'failed' && !j3.sendingAt && /المرسل/.test(j3.lastError));
+    store.removeAccount(acct3);
+
+    resp = await fetch(base + '/api/accounts/remove', { method: 'POST', headers: H(acct), body: '{}' });
+    ok('remove account: gone from the list, its folder kept aside (not deleted), main untouched', resp.status === 200 && (await fetch(base + '/api/state?a=' + acct)).status === 404 && fs.readdirSync(path.join(tmp, 'removed')).some((f) => f.startsWith(acct)) && store.accounts().length === 1 && d.jobs.length > 0);
+    ok('the main account cannot be removed', (await fetch(base + '/api/accounts/remove', { method: 'POST', headers: H('main'), body: '{}' })).status === 400);
+  }
 
   // التحديث الذاتي: مصدر محلي يقلّد المستودع
   const http = require('http');
@@ -314,14 +501,20 @@ const ok = (name, cond) => {
     const out = await update.install();
     ok('good update installs only the changed file, bumps build, keeps a backup', out.updated && out.files === 1 && update.local().build === mine.build + 1 && fs.readFileSync(path.join(ROOT, 'README.md')).equals(newReadme) && fs.existsSync(path.join(tmp, 'backup', String(mine.build), 'README.md')) && d.state.update === null);
     ok('already up to date → no-op', (await update.install()).updated === false);
-    // التحديث التلقائي
+    // التحديث إجباري: يتحقق أول، بعدين يوقف كل شي ويركّب على طول
     fs.writeFileSync(path.join(ROOT, 'README.md'), original);
     fs.writeFileSync(path.join(ROOT, 'version.json'), savedVersion);
-    ok('auto-update waits while a search or send is running', (await update.auto(() => 'يبحث')).waiting === true && update.local().build === mine.build);
-    d.config.autoUpdate = false;
-    ok('auto-update off → only flags it', (await update.auto(() => '')).pending === true && update.local().build === mine.build && d.state.update.build === mine.build + 1);
-    d.config.autoUpdate = true;
-    ok('auto-update installs by itself when idle', (await update.auto(() => '')).updated === true && update.local().build === mine.build + 1);
+    const hooks = [];
+    const H2 = { before: async () => hooks.push('before'), after: () => hooks.push('after') };
+    serveReadme = Buffer.from('tampered');
+    await assert.rejects(update.auto(H2), /التوقيع/);
+    ok('a broken update never stops what is running; the error is kept for the settings page', hooks.length === 0 && update.local().build === mine.build && /التوقيع/.test(d.state.updateError));
+    serveReadme = newReadme;
+    d.config.autoUpdate = false; // المفتاح القديم ما يمنع التحديث
+    const out2 = await update.auto(H2);
+    ok('updates are mandatory: verified first, then everything stops, then it installs (even with the old switch off)', out2.updated === true && hooks.join() === 'before' && update.local().build === mine.build + 1 && d.state.updateError === '');
+    const [a1, a2] = await Promise.all([update.auto(H2), update.auto(H2)]);
+    ok('two update checks at once never run twice', a1 === a2 || (a1.updated === false && a2.updated === false));
   } finally {
     fs.writeFileSync(path.join(ROOT, 'README.md'), original);
     fs.writeFileSync(path.join(ROOT, 'version.json'), savedVersion);

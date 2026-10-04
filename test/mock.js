@@ -17,8 +17,10 @@ const jobs = {
   ],
 };
 exports.calls = {};
-exports.reply = (key, prompt) => {
+exports.models = {}; // آخر موديل/مستوى تفكير طُلب لكل نوع (للتأكد من التوفير)
+exports.reply = (key, prompt, opts = {}) => {
   exports.calls[key] = (exports.calls[key] || 0) + 1;
+  exports.models[key] = [opts.model, opts.effort].filter(Boolean).join('/') || 'default';
   if (key === 'directory')
     return {
       companies: [

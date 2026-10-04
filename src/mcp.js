@@ -4,12 +4,13 @@ const http = require('http');
 const defs = require('./tooldefs');
 
 const PORT = Number(process.env.RASID_PORT) || 4747;
+const ACCOUNT = /^(main|[a-f0-9]{12})$/.test(process.env.RASID_ACCOUNT || '') ? process.env.RASID_ACCOUNT : 'main'; // الأدوات تشتغل على حساب المحادثة نفسه
 
 function callProgram(name, args) {
   return new Promise((resolve) => {
     const body = Buffer.from(JSON.stringify(args || {}), 'utf8');
     const req = http.request(
-      { host: '127.0.0.1', port: PORT, path: '/api/tool/' + encodeURIComponent(name), method: 'POST', headers: { 'X-Rasid': '1', 'Content-Type': 'application/json', 'Content-Length': body.length }, timeout: 120000 },
+      { host: '127.0.0.1', port: PORT, path: '/api/tool/' + encodeURIComponent(name), method: 'POST', headers: { 'X-Rasid': '1', 'X-Rasid-Account': ACCOUNT, 'Content-Type': 'application/json', 'Content-Length': body.length }, timeout: 120000 },
       (res) => {
         let out = '';
         res.setEncoding('utf8');

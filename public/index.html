@@ -20,6 +20,7 @@
   <div class="wz">
     <header class="wz-head">
       <span class="mark">راصد</span>
+      <span class="wz-exits" id="wzExits" hidden><a class="wz-exit" id="wzExit" href="/">رجوع للحساب الرئيسي</a> · <button class="wz-exit" id="wzCancel" type="button">إلغاء هالحساب</button></span>
       <ol class="wz-steps" id="wzSteps">
         <li>الجيميل</li><li>السيرة الذاتية</li><li>معلوماتك</li><li>طريقة الشغل</li>
       </ol>
@@ -89,15 +90,17 @@
 
     <form class="wz-pane" data-step="3" hidden novalidate>
       <h1>كيف تبغاني أشتغل؟</h1>
+      <p class="lead">كل يوم مرة وحدة أبحث، أجهّز التقديمات لين أوصل هدف اليوم، وأرسلها من جيميلك. وبس.</p>
       <div class="choice">
         <label><input type="radio" name="wzMode" value="auto" checked>
-          <span><strong>صلاحية كاملة — أرسل تلقائياً</strong> أي وظيفة فوق حد التطابق ولها إيميل تقديم أقدّم عليها من جيميلك على طول، وأخبرك بعدين في الموجز. تقدر توقفه أي وقت من الإعدادات.</span></label>
+          <span><strong>صلاحية كاملة — أرسل تلقائياً</strong> أي وظيفة فوق حد التطابق ولها إيميل تقديم أقدّم عليها من جيميلك على طول بدون ما أرجع لك، وأخبرك بعدين في الموجز.</span></label>
         <label><input type="radio" name="wzMode" value="review">
           <span><strong>أجهّز وأنت توافق</strong> أبحث وأكتب الرسالة، وما ينرسل شي إلا لما تضغط «أرسل».</span></label>
       </div>
       <div class="grid2">
+        <label>هدف التقديمات في اليوم <input type="number" id="wzCap" min="1" max="30" value="20" dir="ltr"></label>
+        <label>وقت البحث اليومي <select id="wzHour"></select></label>
         <label>أقل نسبة تطابق أقدّم عليها <input type="number" id="wzFit" min="0" max="100" value="70" dir="ltr"></label>
-        <label>أقصى عدد تقديمات في اليوم <input type="number" id="wzCap" min="1" max="30" value="8" dir="ltr"></label>
       </div>
       <p class="note">الوظائف اللي تقديمها من موقع الشركة (بوابات التوظيف) ما أقدر أعبّي نماذجها. أجهّز لك نص الرسالة والرابط وتقدّم أنت.</p>
       <p class="msg" id="wzMsg3"></p>
@@ -113,6 +116,7 @@
 <div id="app" hidden>
   <nav class="rail" aria-label="الأقسام">
     <span class="mark">راصد</span>
+    <div class="acct" id="acct"></div>
     <button data-view="brief" class="on">الموجز</button>
     <button data-view="chat">كلّم راصد</button>
     <button data-view="jobs">الوظائف <b id="cJobs"></b></button>
@@ -129,6 +133,7 @@
   </nav>
   <main id="main" tabindex="-1"></main>
 </div>
+<div id="updating" hidden role="status" aria-live="polite"><div><span class="spin"></span><p>راصد يتحدّث…</p><small>يوقف ثواني، يركّب النسخة الجديدة، ويرجع يشتغل لحاله.</small></div></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <script src="app.js"></script>
 </body>

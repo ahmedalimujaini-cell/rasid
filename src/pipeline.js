@@ -43,8 +43,28 @@ async function wait(ms) {
   while (Date.now() < end && !ai.stopRequested()) await sleep(Math.min(1000, end - Date.now()));
 }
 
+// وظيفة انتهى موعد تقديمها: ما نقدّم عليها (تبقى ظاهرة بحالة «متجاهلة» وسبب واضح)
+function expireOld(now = new Date()) {
+  const d = store.load();
+  const today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+  let n = 0;
+  for (const j of d.jobs) {
+    if (j.sentAt || !j.deadline || j.deadline >= today) continue;
+    if (!['new', 'ready', 'manual'].includes(j.status)) continue;
+    j.status = 'skipped';
+    j.lastError = `انتهى موعد التقديم (${j.deadline}).`;
+    n++;
+  }
+  if (n) {
+    store.event('info', `تجاهلت ${n} وظيفة انتهى موعد تقديمها.`);
+    store.save();
+  }
+  return n;
+}
+
 async function autoSend() {
   const d = store.load();
+  expireOld();
   if (d.config.mode !== 'auto') return 0;
   const queue = d.jobs.filter((j) => j.status === 'ready' && j.applyEmail && !j.sentAt).sort((a, b) => b.fit - a.fit);
   const label = status.main;
@@ -104,6 +124,7 @@ function need(d) {
 function cycle(force = false) {
   return withMain('يبحث عن وظائف', async () => {
     const d = store.load();
+    expireOld();
     const run = todayRun(d);
     delete run.retryAt;
     // مشكلة قديمة عن Claude (مثلاً ما كان مسجّل دخول أمس) ما تمنعنا نجرّب اليوم. لو لسا موجودة، بترجع تطلع.
@@ -335,4 +356,4 @@ function startScheduler() {
   setTimeout(tick, 3000);
 }
 
-module.exports = { status, inboxBusy, stop, freeze, unfreeze, cycle, news, checkInbox, readCv, autoSend, withMain, startScheduler, due, nextSearch, need, dayKey, slot, todayRun };
+module.exports = { expireOld, status, inboxBusy, stop, freeze, unfreeze, cycle, news, checkInbox, readCv, autoSend, withMain, startScheduler, due, nextSearch, need, dayKey, slot, todayRun };

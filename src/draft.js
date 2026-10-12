@@ -74,7 +74,7 @@ function specKey(cfg, role, lang) {
 }
 
 function specPrompt(cfg, role, lang) {
-  return `Write a formal speculative application email that accompanies the attached CV. It will be sent to many companies that have NOT advertised a vacancy: he is introducing himself and asking to be considered for a suitable current or upcoming opening, graduate or trainee programme.
+  return `Write THREE different versions of a formal speculative application email that accompanies the attached CV. They will be sent to many companies that have NOT advertised a vacancy: he is introducing himself and asking to be considered for a suitable current or upcoming opening, graduate or trainee programme. The versions must differ in wording, opening line, which of his facts leads, and subject line, so that companies receiving different versions do not see identical text. All three follow every rule below.
 
 Write the literal token ${COMPANY} wherever the company's name belongs (at least once, in the opening). Say nothing specific about the company, because the same text goes to different companies.
 
@@ -98,23 +98,33 @@ ${signature(cfg)}${cfg.letterNotes ? `\n- Standing preference from the candidate
 ${profileBlock(cfg)}
 </candidate>
 
-Reply with ONLY a JSON object in a \`\`\`json block: {"subject":"email subject line","body":"full email text"}`;
+Reply with ONLY a JSON object in a \`\`\`json block: {"variants":[{"subject":"email subject line","body":"full email text"},{"subject":"","body":""},{"subject":"","body":""}]}`;
 }
 
-// يرجّع رسالة الأساس لهالمسمى: من المحفوظ لو موجودة، وإلا يكتبها Claude مرة وحدة ويحفظها.
+// صيغة تنوّع الرسائل: نفس الشركة دايماً تاخذ نفس الصيغة، والشركات المختلفة توزّع على الصيغ.
+const pickVariant = (list, company) => list[parseInt(crypto.createHash('sha1').update(String(company || '').toLowerCase()).digest('hex').slice(0, 8), 16) % list.length];
+
+function cleanVariant(v) {
+  const subject = String((v && v.subject) || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 200);
+  const body = String((v && v.body) || '').trim();
+  if (!subject || body.length < 40 || !body.includes(COMPANY)) return null;
+  if (/\[[^\]]{2,30}\]/.test(body)) return null;
+  return { subject, body };
+}
+
+// يرجّع صيغ الأساس لهالمسمى: من المحفوظ لو موجودة، وإلا يكتبها Claude مرة وحدة (٣ صيغ) ويحفظها.
 async function specBase(role, lang) {
   const d = store.load();
   d.state.specLetters = d.state.specLetters || {};
   const key = specKey(d.config, role, lang);
-  if (d.state.specLetters[key]) return d.state.specLetters[key];
+  const saved = d.state.specLetters[key];
+  if (saved) return saved.variants ? saved : { ...saved, variants: [{ subject: saved.subject, body: saved.body }] };
   const res = await ai.askJson(specPrompt(d.config, role, lang), { tools: [], timeoutMs: 4 * 60 * 1000, mockKey: 'draft:specbase', model: 'sonnet', effort: 'low' });
-  const subject = String(res.subject || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 200);
-  const body = String(res.body || '').trim();
-  if (!subject || body.length < 40 || !body.includes(COMPANY)) throw new Error('رسالة الأساس رجعت ناقصة');
-  if (/\[[^\]]{2,30}\]/.test(body)) throw new Error('الصياغة فيها فراغات ما انملت [..]');
+  const variants = (Array.isArray(res.variants) ? res.variants : [res]).map(cleanVariant).filter(Boolean).slice(0, 3);
+  if (!variants.length) throw new Error('رسالة الأساس رجعت ناقصة');
   const keys = Object.keys(d.state.specLetters);
   if (keys.length >= 20) delete d.state.specLetters[keys.sort((a, b) => d.state.specLetters[a].at - d.state.specLetters[b].at)[0]];
-  d.state.specLetters[key] = { role, subject, body, language: lang, at: Date.now() };
+  d.state.specLetters[key] = { role, variants, language: lang, at: Date.now() };
   store.save();
   return d.state.specLetters[key];
 }
@@ -131,7 +141,7 @@ async function draftJob(job, kind = 'application', { fresh = false } = {}) {
   if (kind === 'application' && job.kind === 'speculative' && !fresh) {
     const lang = cfg.letterLanguage === 'ar' ? 'ar' : 'en';
     try {
-      const base = await specBase(specRole(job), lang);
+      const base = pickVariant((await specBase(specRole(job), lang)).variants, job.company);
       return { subject: fill(base.subject, job.company), body: fill(base.body, job.company), language: lang, at: Date.now(), fromBase: true };
     } catch (e) {
       // حد الاستخدام أو الدخول: ما في فايدة نحاول بطريقة ثانية. غير كذا (رسالة الأساس رجعت ناقصة): نكتب لهالشركة رسالتها الخاصة.
@@ -183,4 +193,4 @@ async function draftPending(onProgress) {
   return done;
 }
 
-module.exports = { draftJob, draftPending, specBase };
+module.exports = { draftJob, draftPending, specBase, pickVariant };

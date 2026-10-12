@@ -113,6 +113,16 @@ const ok = (name, cond) => {
   const fb = await require('../src/draft').draftJob({ title: 'Speculative application – Estimator', company: 'Fallback Co', kind: 'speculative', requirements: '', location: '' });
   ai.askJson = realAsk;
   ok('a bad base letter falls back to a letter written for that company', !fb.fromBase && fb.body.length > 40);
+  {
+    const D = require('../src/draft');
+    const names = Array.from({ length: 30 }, (_, i) => 'Company ' + i);
+    const used = new Set(names.map((n) => D.pickVariant(['a', 'b', 'c'], n)));
+    ok('letter variants: same company always gets the same one, different companies are spread', D.pickVariant(['a', 'b', 'c'], 'Acme') === D.pickVariant(['a', 'b', 'c'], 'acme') && used.size === 3);
+    ok('speculative letters are kept as three saved variants', Object.values(d.state.specLetters).every((l) => l.variants.length === 3));
+    d.jobs.push({ id: 'old1', title: 'Old', company: 'OldCo', deadline: '2020-01-01', status: 'ready', applyEmail: 'a@b.co', sentAt: 0 }, { id: 'ok1', title: 'Fresh', company: 'FreshCo', deadline: '2099-01-01', status: 'ready', applyEmail: 'a@c.co', sentAt: 0 }, { id: 'sent1', title: 'Sent', company: 'SentCo', deadline: '2020-01-01', status: 'sent', sentAt: 1 });
+    ok('expired deadline: skipped with a reason; open and already-sent ones untouched', pipeline.expireOld() === 1 && d.jobs.find((j) => j.id === 'old1').status === 'skipped' && /انتهى موعد/.test(d.jobs.find((j) => j.id === 'old1').lastError) && d.jobs.find((j) => j.id === 'ok1').status === 'ready' && d.jobs.find((j) => j.id === 'sent1').status === 'sent');
+    d.jobs = d.jobs.filter((j) => !['old1', 'ok1', 'sent1'].includes(j.id));
+  }
   ok('company scan: no email → manual with apply steps; unverified email discarded; already-emailed company skipped', byCoName('Form Only Co').status === 'manual' && byCoName('Form Only Co').applySteps.includes('Careers') && byCoName('Guessed Email Co').applyEmail === '' && d.jobs.filter((j) => j.company === 'Test Operator LLC').length === 1 && d.state.dirIndex === 5);
   ok('the daily run went through its whole plan (target not reached) and is done for today', d.state.run.done && d.state.run.steps.length === 9 && pipeline.due(d, at10 + 60000) === null);
   ok('search passes use Sonnet, the company scan uses Haiku, letters use Sonnet with low effort', require('./mock').models['discover:employers'] === 'sonnet/medium' && require('./mock').models.directory === 'haiku/low' && require('./mock').models['draft:application'] === 'sonnet/low');

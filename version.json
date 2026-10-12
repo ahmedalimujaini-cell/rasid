@@ -1,7 +1,7 @@
 {
-  "build": 17,
-  "date": "2026-10-04",
-  "notes": "صار يبحث مرة وحدة كل يوم الساعة ١٠ ويرسل لين ٢٠ تقديم بدون ما يرجع لك. تقدر تضيف حساب ثاني منفصل. التحديث صار إجباري وسريع. واستهلاك Claude أقل، والشكل أحلى.",
+  "build": 18,
+  "date": "2026-10-12",
+  "notes": "ما أقدّم على وظيفة انتهى موعدها، ورسائل التقديم العامة صارت ٣ صيغ موزّعة على الشركات بدل نص واحد.",
   "files": {
     "package.json": "5de6eee528f3d817e065377265060c5b84ff74b28f5ec03acdb7d0267ca18545",
     "README.md": "51d2e6e29ab72e9b8650d3f517a610e16f43598d01cfe9e8ebbda3a02aff6f23",
@@ -14,14 +14,14 @@
     "src/brief.js": "bc7c4d0caf20e3d8e151353714d860cae714b208d5f2cd488151c02731c7043f",
     "src/chat.js": "4686f21fe21ca9987986cd45bec9960ae51bb9563a0bbd34ce60f5869475df46",
     "src/digest.js": "8430de6bbb988bf30cdf773ba6a538ce5d27d4bccf755ac889e9c0c70bd2871a",
-    "src/discover.js": "d3ac35fbb6ab74de3562118e8d15e427ee760ad0a642e5c9c8c53c4870a389d3",
-    "src/draft.js": "25085bd5f6f071510921ac218d5cc5ecf1ca166c3b6621ec855d2fc6c04629f0",
+    "src/discover.js": "7fcdac6d720cb262e11e5e764d56fbcfd75755fdf38ed31f76c40e5956acff49",
+    "src/draft.js": "4854dfe645556ba5c9de4a5e49d2f8185a25495860e3b8a3d0a5c73b6a40a3a0",
     "src/inbox.js": "914ec3b231c46a29bb6b42852d06803196a6a4620a140ea9d110709c8ad4fd89",
     "src/launch.js": "969b2df5d8d673e9dae0119e4505e7e21c5cbfcc64b7654f410f3debd4819db5",
     "src/mailbox.js": "a2f194d02515f262303168b2cdeb2e2ec26f6aa10dfe98c15de53471f0919898",
     "src/mailer.js": "62f742d24f013ca6ae05f67953f93c87aadb51d5f0b48007ce1fa46d3917d27c",
     "src/mcp.js": "70016dff5be2279c4d7ba4d79f6e54b0cc0a5f1922fcbe9cdafb69a09a590c75",
-    "src/pipeline.js": "b0f3bbacae3cc76a6dfa75e719559401d3ad964104d939ba565d18a4e076a1e9",
+    "src/pipeline.js": "9aff4d9f100a8b9da021a8e3f329054412a78c5a87dd63be060db2156f4f2c37",
     "src/server.js": "faf5f49a10ddf4796b78c87b36fb3a80904efd6b2a1283417b318a56d3932138",
     "src/store.js": "ff4d7960c0f6e5d3f31bf71594b2b73731d70860b13fbe7cf8fa5bc027ab3f63",
     "src/tooldefs.js": "9b2fd406f0ff15ef40135b3c58d6fa9360ce52dd575bfb52cd3bc383e119f323",
@@ -35,7 +35,7 @@
     "public/style.css": "20681e5d5681c953387db2e05d07dd34e8990e69c0822ef999e57f61842f78d3",
     "scripts/release.js": "3898cac6fb2cc9447e72d8b9cfb931747ac30cd92c20333d0d26af5b27697d49",
     "test/mailfix.js": "777512b8d558dcc3d1b3d9e6a367ff36c48f2deea0b5edcd0d23f0c590fa6617",
-    "test/mock.js": "e89d8b251f1c7e7ffe9e423cf4c3b0e14f46f08bc0d3f4f1c6d3c799745315d8",
-    "test/smoke.js": "cd3bedebb3af5bfa012e1ac9fcbc5769cdc0a385c3e63aa99c1c55faf7bee51c"
+    "test/mock.js": "121fef9ecff3748518bb70967ff5414807c041d7ffbc03c3939d6a6844fdddcd",
+    "test/smoke.js": "db058d72ebf3da9ed98c9dc33f58fe4a6b17fb243d25f16989010c00a9cdd1af"
   }
 }

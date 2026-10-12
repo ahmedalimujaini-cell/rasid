@@ -32,7 +32,10 @@ exports.reply = (key, prompt, opts = {}) => {
       ],
     };
   if (key && key.startsWith('discover:')) return { jobs: jobs[key] || [], notes: 'اختبار' };
-  if (key === 'draft:specbase') return { subject: 'Junior Quantity Surveyor – Test User – CV for your consideration', body: 'Dear Hiring Manager,\n\nI would like to be considered for a Junior Quantity Surveyor role at {{COMPANY}}. I completed on-the-job training in quantity surveying.\n\nYours sincerely,\nTest User' };
+  if (key === 'draft:specbase') {
+    const v = (open) => ({ subject: `Junior Quantity Surveyor – Test User – CV for your consideration (${open})`, body: `Dear Hiring Manager,\n\n${open}: I would like to be considered for a Junior Quantity Surveyor role at {{COMPANY}}. I completed on-the-job training in quantity surveying.\n\nYours sincerely,\nTest User` });
+    return { variants: [v('Greetings'), v('Good day'), v('To whom it may concern')] };
+  }
   if (key === 'draft:application') return { subject: 'Application — test role', body: 'Dear Hiring Team,\n\nI am applying for the role. I led offshore ESP installations in Oman.\n\nRegards,\nTest User', language: 'en' };
   if (key === 'draft:followup') return { subject: 'Following up on my application', body: 'Dear Hiring Team,\n\nI applied recently and remain interested in the role.\n\nRegards,\nTest User', language: 'en' };
   if (key === 'classify') {

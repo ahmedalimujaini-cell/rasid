@@ -116,6 +116,7 @@ How to work:
 - Score fit 0-100 honestly against the candidate's real experience. A job the candidate is unlikely to get scores low; do not inflate.
 - Skip jobs already known (listed below) and jobs outside Oman.
 - Give priority to postings that name an email address for applications: those can be sent for him straight away.
+- Check the closing date on every posting: never list a job whose deadline has passed or whose page says it is closed or filled.
 - Aim for up to 12 good results; fewer real ones beat many weak ones. Budget: about 25 web searches and page opens in total, then reply with what you have.
 
 <already_known>
@@ -200,6 +201,7 @@ async function vacancyPass(pass, onProgress) {
     const job = normalize(raw, pass);
     if (!job.title || !job.company) continue;
     if (!job.url) continue; // بدون رابط ما نقدر نتحقق منها
+    if (job.deadline && job.deadline < new Date().toISOString().slice(0, 10)) continue; // انتهى موعدها
     if (d.jobs.some((j) => j.key === job.key)) continue;
     d.jobs.unshift(job);
     n++;

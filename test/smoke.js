@@ -421,6 +421,9 @@ const ok = (name, cond) => {
   resp = await fetch(base + '/api/config', { method: 'POST', headers: { 'X-Rasid': '1' }, body: JSON.stringify({ mode: 'review', dailyCap: 999 }) });
   const st = await resp.json();
   ok('config saved, values clamped, password never returned', st.config.mode === 'review' && st.config.dailyCap === 30 && !('appPassword' in st.config.gmail) && st.config.gmail.hasPassword);
+  resp = await fetch(base + '/api/config', { method: 'POST', headers: { 'X-Rasid': '1' }, body: JSON.stringify({ portals: { kwader: { on: true, user: ' ahmed1 ' }, evil: { on: true, user: 'x' } } }) });
+  const pp = (await resp.json()).config.portals;
+  ok('portal accounts: saved (username only), unknown portals ignored', pp.kwader.on && pp.kwader.user === 'ahmed1' && !pp.evil && Object.keys(pp).length === 3 && !JSON.stringify(pp).includes('assword'));
   resp = await fetch(base + '/../src/store.js');
   ok('static path traversal blocked', resp.status === 404);
   pipeline.status.frozen = true;

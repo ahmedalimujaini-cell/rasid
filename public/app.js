@@ -614,7 +614,10 @@ function guide(j) {
     ? j.applySteps.split(/\n|(?:^|\s)(?:\d+|[١-٩])[.)\-]\s*/).map((x) => x.replace(/^\s*(?:\d+|[١-٩])[.)\-]\s*/, '').trim()).filter((x) => x.length > 3)
     : ['افتح صفحة التقديم من الزر تحت.', 'اضغط Apply / تقديم. لو طلب حساب، سجّل بإيميلك اللي تحت.', 'عبّي الخانات من جدول بياناتك (انسخ والصق).', 'ارفع ملف السيرة، والصق نص الرسالة لو فيه خانة Cover Letter.'];
   steps.push('لما تخلص، ارجع هنا واضغط «قدّمت عليها».');
+  const pk = portalOf(j.url);
+  const pa = pk && S.config.portals && S.config.portals[pk];
   const rows = [
+    pa && pa.on && pa.user ? ['حسابك في ' + (PORTALS.find((x) => x[0] === pk) || [0, pk])[1], pa.user] : null,
     ['اسم الوظيفة', j.title.replace(/^Speculative application – /, '')],
     ['الاسم الكامل', p.name],
     ['الإيميل', S.config.gmail.user],
@@ -627,7 +630,7 @@ function guide(j) {
     ['متى تقدر تبدأ', p.noticePeriod],
     ['لينكدإن', p.linkedin],
     ['ملف السيرة', S.config.cv.originalName],
-  ].filter((r) => r[1]);
+  ].filter((r) => r && r[1]);
   return `<div class="guide">
     <h3>ما لها إيميل تقديم — قدّم أنت من موقعهم</h3>
     <ol>${steps.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>
@@ -704,6 +707,15 @@ function problems() {
   <div class="acts"><button class="btn ghost" id="copyReport">انسخ تقرير المشكلة</button></div>`;
 }
 
+const PORTALS = [['tawteen', 'منصة توطين'], ['kwader', 'كوادر (وزارة الطاقة والمعادن)'], ['talilink', 'تاليلنك']];
+const PORTAL_HOST = { 'tawteen.om': 'tawteen', 'kwader.mem.gov.om': 'kwader', 'app.talilink.com': 'talilink' };
+function portalOf(url) {
+  try {
+    return PORTAL_HOST[new URL(url).hostname.replace(/^www\./, '')] || '';
+  } catch (_) {
+    return '';
+  }
+}
 function settings() {
   const c = S.config;
   const p = c.profile;
@@ -721,6 +733,9 @@ function settings() {
   <label>صوت راصد<select id="s_voiceName"><option value="">تلقائي (أحسن صوت عربي موجود)</option>${(window.speechSynthesis ? speechSynthesis.getVoices() : []).filter((v) => /^ar/i.test(v.lang)).map((v) => `<option value="${esc(v.name)}" ${v.name === (localStorage.getItem('rasidVoice') || '') ? 'selected' : ''}>${esc(v.name)}</option>`).join('')}</select></label>
   <div class="acts" style="margin-bottom:1rem"><button class="btn ghost sm" id="voiceTest">جرّب الصوت</button></div>
   <p class="note">أحسن الأصوات هي اللي في اسمها Natural أو Online، وتطلع في Microsoft Edge فقط. لو القائمة فاضية أو الصوت آلي، معناه راصد مفتوح في متصفح ثاني.</p>
+  <h2>حساباتك في مواقع التوظيف</h2>
+  <p class="lead">علّم على المواقع اللي عندك فيها حساب واكتب اسم المستخدم. البرنامج يقرا وظايفها العامة، ولما تكون الوظيفة تتقدّم عليها من موقع، يعرض لك حسابك جاهز للنسخ. كلمة السر ما أحفظها: تدخل بها أنت في موقعهم.</p>
+  ${PORTALS.map(([k, name]) => `<div class="grid2"><label class="check"><input type="checkbox" id="p_${k}_on" ${(c.portals && c.portals[k] && c.portals[k].on) ? 'checked' : ''}> ${name}</label><label>اسم المستخدم<input id="p_${k}_user" dir="ltr" value="${esc((c.portals && c.portals[k] && c.portals[k].user) || '')}"></label></div>`).join('')}
   <h2>تنبيه على الجوال</h2>
   <p class="lead">يرسل لك «ايش الجديد» على الإيميل، ويوصلك تنبيه من تطبيق الإيميل في جوالك. ما يرسل شي لو ما في جديد.</p>
   <div class="grid2">
@@ -841,6 +856,7 @@ document.addEventListener('click', (e) => {
       searchHour: v('s_searchHour'), inboxEveryMinutes: v('s_inboxEveryMinutes'), followUpDays: v('s_followUpDays'),
       gmail: { user: v('s_user'), appPassword: v('s_pass') },
       profile: Object.fromEntries(PF.map((k) => [k, v('s_' + k)])),
+      portals: Object.fromEntries(PORTALS.map(([k]) => [k, { on: $('#p_' + k + '_on').checked, user: v('p_' + k + '_user') }])),
     };
     if ($('#s_updateRepo')) body.updateRepo = v('s_updateRepo');
     return act(t, async () => {

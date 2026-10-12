@@ -32,6 +32,8 @@ const DEFAULTS = {
       extra: '',
     },
     cv: { file: '', originalName: '', text: '' },
+    // حساباتك في مواقع التوظيف (اسم المستخدم فقط، بدون كلمة السر): يظهر في دليل التقديم اليدوي
+    portals: { tawteen: { on: false, user: '' }, kwader: { on: false, user: '' }, talilink: { on: false, user: '' } },
     mode: 'auto', // auto = يرسل تلقائياً بدون ما يرجع لك | review = تراجع قبل الإرسال
     voice: true, // الموجز الصوتي عند فتح البرنامج
     digestEveryHours: 6, // ملخص على الإيميل كل كم ساعة (0 = لا)

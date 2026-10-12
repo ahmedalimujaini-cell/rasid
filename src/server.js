@@ -122,6 +122,14 @@ function applyConfig(body) {
   if (['auto', 'en', 'ar'].includes(body.letterLanguage)) c.letterLanguage = body.letterLanguage;
   if (typeof body.voice === 'boolean') c.voice = body.voice;
   if (typeof body.autoAI === 'boolean') c.autoAI = body.autoAI;
+  if (body.portals && typeof body.portals === 'object') {
+    for (const k of Object.keys(c.portals)) {
+      const x = body.portals[k];
+      if (!x || typeof x !== 'object') continue;
+      if (typeof x.on === 'boolean') c.portals[k].on = x.on;
+      if (typeof x.user === 'string') c.portals[k].user = x.user.trim().slice(0, 120);
+    }
+  }
   if ('digestEveryHours' in body) c.digestEveryHours = [0, 6, 12, 24].includes(Number(body.digestEveryHours)) ? Number(body.digestEveryHours) : c.digestEveryHours;
   if (typeof body.notifyEmail === 'string' && (body.notifyEmail.trim() === '' || /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(body.notifyEmail.trim()))) c.notifyEmail = body.notifyEmail.trim();
   if (typeof body.updateRepo === 'string') c.updateRepo = body.updateRepo.trim().replace(/^https?:\/\/github\.com\//i, '').replace(/\.git$|\/$/g, '').slice(0, 120);

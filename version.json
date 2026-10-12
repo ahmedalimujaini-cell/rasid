@@ -1,7 +1,7 @@
 {
-  "build": 18,
+  "build": 19,
   "date": "2026-10-12",
-  "notes": "ما أقدّم على وظيفة انتهى موعدها، ورسائل التقديم العامة صارت ٣ صيغ موزّعة على الشركات بدل نص واحد.",
+  "notes": "البحث صار يفتح كوادر (وزارة الطاقة) وتوطين وبوابات تاليلنك بنفسه ويقرا وظايفها، مع ترقية: ما أقدّم على وظيفة انتهى موعدها، ورسائل التقديم العامة ٣ صيغ.",
   "files": {
     "package.json": "5de6eee528f3d817e065377265060c5b84ff74b28f5ec03acdb7d0267ca18545",
     "README.md": "51d2e6e29ab72e9b8650d3f517a610e16f43598d01cfe9e8ebbda3a02aff6f23",
@@ -14,7 +14,7 @@
     "src/brief.js": "bc7c4d0caf20e3d8e151353714d860cae714b208d5f2cd488151c02731c7043f",
     "src/chat.js": "4686f21fe21ca9987986cd45bec9960ae51bb9563a0bbd34ce60f5869475df46",
     "src/digest.js": "8430de6bbb988bf30cdf773ba6a538ce5d27d4bccf755ac889e9c0c70bd2871a",
-    "src/discover.js": "7fcdac6d720cb262e11e5e764d56fbcfd75755fdf38ed31f76c40e5956acff49",
+    "src/discover.js": "c80035b0580d4fd75ed636ed068d6ff46bb7f30f44fc133fc3e367a5bbe5d84a",
     "src/draft.js": "4854dfe645556ba5c9de4a5e49d2f8185a25495860e3b8a3d0a5c73b6a40a3a0",
     "src/inbox.js": "914ec3b231c46a29bb6b42852d06803196a6a4620a140ea9d110709c8ad4fd89",
     "src/launch.js": "969b2df5d8d673e9dae0119e4505e7e21c5cbfcc64b7654f410f3debd4819db5",
@@ -36,6 +36,6 @@
     "scripts/release.js": "3898cac6fb2cc9447e72d8b9cfb931747ac30cd92c20333d0d26af5b27697d49",
     "test/mailfix.js": "777512b8d558dcc3d1b3d9e6a367ff36c48f2deea0b5edcd0d23f0c590fa6617",
     "test/mock.js": "121fef9ecff3748518bb70967ff5414807c041d7ffbc03c3939d6a6844fdddcd",
-    "test/smoke.js": "db058d72ebf3da9ed98c9dc33f58fe4a6b17fb243d25f16989010c00a9cdd1af"
+    "test/smoke.js": "8b37fa5fcc81f10e3af34c012f5fc62fc1384009aa67a670f446187234d8e6aa"
   }
 }

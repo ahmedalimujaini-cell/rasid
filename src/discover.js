@@ -13,7 +13,7 @@ const PASSES = [
     key: 'boards',
     label: 'مواقع التوظيف',
     focus:
-      'Job boards filtered to Oman and posted in the last 30 days: LinkedIn Jobs, Bayt, GulfTalent, Naukrigulf, Indeed Oman, Tanqeeb, Oman Jobs / OmanJobVacancy, and any board specialised in his sector. Search many keyword variants of his job titles in English and Arabic, including junior, assistant, graduate and trainee variants when his experience is short.',
+      'Job boards filtered to Oman and posted in the last 30 days: LinkedIn Jobs, Bayt, GulfTalent, Naukrigulf, Indeed Oman, Tanqeeb, Oman Jobs / OmanJobVacancy, and any board specialised in his sector. Search many keyword variants of his job titles in English and Arabic, including junior, assistant, graduate and trainee variants when his experience is short. Also open these Omani portals directly and read their public listings: Kwader (https://kwader.mem.gov.om/jobs, the Ministry of Energy and Minerals employment portal for the oil and gas sector; each listing shows company, minimum qualifications and deadline, and applying there redirects to the operator\'s own site, so give that operator page as the url and describe the redirect in applySteps) and Tawteen (https://tawteen.om/, the Ministry of Labour national employment platform; if its listings do not load for you, say so in notes instead of guessing). Employer careers pages hosted on app.talilink.com are real applications portals: list them as portal jobs.',
   },
   {
     key: 'public',

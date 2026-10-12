@@ -423,7 +423,22 @@ const ok = (name, cond) => {
   ok('config saved, values clamped, password never returned', st.config.mode === 'review' && st.config.dailyCap === 30 && !('appPassword' in st.config.gmail) && st.config.gmail.hasPassword);
   resp = await fetch(base + '/api/config', { method: 'POST', headers: { 'X-Rasid': '1' }, body: JSON.stringify({ portals: { kwader: { on: true, user: ' ahmed1 ' }, evil: { on: true, user: 'x' } } }) });
   const pp = (await resp.json()).config.portals;
-  ok('portal accounts: saved (username only), unknown portals ignored', pp.kwader.on && pp.kwader.user === 'ahmed1' && !pp.evil && Object.keys(pp).length === 3 && !JSON.stringify(pp).includes('assword'));
+  ok('portal accounts: saved, unknown portals ignored, password never returned to the UI', pp.kwader.on && pp.kwader.user === 'ahmed1' && !pp.evil && Object.keys(pp).length === 3 && !('pass' in pp.kwader) && pp.kwader.hasPass === false);
+  resp = await fetch(base + '/api/config', { method: 'POST', headers: { 'X-Rasid': '1' }, body: JSON.stringify({ portals: { kwader: { pass: 'S3cret-pw!' } } }) });
+  const st2 = await resp.json();
+  ok('portal password: stored locally, hidden from the UI state, blank keeps it, never in Claude tool output', !JSON.stringify(st2).includes('S3cret-pw!') && st2.config.portals.kwader.hasPass && require('../src/portals').creds('kwader').pass === 'S3cret-pw!' && (await fetch(base + '/api/config', { method: 'POST', headers: { 'X-Rasid': '1' }, body: JSON.stringify({ portals: { kwader: { pass: '' } } }) }).then((r) => r.json())).config.portals.kwader.hasPass && !JSON.stringify(await require('../src/tools').call('program_status', {}, { said: 'x', deps: null, done: [], failed: [] })).includes('S3cret-pw!'));
+  {
+    const P = require('../src/portals');
+    const now = Date.now();
+    const mails = [
+      { from: 'noreply@talilink.com', date: new Date(now - 30000), subject: 'Your verification code', text: 'Your code is 482913. It expires in 10 minutes.' },
+      { from: 'promo@shop.example', date: new Date(now - 10000), subject: 'Code', text: 'Your code is 111111' },
+      { from: 'no-reply@mem.gov.om', date: new Date(now - 3600000), subject: 'old', text: 'OTP: 999999' },
+      { from: 'attacker@talilink.com.evil.net', date: new Date(now - 5000), subject: 'code', text: 'Your code is 000000' },
+    ];
+    ok('OTP: only the newest code from that site\'s own sender, never from other senders or look-alike domains', P.pickOtp(mails, 'talilink', now - 120000) === '482913' && P.pickOtp(mails, 'kwader', now - 120000) === '' && P.pickOtp(mails, 'tawteen', now - 120000) === '');
+    ok('OTP extraction: keyword-near, Arabic digits, lone six digits, ignores years', P.extractCode('رمز التحقق: ٤٥٦٧٨٩') === '456789' && P.extractCode('Use 123456 to sign in') === '123456' && P.extractCode('In 2026 we changed things') === '');
+  }
   resp = await fetch(base + '/../src/store.js');
   ok('static path traversal blocked', resp.status === 404);
   pipeline.status.frozen = true;

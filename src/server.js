@@ -61,6 +61,10 @@ function publicState() {
   cfg.cv.hasText = !!cfg.cv.text;
   delete cfg.cv.text;
   delete cfg.smtp;
+  for (const k of Object.keys(cfg.portals || {})) {
+    cfg.portals[k].hasPass = !!cfg.portals[k].pass;
+    delete cfg.portals[k].pass;
+  }
   return {
     config: cfg,
     jobs: d.jobs,
@@ -128,6 +132,7 @@ function applyConfig(body) {
       if (!x || typeof x !== 'object') continue;
       if (typeof x.on === 'boolean') c.portals[k].on = x.on;
       if (typeof x.user === 'string') c.portals[k].user = x.user.trim().slice(0, 120);
+      if (typeof x.pass === 'string' && x.pass) c.portals[k].pass = x.pass.slice(0, 200); // فاضي = خلّ المحفوظة
     }
   }
   if ('digestEveryHours' in body) c.digestEveryHours = [0, 6, 12, 24].includes(Number(body.digestEveryHours)) ? Number(body.digestEveryHours) : c.digestEveryHours;

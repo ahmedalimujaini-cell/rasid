@@ -1,7 +1,7 @@
 {
-  "build": 20,
+  "build": 21,
   "date": "2026-10-12",
-  "notes": "أضفت في الإعدادات «حساباتك في مواقع التوظيف» (توطين، كوادر، تاليلنك) وراصد يقرا وظايفها. وما أقدّم على وظيفة انتهى موعدها، ورسائل التقديم العامة ٣ صيغ.",
+  "notes": "أضفت كلمة السر لحساباتك في توطين وكوادر وتاليلنك (محفوظة على جهازك بس)، وقراءة رمز التحقق من جيميلك لهالمواقع فقط. وما أقدّم على وظيفة انتهى موعدها، والرسائل العامة ٣ صيغ.",
   "files": {
     "package.json": "5de6eee528f3d817e065377265060c5b84ff74b28f5ec03acdb7d0267ca18545",
     "README.md": "51d2e6e29ab72e9b8650d3f517a610e16f43598d01cfe9e8ebbda3a02aff6f23",
@@ -22,13 +22,14 @@
     "src/mailer.js": "62f742d24f013ca6ae05f67953f93c87aadb51d5f0b48007ce1fa46d3917d27c",
     "src/mcp.js": "70016dff5be2279c4d7ba4d79f6e54b0cc0a5f1922fcbe9cdafb69a09a590c75",
     "src/pipeline.js": "9aff4d9f100a8b9da021a8e3f329054412a78c5a87dd63be060db2156f4f2c37",
-    "src/server.js": "13e2a672d0cd9ac8a10b40576880b48c05c00b1ae5840fcd103192b8a99b00e8",
-    "src/store.js": "6197c765b4c3a1ffd0228c3c038e23b5bda0ba0ce4c7cf82f6c4166e1b608191",
+    "src/portals.js": "47d3753d6a5b2a5c9f7d19e0b1bd9a819c2f20a8cb252e74a182cba25e80a578",
+    "src/server.js": "cc38972b73fc060b067a540d953a485c62a623732136123f19b2d15525f5622c",
+    "src/store.js": "79e8487985f4fa1b19982cf2bdd80c211061763d15bebc838b48b40c4dedda3e",
     "src/tooldefs.js": "9b2fd406f0ff15ef40135b3c58d6fa9360ce52dd575bfb52cd3bc383e119f323",
     "src/tools.js": "e4f62189656087d7654c22e885b4ce5ae2777667ba1024ab0d0e92b31878e58a",
     "src/update.js": "14db78d02e25aa97da5f89569d36d47e265b1f009115af5b79117c03e4af6a34",
     "src/window.js": "0209e1210df5fd017b9a4664492ce150fed22bdf1fbf8405996a9d640fa98563",
-    "public/app.js": "7e4a899b7c4d35276389a16d2f7b9054ad2acc5bf278613cc0e61ae13683320d",
+    "public/app.js": "a84eae555ac1b3fb878b9000dea5990ec0cefcdd05502deea017cfc3cb43cfeb",
     "public/icon.png": "a27ffc08faf19536305057d034bea4629202bdae047b146b2904f201033555f9",
     "public/index.html": "c8bdc2826520ea58c0e9fee41d8b8f15689d4aa9e44a2dd999c8f16d51a68990",
     "public/manifest.webmanifest": "b0fed68868432465758d4204e723717f7227f1dd667246d612dcc9c3e736e956",
@@ -36,6 +37,6 @@
     "scripts/release.js": "3898cac6fb2cc9447e72d8b9cfb931747ac30cd92c20333d0d26af5b27697d49",
     "test/mailfix.js": "777512b8d558dcc3d1b3d9e6a367ff36c48f2deea0b5edcd0d23f0c590fa6617",
     "test/mock.js": "121fef9ecff3748518bb70967ff5414807c041d7ffbc03c3939d6a6844fdddcd",
-    "test/smoke.js": "fbf56318253c24402d2b2dc247e0ae1fe823b912fb2c0bee24dc037b718b124a"
+    "test/smoke.js": "f736cf7efaf375d3940cb446cc97d4045e43269f2af1c3e2bd41cdb464b61f61"
   }
 }

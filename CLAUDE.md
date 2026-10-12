@@ -14,6 +14,7 @@ installs, and restarts). Be conservative.
 - `src/mailer.js` sending · `src/inbox.js` reply tracking · `src/brief.js` spoken brief · `src/digest.js` email summary
 - `src/chat.js` in-app chat: a Claude agent with tools · `src/tooldefs.js` tool definitions · `src/tools.js` tool dispatcher · `src/mcp.js` stdio MCP bridge Claude launches (proxies to `/api/tool/*`) · `src/actions.js` state-changing actions and their guards · `src/mailbox.js` whole-Gmail search/read (read-only IMAP) · `src/ai.js` the `claude -p` wrapper
 - `src/update.js` self-update from this repo (`version.json` lists sha256 per file): stage+verify first, then `pipeline.freeze()` stops everything, apply, restart · `src/launch.js`, `src/window.js` desktop launcher
+- `src/portals.js` job-portal accounts (Tawteen, Kwader, Talilink): local credentials and a read-only OTP reader (from the portal's own sender domains only)
 - `public/` dashboard (plain JS, no build step) · `test/smoke.js` end-to-end checks with `test/mock.js`
 - `install.ps1`, `autostart.ps1`, `start.ps1` Windows scripts: keep them ASCII-only.
 
@@ -33,4 +34,5 @@ installs, and restarts). Be conservative.
 - The updater must keep its sha256, path and `node --check` validation and its backup.
 - Do not add paid services or new npm dependencies without the owner asking. Free tooling only.
 - Keep Claude usage low: pick the lightest model/effort that does the job (`model`/`effort` in `ai.askJson`), no automatic Claude calls outside the daily run, and keep the daily run stopping at its target.
+- Portal passwords stay local in `data/` like the Gmail app password: never in the repo, never returned by `publicState`, never in any Claude prompt or tool result. OTP codes are extracted by code (regex), from the portal's own sender domains only, read-only; the mail text is never handed to Claude.
 - UI text is Gulf Arabic, short and plain. Do not redesign screens unless asked.

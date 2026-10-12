@@ -1,7 +1,7 @@
 {
-  "build": 21,
+  "build": 22,
   "date": "2026-10-12",
-  "notes": "أضفت كلمة السر لحساباتك في توطين وكوادر وتاليلنك (محفوظة على جهازك بس)، وقراءة رمز التحقق من جيميلك لهالمواقع فقط. وما أقدّم على وظيفة انتهى موعدها، والرسائل العامة ٣ صيغ.",
+  "notes": "صار «حسابات المواقع» قسم لحاله تحت «كلّم راصد» (توطين، كوادر، تاليلنك: اسم المستخدم وكلمة السر)، وطلع من الإعدادات.",
   "files": {
     "package.json": "5de6eee528f3d817e065377265060c5b84ff74b28f5ec03acdb7d0267ca18545",
     "README.md": "51d2e6e29ab72e9b8650d3f517a610e16f43598d01cfe9e8ebbda3a02aff6f23",
@@ -29,9 +29,9 @@
     "src/tools.js": "e4f62189656087d7654c22e885b4ce5ae2777667ba1024ab0d0e92b31878e58a",
     "src/update.js": "14db78d02e25aa97da5f89569d36d47e265b1f009115af5b79117c03e4af6a34",
     "src/window.js": "0209e1210df5fd017b9a4664492ce150fed22bdf1fbf8405996a9d640fa98563",
-    "public/app.js": "a84eae555ac1b3fb878b9000dea5990ec0cefcdd05502deea017cfc3cb43cfeb",
+    "public/app.js": "59c18ffe0a2bb2ac93a04ef4059a7640aba93ea73ab60ec5943f37c613a687c7",
     "public/icon.png": "a27ffc08faf19536305057d034bea4629202bdae047b146b2904f201033555f9",
-    "public/index.html": "c8bdc2826520ea58c0e9fee41d8b8f15689d4aa9e44a2dd999c8f16d51a68990",
+    "public/index.html": "46445c21a2ea655a3e2eec6ced7c2fac79c0787a686c63b6c62a62ac9cf83284",
     "public/manifest.webmanifest": "b0fed68868432465758d4204e723717f7227f1dd667246d612dcc9c3e736e956",
     "public/style.css": "20681e5d5681c953387db2e05d07dd34e8990e69c0822ef999e57f61842f78d3",
     "scripts/release.js": "3898cac6fb2cc9447e72d8b9cfb931747ac30cd92c20333d0d26af5b27697d49",

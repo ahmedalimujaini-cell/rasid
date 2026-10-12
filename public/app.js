@@ -393,7 +393,7 @@ function render(railOnly) {
   const a = document.activeElement;
   if (a && $('#main').contains(a) && /INPUT|TEXTAREA|SELECT/.test(a.tagName)) return;
   // نعيد الرسم بس لو شي تغيّر فعلاً: بدون رمشة، والقوائم المفتوحة تبقى مثل ما هي
-  const html = { brief, chat: chatView, jobs, replies, news, problems, settings }[view]();
+  const html = { brief, chat: chatView, portals: portalsView, jobs, replies, news, problems, settings }[view]();
   if (html === mainHtmlLast && view === viewLast) return;
   const main = $('#main');
   const changedView = view !== viewLast;
@@ -716,6 +716,15 @@ function portalOf(url) {
     return '';
   }
 }
+function portalsView() {
+  const c = S.config;
+  return `<h1 class="page-h">حسابات المواقع</h1><div class="set">
+  <p class="lead">علّم على المواقع اللي عندك فيها حساب، واكتب اسم المستخدم وكلمة السر. كلمة السر تنحفظ على جهازك بس (مثل كلمة سر الجيميل)، وما تنرسل لـClaude ولا تطلع في الشاشة. ورمز التحقق (OTP) يقراه راصد من جيميلك، ومن رسائل هالمواقع بس، قراءة فقط. راصد يقرا وظايف هالمواقع، ولما تكون الوظيفة تتقدّم عليها من موقع، يعرض لك حسابك جاهز للنسخ.</p>
+  ${PORTALS.map(([k, name]) => `<div class="grid2"><label class="check"><input type="checkbox" id="p_${k}_on" ${(c.portals && c.portals[k] && c.portals[k].on) ? 'checked' : ''}> ${name}</label><label>اسم المستخدم<input id="p_${k}_user" dir="ltr" value="${esc((c.portals && c.portals[k] && c.portals[k].user) || '')}" autocomplete="off"></label><label>كلمة السر <small>${c.portals && c.portals[k] && c.portals[k].hasPass ? 'محفوظة — اكتب وحدة جديدة لو تبغى تغيّرها' : 'ما انحفظت بعد'}</small><input type="password" id="p_${k}_pass" dir="ltr" autocomplete="new-password"></label></div>`).join('')}
+  <div class="acts"><button class="btn primary" id="savePortals">احفظ الحسابات</button></div>
+  </div>`;
+}
+
 function settings() {
   const c = S.config;
   const p = c.profile;
@@ -733,9 +742,6 @@ function settings() {
   <label>صوت راصد<select id="s_voiceName"><option value="">تلقائي (أحسن صوت عربي موجود)</option>${(window.speechSynthesis ? speechSynthesis.getVoices() : []).filter((v) => /^ar/i.test(v.lang)).map((v) => `<option value="${esc(v.name)}" ${v.name === (localStorage.getItem('rasidVoice') || '') ? 'selected' : ''}>${esc(v.name)}</option>`).join('')}</select></label>
   <div class="acts" style="margin-bottom:1rem"><button class="btn ghost sm" id="voiceTest">جرّب الصوت</button></div>
   <p class="note">أحسن الأصوات هي اللي في اسمها Natural أو Online، وتطلع في Microsoft Edge فقط. لو القائمة فاضية أو الصوت آلي، معناه راصد مفتوح في متصفح ثاني.</p>
-  <h2>حساباتك في مواقع التوظيف</h2>
-  <p class="lead">علّم على المواقع اللي عندك فيها حساب واكتب اسم المستخدم. البرنامج يقرا وظايفها العامة، ولما تكون الوظيفة تتقدّم عليها من موقع، يعرض لك حسابك جاهز للنسخ. كلمة السر تنحفظ على جهازك بس (مثل كلمة سر الجيميل)، وما تنرسل لـClaude ولا تطلع في الشاشة. ورمز التحقق (OTP) يقراه راصد من جيميلك، ومن رسائل هالمواقع بس، قراءة فقط.</p>
-  ${PORTALS.map(([k, name]) => `<div class="grid2"><label class="check"><input type="checkbox" id="p_${k}_on" ${(c.portals && c.portals[k] && c.portals[k].on) ? 'checked' : ''}> ${name}</label><label>اسم المستخدم<input id="p_${k}_user" dir="ltr" value="${esc((c.portals && c.portals[k] && c.portals[k].user) || '')}" autocomplete="off"></label><label>كلمة السر <small>${c.portals && c.portals[k] && c.portals[k].hasPass ? 'محفوظة — اكتب وحدة جديدة لو تبغى تغيّرها' : 'ما انحفظت بعد'}</small><input type="password" id="p_${k}_pass" dir="ltr" autocomplete="new-password"></label></div>`).join('')}
   <h2>تنبيه على الجوال</h2>
   <p class="lead">يرسل لك «ايش الجديد» على الإيميل، ويوصلك تنبيه من تطبيق الإيميل في جوالك. ما يرسل شي لو ما في جديد.</p>
   <div class="grid2">
@@ -848,6 +854,10 @@ document.addEventListener('click', (e) => {
     if (ds.act === 'draft' || ds.act === 'followup') toast('يكتب… دقيقة تقريباً.');
     return act(t, () => call(`/api/jobs/${id}/${ds.act}`), { skip: 'تجاهلتها.', done: 'سجّلتها.', draft: 'الرسالة جاهزة.', followup: 'المتابعة جاهزة — راجعها وأرسلها.' }[ds.act]);
   }
+  if (t.id === 'savePortals') {
+    const portals = Object.fromEntries(PORTALS.map(([k]) => [k, { on: $('#p_' + k + '_on').checked, user: $('#p_' + k + '_user').value, pass: $('#p_' + k + '_pass').value }]));
+    return act(t, () => call('/api/config', { portals }).then(refresh), 'انحفظت.');
+  }
   if (t.id === 'saveSet') {
     const v = (id) => $('#' + id).value;
     try { localStorage.setItem('rasidVoice', v('s_voiceName')); } catch (_) {}
@@ -856,7 +866,6 @@ document.addEventListener('click', (e) => {
       searchHour: v('s_searchHour'), inboxEveryMinutes: v('s_inboxEveryMinutes'), followUpDays: v('s_followUpDays'),
       gmail: { user: v('s_user'), appPassword: v('s_pass') },
       profile: Object.fromEntries(PF.map((k) => [k, v('s_' + k)])),
-      portals: Object.fromEntries(PORTALS.map(([k]) => [k, { on: $('#p_' + k + '_on').checked, user: v('p_' + k + '_user'), pass: v('p_' + k + '_pass') }])),
     };
     if ($('#s_updateRepo')) body.updateRepo = v('s_updateRepo');
     return act(t, async () => {

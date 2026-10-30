@@ -1,7 +1,7 @@
 {
-  "build": 23,
-  "date": "2026-10-23",
-  "notes": "وقّفت قراءة كوادر وتوطين الآلية لأن شروطهم تمنعها، وتقدّم عليهم أنت. فيه كل التحديثات من قبل: حسابات المواقع تحت «كلّم راصد»، ما أقدّم على وظيفة منتهية، والرسائل العامة ٣ صيغ.",
+  "build": 24,
+  "date": "2026-10-30",
+  "notes": "رسالة الإيميل صارت بس: الوظائف اللي قدّمت عليها، ومسميات الوظائف اللي تحتاج تقدّم عليها بنفسك. بدون مشاكل.",
   "files": {
     "package.json": "5de6eee528f3d817e065377265060c5b84ff74b28f5ec03acdb7d0267ca18545",
     "README.md": "51d2e6e29ab72e9b8650d3f517a610e16f43598d01cfe9e8ebbda3a02aff6f23",
@@ -13,7 +13,7 @@
     "src/ai.js": "d3f57a5a5b6ea806e80117c1645cafda0c42ca09c076820610636d93ab5cda49",
     "src/brief.js": "bc7c4d0caf20e3d8e151353714d860cae714b208d5f2cd488151c02731c7043f",
     "src/chat.js": "4686f21fe21ca9987986cd45bec9960ae51bb9563a0bbd34ce60f5869475df46",
-    "src/digest.js": "8430de6bbb988bf30cdf773ba6a538ce5d27d4bccf755ac889e9c0c70bd2871a",
+    "src/digest.js": "79a87646afcd839048d7973493d5bdacdba126b425f9255ac624d228bc13019a",
     "src/discover.js": "7eb5ec42840031de847b9f45ef7a33ba47836c4c4c5c6271a298966604e8b9d3",
     "src/draft.js": "4854dfe645556ba5c9de4a5e49d2f8185a25495860e3b8a3d0a5c73b6a40a3a0",
     "src/inbox.js": "914ec3b231c46a29bb6b42852d06803196a6a4620a140ea9d110709c8ad4fd89",
@@ -37,6 +37,6 @@
     "scripts/release.js": "3898cac6fb2cc9447e72d8b9cfb931747ac30cd92c20333d0d26af5b27697d49",
     "test/mailfix.js": "777512b8d558dcc3d1b3d9e6a367ff36c48f2deea0b5edcd0d23f0c590fa6617",
     "test/mock.js": "121fef9ecff3748518bb70967ff5414807c041d7ffbc03c3939d6a6844fdddcd",
-    "test/smoke.js": "27bb6d4b1fac7d908c9ba718abf6fe13f21efa942ae601a6cb9403e0e8254f59"
+    "test/smoke.js": "2e815d30143b5eee11cb6641010d496674dcfaf2ec1284f7e9fc12c10cbed2cf"
   }
 }

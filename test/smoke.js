@@ -201,8 +201,15 @@ const ok = (name, cond) => {
   d.config.digestEveryHours = 12;
   ok('digest is due after the interval', digest.due() === true);
   const before = got.length;
+  d.state.lastDigest = Date.now() - 13 * 3600000;
   d.problems.unshift({ id: 'zz', key: 'x', t: Date.now(), text: 'مشكلة اختبار', fix: '', resolved: false });
-  ok('digest emails the summary to his own address', (await digest.run()) === true && got.length === before + 1 && got[got.length - 1].subject.startsWith('راصد:') && got[got.length - 1].to.text === 'me@gmail.com' && digest.due() === false);
+  ok('digest: a problem alone sends no email', (await digest.run()) === false && got.length === before);
+  d.state.lastDigest = Date.now() - 13 * 3600000;
+  d.jobs.push({ id: 'dg1', title: 'Junior Web Developer', company: 'Digest Co', status: 'sent', sentAt: Date.now(), foundAt: Date.now() }, { id: 'dg2', title: 'IT Trainee', company: 'Portal Co', status: 'manual', foundAt: Date.now() });
+  const dgSent = await digest.run();
+  const dg = got[got.length - 1];
+  ok('digest emails only what he applied for and the titles he must apply for himself', dgSent === true && got.length === before + 1 && dg.subject.startsWith('راصد:') && dg.to.text === 'me@gmail.com' && dg.text.includes('قدّمت لك على') && dg.text.includes('Junior Web Developer — Digest Co') && dg.text.includes('تحتاج تقدّم عليها بنفسك') && dg.text.includes('- IT Trainee') && !dg.text.includes('Portal Co') && !dg.text.includes('مشكلة') && !dg.subject.includes('مشكلة') && digest.due() === false);
+  d.jobs = d.jobs.filter((j) => j.id !== 'dg1' && j.id !== 'dg2');
   d.problems.shift();
   d.config.digestEveryHours = 0;
   ok('digest off when set to 0', digest.due() === false);

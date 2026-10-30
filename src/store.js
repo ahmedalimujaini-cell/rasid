@@ -36,6 +36,8 @@ const DEFAULTS = {
     portals: { tawteen: { on: false, user: '', pass: '' }, kwader: { on: false, user: '', pass: '' }, talilink: { on: false, user: '', pass: '' } },
     mode: 'auto', // auto = يرسل تلقائياً بدون ما يرجع لك | review = تراجع قبل الإرسال
     voice: true, // الموجز الصوتي عند فتح البرنامج
+    chatVoice: false, // «كلّم راصد» يرد بالصوت لما تكلّمه بالمايك (تشغّله أو تطفيه من صفحة المحادثة)
+    devLink: { url: '', token: '' }, // ربط راصد بـClaude Code لطلبات التعديل (في الحساب الرئيسي بس، محلي: المفتاح ما يطلع للواجهة ولا لـClaude)
     digestEveryHours: 6, // ملخص على الإيميل كل كم ساعة (0 = لا)
     notifyEmail: '', // وين يروح الملخص (فاضي = نفس الجيميل)
     minFit: 70,
@@ -57,7 +59,7 @@ const DEFAULTS = {
   news: [],
   brief: null, // { text, at, heard }
   chat: [],
-  state: { lastSearch: 0, lastInbox: 0, lastNews: 0, lastUid: 0, uidValidity: 0, lastBriefHeard: 0, briefDirty: false, dirIndex: 0, lastDigest: 0 },
+  state: { lastSearch: 0, lastInbox: 0, lastNews: 0, lastUid: 0, uidValidity: 0, lastBriefHeard: 0, briefDirty: false, dirIndex: 0, lastDigest: 0, devRequests: [] },
 };
 
 const als = new AsyncLocalStorage();

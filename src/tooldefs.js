@@ -47,11 +47,19 @@ module.exports = [
       'add_job {company, title, email, url, location, companyAbout, requirements} add a company so an application is written and sent (email only if the user typed it; empty email = manual application); ' +
       'send {jobId} send a ready application now (ONLY when the user explicitly says to send); ' +
       'skip {jobId}; restore {jobId}; mark_done {jobId} (he applied himself on the site); ' +
-      'settings {values:{mode:"auto"|"review", minFit, dailyCap (daily target: the search stops once this many email applications are ready, and at most this many are sent per day), searchHour (0-23, the hour of the once-a-day search), inboxEveryMinutes, followUpDays, letterLanguage:"auto"|"en"|"ar", voice, digestEveryHours, autoAI (true = search by itself once a day at searchHour; false = search only when he asks, to save his Claude usage)}}; ' +
+      'settings {values:{mode:"auto"|"review", minFit, dailyCap (daily target: the search stops once this many email applications are ready, and at most this many are sent per day), searchHour (0-23, the hour of the once-a-day search), inboxEveryMinutes, followUpDays, letterLanguage:"auto"|"en"|"ar", voice (spoken brief when the app opens), chatVoice (true = read chat replies aloud when he talks by microphone; false = text only), digestEveryHours, autoAI (true = search by itself once a day at searchHour; false = search only when he asks, to save his Claude usage)}}; ' +
       'profile {values:{nickname, birthDate, phone, location, linkedin, headline, summary, targets, avoid, noticePeriod, extra}}; ' +
       'letter_notes {text} standing instruction for all future application emails; ' +
       'run {what:"search"|"inbox"|"news"} start a job search, check for new replies now, or refresh news. ' +
       'Returns what was done, or the reason it was refused.',
     inputSchema: { type: 'object', properties: { action: { type: 'object', description: 'The action object, with its type field.' } }, required: ['action'] },
+  },
+  {
+    name: 'request_change',
+    description:
+      "Send his request to Rasid's developer (Claude Code in the cloud) when it needs a change to the PROGRAM ITSELF that do_action cannot make: what the email summary or the spoken brief contain, the screens, how the search or the letters work, a new feature, a bug. " +
+      'The developer implements it, tests it and publishes an update; Rasid installs it by itself within minutes and the update note says what changed. ' +
+      'Use it at once instead of saying you cannot. Do not use it for settings, profile, letters or jobs (do_action does those). Returns a follow link.',
+    inputSchema: { type: 'object', properties: { request: str('What he wants changed, complete and clear, in Arabic: the current behaviour, the wanted behaviour, and any example he gave.') }, required: ['request'] },
   },
 ];

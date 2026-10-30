@@ -96,12 +96,30 @@ const ok = (name, cond) => {
   ok('program_status never exposes the Gmail password', t.gmail_account === 'me@gmail.com' && !JSON.stringify(t).includes('abcd'));
   t = await chat.callTool('job_details', { id: firstId });
   ok('job_details includes the full application email', t.application_email.body.includes('Short version'));
+  ok('chat voice reply: off by default, and the chat can switch it on and off', d.config.chatVoice === false && !!(await chat.callTool('do_action', { action: { type: 'settings', values: { chatVoice: true } } })).done && d.config.chatVoice === true && !!(await chat.callTool('do_action', { action: { type: 'settings', values: { chatVoice: false } } })).done && d.config.chatVoice === false);
+  ok('the chat is told to act, and to send program changes to the developer instead of refusing', /Never answer that you cannot/.test(chat.prompt(d, 'x', false)) && /request_change/.test(chat.prompt(d, 'x', false)));
+
+  // طلبات تعديل البرنامج: تروح لـClaude Code (Routine بتشغيل API) بالرابط والمفتاح المحليين، والمفتاح ما يطلع أبداً
+  const devlink = require('../src/devlink');
+  ok('change request: refused with the setup steps until the link is saved', /ربط راصد بـClaude مو مفعّل/.test(String((await chat.callTool('request_change', { request: 'خلّ الملخص يعرض التقديمات بس' })).error || '')));
+  assert.throws(() => devlink.save('https://evil.example.com/v1/claude_code/routines/trig_01ABCDEFGH/fire', 'sk-ant-oat01-' + 'y'.repeat(40)));
+  assert.throws(() => devlink.save('https://api.anthropic.com/v1/claude_code/routines/trig_01ABCDEFGH/fire', 'not-a-token'));
+  const DEV_TOKEN = 'sk-ant-oat01-' + 'x'.repeat(40);
+  devlink.save('https://api.anthropic.com/v1/claude_code/routines/trig_01ABCDEFGH/fire', DEV_TOKEN);
+  let fired = null;
+  const fakeFire = async (url, token, text) => ((fired = { url, token, text }), { status: 200, json: { type: 'routine_fire', claude_code_session_url: 'https://claude.ai/code/session_01TEST' } });
+  const rq = await devlink.requestChange('خلّ ملخص الإيميل يعرض التقديمات بس', 'ابغى الملخص بس اللي قدّمت عليه', fakeFire);
+  ok('change request: goes to the routine with his own words, the key stays out of the text, a follow link comes back and is recorded', rq.sent && rq.follow_link === 'https://claude.ai/code/session_01TEST' && fired.token === DEV_TOKEN && fired.url.endsWith('/trig_01ABCDEFGH/fire') && fired.text.includes('ابغى الملخص بس اللي قدّمت عليه') && !fired.text.includes(DEV_TOKEN) && devlink.recent().length === 1 && devlink.recent()[0].url === 'https://claude.ai/code/session_01TEST');
+  await assert.rejects(devlink.requestChange('طلب ما جا من رسالته هو', '', fakeFire), /رسالتك/);
+  await assert.rejects(devlink.requestChange('طلب والمفتاح انلغى من الموقع', 'سوها', async () => ({ status: 401, json: null })), /المفتاح/);
+  ok('change request: no request without his own message, and a revoked key gives a clear reason', true);
+  ok('the key never reaches Claude tool output', !JSON.stringify(await require('../src/tools').call('program_status', {}, { said: 'x', deps: null, done: [], failed: [] })).includes(DEV_TOKEN));
   const A = ai.buildArgs;
   ok('agent flags: only Rasid tools + web are allowed, his own MCP servers are not loaded', A({ tools: ['WebSearch'], mcpConfig: '/x/mcp.json', mcpTools: ['mail_search'] }, 0).join(' ').includes('--allowedTools WebSearch,mcp__rasid,mcp__rasid__mail_search --mcp-config /x/mcp.json --permission-mode dontAsk --strict-mcp-config') && !A({ tools: [] }, 2).includes('--tools'));
   // خادم MCP نفسه: يرد على البروتوكول ويعرض الأدوات
   const { spawnSync } = require('child_process');
   const mcpOut = spawnSync(process.execPath, [path.join(__dirname, '..', 'src', 'mcp.js')], { input: '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}\n{"jsonrpc":"2.0","method":"notifications/initialized"}\n{"jsonrpc":"2.0","id":2,"method":"tools/list"}\n', encoding: 'utf8' }).stdout.trim().split('\n').map((l) => JSON.parse(l));
-  ok('MCP server speaks the protocol and lists the tools', mcpOut[0].result.protocolVersion === '2025-06-18' && mcpOut[1].result.tools.length === 8 && mcpOut[1].result.tools.every((x) => x.name && x.inputSchema));
+  ok('MCP server speaks the protocol and lists the tools', mcpOut[0].result.protocolVersion === '2025-06-18' && mcpOut[1].result.tools.length === 9 && mcpOut[1].result.tools.some((x) => x.name === 'request_change') && mcpOut[1].result.tools.every((x) => x.name && x.inputSchema));
   ok('discovery: dedupes + drops no-URL job; company scan adds 3 (8 kept)', d.jobs.length === 8 && r.found === 8);
   const spec = byCoName('Batinah Builders');
   ok('company scan: speculative application with the published email is ready to send', spec.kind === 'speculative' && spec.status === 'ready' && spec.title.startsWith('Speculative application'));
@@ -434,6 +452,10 @@ const ok = (name, cond) => {
   resp = await fetch(base + '/api/config', { method: 'POST', headers: { 'X-Rasid': '1' }, body: JSON.stringify({ portals: { kwader: { pass: 'S3cret-pw!' } } }) });
   const st2 = await resp.json();
   ok('portal password: stored locally, hidden from the UI state, blank keeps it, never in Claude tool output', !JSON.stringify(st2).includes('S3cret-pw!') && st2.config.portals.kwader.hasPass && require('../src/portals').creds('kwader').pass === 'S3cret-pw!' && (await fetch(base + '/api/config', { method: 'POST', headers: { 'X-Rasid': '1' }, body: JSON.stringify({ portals: { kwader: { pass: '' } } }) }).then((r) => r.json())).config.portals.kwader.hasPass && !JSON.stringify(await require('../src/tools').call('program_status', {}, { said: 'x', deps: null, done: [], failed: [] })).includes('S3cret-pw!'));
+  const sDev = await (await fetch(base + '/api/state')).json();
+  ok('Claude link: the key is never in the UI state; the link shows as ready with the recent requests', !JSON.stringify(sDev).includes('sk-ant-oat01-') && sDev.devLink.ready && sDev.devLink.hasToken && sDev.devRequests.length >= 1 && !('devLink' in sDev.config));
+  resp = await fetch(base + '/api/devlink', { method: 'POST', headers: { 'X-Rasid': '1' }, body: JSON.stringify({ url: 'http://example.com/fire', token: '' }) });
+  ok('Claude link: a wrong link is refused and the saved one is kept', resp.status >= 400 && require('../src/devlink').ready());
   {
     const P = require('../src/portals');
     const now = Date.now();

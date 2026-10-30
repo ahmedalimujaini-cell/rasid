@@ -499,6 +499,7 @@ function chatView() {
   <form class="chat-in" id="chatForm">
     <textarea id="chatText" rows="2" dir="auto" placeholder="اكتب لراصد…" ${chatBusy ? 'disabled' : ''}>${esc(chatDraft)}</textarea>
     ${Recog ? `<button type="button" class="btn ghost ${listening ? 'listening' : ''}" id="mic" ${chatBusy ? 'disabled' : ''}>${listening ? 'أسمعك…' : 'تكلّم'}</button>` : ''}
+    ${Recog ? `<button type="button" class="btn ghost sm" id="chatVoice" aria-pressed="${S.config.chatVoice ? 'true' : 'false'}" title="لما تكلّمني بالمايك: أرد عليك بالصوت أو كتابة بس">${S.config.chatVoice ? 'الرد بالصوت: شغّال' : 'الرد بالصوت: مطفي'}</button>` : ''}
     <button class="btn primary" ${chatBusy ? 'disabled' : ''}>أرسل</button>
   </form></div>`;
 }
@@ -526,9 +527,10 @@ async function sendChat(text, spoken) {
   if (document.activeElement) document.activeElement.blur();
   render();
   try {
-    const out = await call('/api/chat', { text, spoken: !!spoken });
+    const aloud = !!spoken && S.config.chatVoice === true;
+    const out = await call('/api/chat', { text, spoken: aloud });
     S = out.state;
-    if (spoken && S.config.voice !== false) speak(out.reply.replace(/^- /gm, '').replace(/[<>*_#|]/g, ' '), false);
+    if (aloud && S.config.chatVoice === true) speak(out.reply.replace(/^- /gm, '').replace(/[<>*_#|]/g, ' '), false);
   } catch (e) {
     toast(e.message, true);
     chatDraft = text;
@@ -725,6 +727,21 @@ function portalsView() {
   </div>`;
 }
 
+// ربط راصد بـClaude: أي تعديل تطلبه من «كلّم راصد» يروح لـClaude Code يسويه وينشره، وراصد يحدّث نفسه
+function devLinkView() {
+  const L = S.devLink || {};
+  const reqs = (S.devRequests || []).map((r) => `<li><p>${esc(r.request)}<small>${ago(r.t)}${r.url ? ` · <a href="${esc(r.url)}" target="_blank" rel="noopener">تابعه</a>` : ''}</small></p></li>`).join('');
+  const head = `<h2>ربط راصد بـClaude</h2>
+  <p class="lead">${L.ready ? 'مربوط. أي تعديل على البرنامج تطلبه من «كلّم راصد» يروح لـClaude Code: يسويه ويختبره وينشره، وراصد يحدّث نفسه خلال دقايق.' : 'مو مربوط بعد. لما تربطه، أي تعديل على البرنامج تطلبه من «كلّم راصد» يروح لـClaude Code يسويه وينشره بدون ما تسوي شي.'}</p>`;
+  if (ACCT !== 'main') return head + (reqs ? `<ul class="need">${reqs}</ul>` : '');
+  return `${head}
+  ${L.ready ? '' : `<p class="note">مرة وحدة بس: افتح claude.ai/code/routines، افتح «راصد · طلبات التعديل»، اضغط Add another trigger واختار API، بعدها Generate token. انسخ الرابط والمفتاح والصقهم هنا.</p>`}
+  <label>رابط التشغيل<input id="s_devUrl" dir="ltr" value="${esc(L.url || '')}" placeholder="https://api.anthropic.com/v1/claude_code/routines/trig_.../fire" autocomplete="off"></label>
+  <label>المفتاح <small>${L.hasToken ? 'محفوظ — الصق واحد جديد لو تبغى تغيّره' : 'ما انحفظ بعد'}</small><input id="s_devToken" type="password" dir="ltr" placeholder="sk-ant-oat01-..." autocomplete="new-password"></label>
+  <div class="acts" style="margin-bottom:1rem"><button class="btn ghost sm" id="saveDev">احفظ الربط</button></div>
+  ${reqs ? `<p class="note">آخر طلبات التعديل:</p><ul class="need">${reqs}</ul>` : ''}`;
+}
+
 function settings() {
   const c = S.config;
   const p = c.profile;
@@ -759,6 +776,7 @@ function settings() {
   <p class="lead">النسخة الحالية ${S.version}. التحديث إجباري ولحاله: يشيّك كل ٥ دقايق، وأول ما تنزل نسخة جديدة يوقف كل شي ثواني، يركّبها، ويرجع يشتغل من أول وجديد.${S.updateError ? `<br><small style="color:var(--red)">آخر محاولة: ${esc(S.updateError)}</small>` : ''}</p>
   ${ACCT === 'main' ? `<label>مصدر التحديث<input id="s_updateRepo" dir="ltr" placeholder="ahmedalimujaini-cell/rasid" value="${esc(c.updateRepo || '')}"></label>` : ''}
   <div class="acts" style="margin-bottom:1.4rem"><button class="btn ghost sm" id="checkUpdate">شيّك على تحديث الحين</button></div>
+  ${devLinkView()}
   <h2>الجيميل</h2>
   <label>العنوان<input id="s_user" dir="ltr" value="${esc(c.gmail.user)}"></label>
   <label>كلمة مرور التطبيقات <small>اتركها فاضية لو ما تبغى تغيّرها</small><input id="s_pass" type="password" dir="ltr" placeholder="${c.gmail.hasPassword ? 'محفوظة' : ''}" autocomplete="off"></label>
@@ -853,6 +871,14 @@ document.addEventListener('click', (e) => {
     }
     if (ds.act === 'draft' || ds.act === 'followup') toast('يكتب… دقيقة تقريباً.');
     return act(t, () => call(`/api/jobs/${id}/${ds.act}`), { skip: 'تجاهلتها.', done: 'سجّلتها.', draft: 'الرسالة جاهزة.', followup: 'المتابعة جاهزة — راجعها وأرسلها.' }[ds.act]);
+  }
+  if (t.id === 'chatVoice') {
+    const on = !S.config.chatVoice;
+    if (!on) stopSpeaking();
+    return act(t, async () => { S = await call('/api/config', { chatVoice: on }); }, on ? 'صرت أرد عليك بالصوت لما تكلّمني بالمايك.' : 'طفّيت الرد بالصوت. أرد كتابة بس.');
+  }
+  if (t.id === 'saveDev') {
+    return act(t, async () => { S = await call('/api/devlink', { url: $('#s_devUrl').value, token: $('#s_devToken').value }); }, 'انحفظ الربط.');
   }
   if (t.id === 'savePortals') {
     const portals = Object.fromEntries(PORTALS.map(([k]) => [k, { on: $('#p_' + k + '_on').checked, user: $('#p_' + k + '_user').value, pass: $('#p_' + k + '_pass').value }]));

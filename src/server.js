@@ -9,6 +9,7 @@ const draft = require('./draft');
 const ai = require('./ai');
 const brief = require('./brief');
 const chat = require('./chat');
+const devlink = require('./devlink');
 const win = require('./window');
 const update = require('./update');
 
@@ -61,6 +62,7 @@ function publicState() {
   cfg.cv.hasText = !!cfg.cv.text;
   delete cfg.cv.text;
   delete cfg.smtp;
+  delete cfg.devLink; // المفتاح ما يطلع للواجهة أبداً (الواجهة تاخذ devLink تحت بدون المفتاح)
   for (const k of Object.keys(cfg.portals || {})) {
     cfg.portals[k].hasPass = !!cfg.portals[k].pass;
     delete cfg.portals[k].pass;
@@ -74,6 +76,8 @@ function publicState() {
     news: d.news,
     brief: d.brief,
     chat: d.chat.slice(-40),
+    devLink: devlink.info(),
+    devRequests: devlink.recent(),
     version: update.local().build,
     update: main.state.update || null,
     updateError: main.state.updateError || '',
@@ -125,6 +129,7 @@ function applyConfig(body) {
   if (body.mode === 'review' || body.mode === 'auto') c.mode = body.mode;
   if (['auto', 'en', 'ar'].includes(body.letterLanguage)) c.letterLanguage = body.letterLanguage;
   if (typeof body.voice === 'boolean') c.voice = body.voice;
+  if (typeof body.chatVoice === 'boolean') c.chatVoice = body.chatVoice;
   if (typeof body.autoAI === 'boolean') c.autoAI = body.autoAI;
   if (body.portals && typeof body.portals === 'object') {
     for (const k of Object.keys(c.portals)) {
@@ -235,6 +240,11 @@ async function api(req, res, url) {
   // أدوات المحادثة: يناديها خادم MCP اللي يشغّله Claude أثناء «كلّم راصد»
   const tm = url.pathname.match(/^\/api\/tool\/(\w+)$/);
   if (tm && req.method === 'POST') return json(res, 200, await chat.callTool(tm[1], body));
+  if (route === 'POST /api/devlink') {
+    if (store.current() !== store.MAIN) return json(res, 400, { error: 'الربط يتفعّل من الحساب الرئيسي.' });
+    devlink.save(body.url, body.token);
+    return json(res, 200, publicState());
+  }
   if (route === 'POST /api/chat') {
     if (pipeline.status.frozen) return json(res, 409, { error: 'راصد يتحدّث الحين — ثواني وكلّمني.' });
     ai.resume();

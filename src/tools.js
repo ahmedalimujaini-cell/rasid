@@ -71,6 +71,11 @@ async function call(name, args, ctx) {
         return { refused: why };
       }
     }
+    case 'request_change': {
+      const out = await require('./devlink').requestChange(args.request, ctx.said || '');
+      ctx.done && ctx.done.push('أرسلت طلب التعديل للمطوّر');
+      return out;
+    }
     default:
       throw new Error('أداة غير معروفة: ' + String(name).slice(0, 40));
   }

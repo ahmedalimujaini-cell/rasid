@@ -1,7 +1,7 @@
 {
-  "build": 24,
+  "build": 25,
   "date": "2026-10-30",
-  "notes": "رسالة الإيميل صارت بس: الوظائف اللي قدّمت عليها، ومسميات الوظائف اللي تحتاج تقدّم عليها بنفسك. بدون مشاكل.",
+  "notes": "الرد بالصوت في «كلّم راصد» صار له زر يشغّله ويطفيه، ومطفي من الأساس. وأي تعديل على البرنامج تطلبه من المحادثة يروح لـClaude يسويه وينشره لحاله، بعد ما تربطه مرة وحدة من الإعدادات.",
   "files": {
     "package.json": "5de6eee528f3d817e065377265060c5b84ff74b28f5ec03acdb7d0267ca18545",
     "README.md": "51d2e6e29ab72e9b8650d3f517a610e16f43598d01cfe9e8ebbda3a02aff6f23",
@@ -9,10 +9,11 @@
     "autostart.ps1": "7e63c4d12e633f0a125c1978ef29b2dd3ab5a6395d57901109fda7f52f8406b0",
     "install.ps1": "40d674502d05a7de79a0e536ec42b29cf1ad26fd0fd19d06d5e3602a8369b673",
     "rasid.ico": "e2b47fd026137d7de9b9dd0cf286ce87513de6d87399aeced96a83805064a68b",
-    "src/actions.js": "1b376a6d0c9c3a709d25476d960b75a4d43957cf2430119d9e62ab77493dc0e8",
+    "src/actions.js": "0ff24a72a32acde009388a4755209fb9342bc070edad55c6f003a9c469473199",
     "src/ai.js": "d3f57a5a5b6ea806e80117c1645cafda0c42ca09c076820610636d93ab5cda49",
     "src/brief.js": "bc7c4d0caf20e3d8e151353714d860cae714b208d5f2cd488151c02731c7043f",
-    "src/chat.js": "4686f21fe21ca9987986cd45bec9960ae51bb9563a0bbd34ce60f5869475df46",
+    "src/chat.js": "0a129ad123672717cacc4622041ebb2e3d57745128d7b7d7b9d004a7ffe0c949",
+    "src/devlink.js": "1b47b35ec8e1ab79117557794c8d85169e0aef2b14c8a4dcd7e047a375cb3eb8",
     "src/digest.js": "79a87646afcd839048d7973493d5bdacdba126b425f9255ac624d228bc13019a",
     "src/discover.js": "7eb5ec42840031de847b9f45ef7a33ba47836c4c4c5c6271a298966604e8b9d3",
     "src/draft.js": "4854dfe645556ba5c9de4a5e49d2f8185a25495860e3b8a3d0a5c73b6a40a3a0",
@@ -23,13 +24,13 @@
     "src/mcp.js": "70016dff5be2279c4d7ba4d79f6e54b0cc0a5f1922fcbe9cdafb69a09a590c75",
     "src/pipeline.js": "9aff4d9f100a8b9da021a8e3f329054412a78c5a87dd63be060db2156f4f2c37",
     "src/portals.js": "47d3753d6a5b2a5c9f7d19e0b1bd9a819c2f20a8cb252e74a182cba25e80a578",
-    "src/server.js": "cc38972b73fc060b067a540d953a485c62a623732136123f19b2d15525f5622c",
-    "src/store.js": "79e8487985f4fa1b19982cf2bdd80c211061763d15bebc838b48b40c4dedda3e",
-    "src/tooldefs.js": "9b2fd406f0ff15ef40135b3c58d6fa9360ce52dd575bfb52cd3bc383e119f323",
-    "src/tools.js": "e4f62189656087d7654c22e885b4ce5ae2777667ba1024ab0d0e92b31878e58a",
+    "src/server.js": "51437727af787974ae144cf5ebfe0fe9b9cb9e51e33e9faa00c1b3a9cd9842a1",
+    "src/store.js": "628a7b9cd6b3cd3faf8fa2e0c18d426a82e7987421c6fa048b461985d9580f6e",
+    "src/tooldefs.js": "455964d5224c1de1157de05d89bb4e98e01d0caa4b801d0322c549eb3ffb63ca",
+    "src/tools.js": "235075b21cfdd9054f12d59c73629209348c4ac2afc9d4f3c58644622428f060",
     "src/update.js": "14db78d02e25aa97da5f89569d36d47e265b1f009115af5b79117c03e4af6a34",
     "src/window.js": "0209e1210df5fd017b9a4664492ce150fed22bdf1fbf8405996a9d640fa98563",
-    "public/app.js": "59c18ffe0a2bb2ac93a04ef4059a7640aba93ea73ab60ec5943f37c613a687c7",
+    "public/app.js": "d61ce488657c6e7bb18a7d1e709210edda0f36f2601985ba6c9a37878f2db6a0",
     "public/icon.png": "a27ffc08faf19536305057d034bea4629202bdae047b146b2904f201033555f9",
     "public/index.html": "46445c21a2ea655a3e2eec6ced7c2fac79c0787a686c63b6c62a62ac9cf83284",
     "public/manifest.webmanifest": "b0fed68868432465758d4204e723717f7227f1dd667246d612dcc9c3e736e956",
@@ -37,6 +38,6 @@
     "scripts/release.js": "3898cac6fb2cc9447e72d8b9cfb931747ac30cd92c20333d0d26af5b27697d49",
     "test/mailfix.js": "777512b8d558dcc3d1b3d9e6a367ff36c48f2deea0b5edcd0d23f0c590fa6617",
     "test/mock.js": "121fef9ecff3748518bb70967ff5414807c041d7ffbc03c3939d6a6844fdddcd",
-    "test/smoke.js": "2e815d30143b5eee11cb6641010d496674dcfaf2ec1284f7e9fc12c10cbed2cf"
+    "test/smoke.js": "abe32318d5c06c173736e3f4fc77ba208d7e30392ba4cb0dac43cc030991f59d"
   }
 }

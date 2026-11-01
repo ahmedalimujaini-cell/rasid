@@ -151,7 +151,7 @@ b.dch{color:var(--bad);text-decoration:underline}
 
   <p class="hint" style="margin:8px 2px 0">تقدر تختار أكثر من ملف PDF مرة وحدة، أو ترفع ملف بعد ملف — كلها تنضاف لنفس الجرد.</p>
   <div class="card" id="oldBox"></div>
-  <input type="file" id="oldIn" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+  <input type="file" id="oldIn" accept=".xlsx,.xlsm,.xls,.csv,.ods,.txt,.pdf,application/pdf,image/*,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple hidden>
   <div class="card" id="filesBox" hidden></div>
 
   <div class="prog card" id="prog" hidden>
@@ -189,6 +189,7 @@ b.dch{color:var(--bad);text-decoration:underline}
 
 <script src="libs/pdf.min.js"></script>
 <script src="libs/exceljs.min.js"></script>
+<script src="libs/xlsx.full.min.js"></script>
 <script src="data.js"></script>
 <script>
 (function(){
@@ -1392,23 +1393,194 @@ async function parseListWorkbook(buf){
   }
   return { rows: rows, sns: sns };
 }
-async function loadOldList(file){
-  try{
-    if (!/\.xlsx$/i.test(file.name)) throw new Error('لازم يكون ملف Excel (.xlsx)');
-    var P = await parseListWorkbook(await file.arrayBuffer());
-    S.old = { name: file.name, rows: P.rows, sns: P.sns };
-    save(); renderAll(); toast('تم تحميل اللستة القديمة: ' + P.rows.length + ' صنف و' + P.sns.length + ' سيريال', 3500);
-  }catch(e){ toast('ما قدرت أقرأ اللستة القديمة: ' + (e.message || e), 5000); }
+/* ================= قراءة اللستة القديمة (أي شكل) ================= */
+var KW = {
+  mat: /(material|mat\.?\s*(no|nr|number|#)|part\s*(no|nr|number|num|#)?|p\s*\/\s*n|\bpn\b|item\s*(no|code|number|#)?|article|catalog|cat\.?\s*no|رقم\s*القطعة|القطعة|المادة|الصنف|البارت|رقم\s*المادة)/i,
+  matBad: /(type|desc|group|class|status|text|نوع|وصف)/i,
+  sn: /(serial|s\s*\/\s*n|\bsn\b|ser\.?\s*no|سيريال|السيريال|التسلسلي)/i,
+  qty: /(qty|quantity|count|stock|unrestricted|on\s*hand|balance|physical|الكمية|العدد|الموجود|الرصيد)/i,
+  qtyBad: /(result|status|serial|method|batch|lot|plant|location|sloc|price|value|cost|حالة|الدفعة)/i,
+  desc: /(desc|description|material\s*text|الوصف)/i,
+  batch: /(batch|lot|الدفعة)/i,
+  gr: /(receipt|gr\s*date|date|تاريخ)/i
+};
+function txt(v){ if (v == null) return ''; if (v instanceof Date) return fmtD(v); return String(v).trim(); }
+function snLike(v){ var t = txt(v).toUpperCase(); return t.length >= 3 && t.length <= 30 && /^[A-Z0-9][A-Z0-9\-\/\.]*$/.test(t) && (t.match(/[0-9]/g) || []).length >= 3; }
+function pnLike(v){ var t = txt(v).toUpperCase(); return t.length >= 4 && t.length <= 32 && /[A-Z]/.test(t) && /[0-9]/.test(t) && /^[A-Z0-9][A-Z0-9\-\/\.#]*$/.test(t) && !/^(S\/?N|SN)\b/.test(t); }
+function numOf(v){ if (typeof v === 'number' && isFinite(v)) return v; var t = txt(v).replace(/,/g, ''); return /^-?\d+(\.\d+)?$/.test(t) ? +t : null; }
+function knownPN(){ var k = {}; S.list.forEach(function(r){ k[bareN(r.pn)] = r.pn; }); return k; }
+function splitSNs(v){
+  var t = txt(v); if (!t) return [];
+  var parts = t.split(/[,;\n\r|]+|\s{2,}/).map(function(x){ return x.trim().replace(/\s*x\d+$/i, '').replace(/^(S\/?N|SN)\s*[:#]?\s*/i, ''); }).filter(Boolean);
+  if (parts.length === 1 && /\s/.test(parts[0])){ var sp = parts[0].split(/\s+/); if (sp.every(snLike)) parts = sp; }
+  return parts.filter(snLike);
+}
+/* جدول ثنائي → صفوف أصناف + سيريالات */
+function parseGrid(grid, out, sheetName){
+  if (!grid || !grid.length) return;
+  var K = knownPN(), H = -1, best = 0, maxScan = Math.min(grid.length, 40);
+  for (var r = 0; r < maxScan; r++){
+    var sc = 0, row = grid[r] || [];
+    row.forEach(function(c){ var t = txt(c); if (!t || t.length > 40) return; if (KW.mat.test(t) || KW.sn.test(t) || KW.qty.test(t) || KW.desc.test(t) || KW.batch.test(t)) sc++; });
+    if (sc > best){ best = sc; H = r; }
+  }
+  if (best < 2) H = -1;
+  var head = H >= 0 ? (grid[H] || []).map(txt) : [], start = H + 1, nc = 0;
+  grid.forEach(function(row){ if (row && row.length > nc) nc = row.length; });
+  var stats = [];
+  for (var c = 0; c < nc; c++){
+    var s = { c: c, known: 0, pn: 0, sn: 0, num: 0, filled: 0, uniq: {}, digits: 0 };
+    for (var r2 = start; r2 < grid.length; r2++){
+      var v = (grid[r2] || [])[c], t = txt(v); if (!t) continue;
+      s.filled++; s.uniq[t] = 1;
+      if (K[bareN(t)]) s.known++;
+      if (pnLike(t)) s.pn++;
+      if (splitSNs(t).length) s.sn++;
+      if (numOf(v) != null) s.num++;
+      s.digits += (t.match(/[0-9]/g) || []).length;
+    }
+    s.u = Object.keys(s.uniq).length; s.h = head[c] || '';
+    stats.push(s);
+  }
+  function pick(list, score){ var b = null, bs = 0; list.forEach(function(s){ var v = score(s); if (v > bs){ bs = v; b = s; } }); return b; }
+  var matCol = pick(stats.filter(function(s){ return KW.mat.test(s.h) && !KW.matBad.test(s.h); }), function(s){ return s.known * 3 + s.pn + 0.1; });
+  if (!matCol || (matCol.known + matCol.pn) === 0) matCol = pick(stats, function(s){ return s.known * 3 + (s.pn >= s.filled * 0.5 ? s.pn : 0); });
+  if (!matCol) return;
+  var others = stats.filter(function(s){ return s !== matCol; });
+  var snCol = pick(others.filter(function(s){ return KW.sn.test(s.h); }), function(s){ return s.sn + 0.1; });
+  if (!snCol && H < 0){
+    // بدون عناوين: أول عمود بعد رقم القطعة أغلبه سيريالات وما يتكرر
+    snCol = others.filter(function(s){ return s.c > matCol.c && s.sn >= s.filled * 0.6 && s.filled && s.u >= s.filled * 0.8 && s.known === 0; })[0] || null;
+  }
+  var qtyCol = pick(others.filter(function(s){ return s !== snCol && KW.qty.test(s.h) && !KW.qtyBad.test(s.h); }), function(s){ return s.num + 0.1; });
+  var descCol = pick(others.filter(function(s){ return s !== snCol && s !== qtyCol && KW.desc.test(s.h); }), function(s){ return s.filled + 0.1; });
+  var batchCol = pick(others.filter(function(s){ return s !== snCol && KW.batch.test(s.h); }), function(s){ return s.filled + 0.1; });
+  var grCol = pick(others.filter(function(s){ return s !== snCol && s !== batchCol && KW.gr.test(s.h) && /receipt|gr/i.test(s.h); }), function(s){ return s.filled + 0.1; });
+  for (var r3 = start; r3 < grid.length; r3++){
+    var row3 = grid[r3] || [], m = txt(row3[matCol.c]);
+    if (!m || !(K[bareN(m)] || pnLike(m))) continue;
+    var key = bareN(m), pn = K[key] || m;
+    var rec = out.mats[key] || (out.mats[key] = { pn: pn, desc: '', qty: null, sns: 0 });
+    if (descCol && !rec.desc) rec.desc = txt(row3[descCol.c]);
+    if (qtyCol){ var q = numOf(row3[qtyCol.c]); if (q != null) rec.qty = (rec.qty || 0) + q; }
+    if (snCol){
+      splitSNs(row3[snCol.c]).forEach(function(sn){
+        var k = normSN(sn); if (out.seen[k]) return; out.seen[k] = 1;
+        out.sns.push({ mat: pn, sn: sn, batch: batchCol ? txt(row3[batchCol.c]) : '', gr: grCol ? txt(row3[grCol.c]) : '' });
+        rec.sns++;
+      });
+    }
+  }
+  out.notes.push((sheetName || 'ورقة') + ': رقم القطعة «' + (matCol.h || ('عمود ' + (matCol.c + 1))) + '»' + (snCol ? ' · السيريال «' + (snCol.h || ('عمود ' + (snCol.c + 1))) + '»' : '') + (qtyCol ? ' · العدد «' + qtyCol.h + '»' : ''));
+}
+function finishOld(out){
+  var rows = Object.keys(out.mats).map(function(k){ var x = out.mats[k]; return { pn: x.pn, desc: x.desc, plant: '', type: '', sloc: '', count: x.qty != null ? x.qty : (x.sns ? x.sns : null) }; });
+  return { rows: rows, sns: out.sns, notes: out.notes };
+}
+function newOut(){ return { mats: {}, sns: [], seen: {}, notes: [] }; }
+async function parseSheetFile(buf, out){
+  if (!window.XLSX) throw new Error('مكتبة قراءة الجداول ما تحمّلت');
+  var wb = XLSX.read(new Uint8Array(buf), { type: 'array', cellDates: true });
+  var names = wb.SheetNames.filter(function(n){ return !/^(summary|scanned items)$/i.test(n); });
+  var mine = names.filter(function(n){ return /^(count|sn list)$/i.test(n); });
+  (mine.length ? mine : names).forEach(function(n){
+    parseGrid(XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: '' }), out, n);
+  });
+}
+/* PDF أو صورة: نقرأ الصفحات بالذكاء الاصطناعي */
+function listPrompt(){
+  return [
+    'You are reading one page of an inventory / stock list (ITT BIW Connector Systems, Oman — ESP connectors, penetrators, feedthrus, kits, o-rings, fittings).',
+    'Extract EVERY data row. For each row return: material = the part / material number exactly as printed; serial = the serial number exactly as printed ("" if the row has none); qty = the quantity if the list has a quantity column (number), otherwise null; desc = the description if printed, else "".',
+    'If one row lists several serial numbers, return one entry per serial number with the same material. Skip headers, totals, page numbers and footers. Read every character exactly; never correct or invent numbers. A batch / lot number is NOT a serial number.',
+    'Return ONLY JSON: {"rows":[{"material":"","serial":"","qty":null,"desc":""}]}'
+  ].join('\n');
+}
+async function aiJSON(block, prompt, textForSample, imgB64){
+  if (!SAMPLE && CAPS) await CAPS;
+  var last;
+  for (var k = 0; k < 3; k++){
+    try{
+      var obj;
+      if (SAMPLE){
+        var r = imgB64 ? await SAMPLE(prompt, { images: [b64ToBlob(imgB64, 'image/jpeg')], modelTier: 'default' }) : await SAMPLE(prompt + '\n\nPAGE TEXT:\n' + textForSample, { modelTier: 'default' });
+        var t = String(r && r.text || '').replace(/```json|```/g, ''); var a = t.indexOf('{'), b = t.lastIndexOf('}');
+        if (a < 0 || b < 0) throw new Error('رد غير مفهوم'); obj = JSON.parse(t.slice(a, b + 1));
+      } else {
+        var res = await fetch(PROXY_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-App-Token': APP_TOKEN }, body: JSON.stringify({ block: block, prompt: prompt }) });
+        obj = null; try{ obj = await res.json(); }catch(e){}
+        if (!res.ok){ var er = new Error((obj && obj.error) || ('HTTP ' + res.status)); er.status = res.status; throw er; }
+      }
+      if (obj && obj.error) throw new Error(obj.error);
+      return obj;
+    }catch(e){ last = e; if (e && (e.code === 'not_granted' || e.status === 401 || e.status === 400)) break; await sleep(k === 0 ? 1500 : 4500); }
+  }
+  throw last;
+}
+function pageText(tc){
+  var lines = {}, keys = [];
+  tc.items.forEach(function(it){ var y = Math.round(it.transform[5] / 3); if (!lines[y]){ lines[y] = []; keys.push(y); } lines[y].push(it); });
+  keys.sort(function(a, b){ return b - a; });
+  return keys.map(function(y){ return lines[y].sort(function(a, b){ return a.transform[4] - b.transform[4]; }).map(function(i){ return i.str; }).filter(function(s){ return s.trim(); }).join('\t'); }).filter(Boolean).join('\n');
+}
+function addAIRows(obj, out, label){
+  var rows = (obj && Array.isArray(obj.rows)) ? obj.rows : [], K = knownPN(), grid = [['Material', 'Serial Number', 'Qty', 'Description']];
+  rows.forEach(function(x){ grid.push([txt(x.material), txt(x.serial), x.qty == null ? '' : x.qty, txt(x.desc)]); });
+  parseGrid(grid, out, label);
+}
+async function parsePdfList(file, out, prog){
+  var pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()), isEvalSupported: false }).promise;
+  for (var p = 1; p <= pdf.numPages; p++){
+    prog('قراءة اللستة القديمة: ' + file.name + ' — صفحة ' + p + ' من ' + pdf.numPages);
+    var page = await pdf.getPage(p), tx = pageText(await page.getTextContent()), obj;
+    if (tx.replace(/\s/g, '').length > 40){
+      obj = await aiJSON({ type: 'document', source: { type: 'text', media_type: 'text/plain', data: tx } }, listPrompt(), tx, null);
+    } else {
+      var c = await renderPage(page), b64 = jpegB64(c, MAX_EDGE, 0.9); c.width = c.height = 0;
+      obj = await aiJSON({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } }, listPrompt(), null, b64);
+    }
+    addAIRows(obj, out, file.name + ' ص' + p);
+    page.cleanup();
+  }
+  try{ pdf.destroy(); }catch(e){}
+}
+async function loadOldList(files){
+  files = Array.prototype.slice.call(files || []); if (!files.length) return;
+  var out = newOut(), box = $('#oldBox'), failed = [];
+  var prog = function(t){ box.innerHTML = '<div class="hint">⏳ ' + esc(t) + '</div>'; };
+  for (var i = 0; i < files.length; i++){
+    var f = files[i];
+    prog('قراءة اللستة القديمة: ' + f.name);
+    try{
+      if (/\.pdf$/i.test(f.name) || /pdf$/i.test(f.type)) await parsePdfList(f, out, prog);
+      else if (/^image\//i.test(f.type) || /\.(jpe?g|png|webp|heic|heif)$/i.test(f.name)){
+        var c = await loadImageFile(f), b64 = jpegB64(c, MAX_EDGE, 0.9); c.width = c.height = 0;
+        addAIRows(await aiJSON({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } }, listPrompt(), null, b64), out, f.name);
+      } else await parseSheetFile(await f.arrayBuffer(), out);
+    }catch(e){ failed.push(f.name + ': ' + (e.message || e)); }
+  }
+  var P = finishOld(out);
+  if (!P.rows.length){
+    renderOld();
+    await dialog('ما قدرت أقرأ اللستة القديمة', (failed.length ? esc(failed.join(' — ')) + '<br><br>' : '') + 'ما لقيت فيها أرقام قطع. ارسل الملف نفسه بالشات وأضبط القراءة على شكله بالضبط.', [{ t: 'تم', v: 1, cls: 'primary' }]);
+    return;
+  }
+  S.old = { name: files.map(function(f){ return f.name; }).join(' + '), rows: P.rows, sns: P.sns, notes: P.notes };
+  save(); renderAll();
+  if (failed.length) toast('ملفات ما انقرت: ' + failed.join(' — '), 6000);
+  else toast('تم: ' + P.rows.length + ' صنف و' + P.sns.length + ' سيريال من اللستة القديمة', 3500);
 }
 function renderOld(){
   var b = $('#oldBox');
   if (!S.old){
-    b.innerHTML = '<div class="ob"><div class="ot"><b>اللستة القديمة للمقارنة</b><div class="hint">ارفع ملف الجرد القديم (Excel) عشان يقارن: ايش كان موجود سابقاً وايش الجديد اللي انضاف.</div></div><button class="btn" data-old="up">📂 ارفع اللستة القديمة</button></div>';
+    b.innerHTML = '<div class="ob"><div class="ot"><b>اللستة القديمة للمقارنة</b><div class="hint">ارفع الجرد القديم بأي شكل: Excel (xlsx أو xls) أو CSV أو PDF أو صورة، ملف أو أكثر. يقارن: ايش كان موجود سابقاً وايش الجديد اللي انضاف.</div></div><button class="btn" data-old="up">📂 ارفع اللستة القديمة</button></div>';
     return;
   }
-  var C = compareData(analyze());
-  b.innerHTML = '<div class="ob"><div class="ot"><b>اللستة القديمة:</b> <span class="ltr">' + esc(S.old.name) + '</span><div class="hint">' + S.old.rows.length + ' صنف · ' + S.old.sns.length + ' سيريال — ' +
-    'موجود سابقاً ' + (C.cnt.EXIST_FOUND + C.cnt.EXIST_MISSING) + ' · جديد انضاف ' + (C.cnt.NEWLIST_FOUND + C.cnt.NEWLIST_MISSING + C.cnt.NEW_FOUND) + ' · انشال ' + (C.cnt.REMOVED + C.cnt.REMOVED_FOUND) + '</div></div>' +
+  var C = compareData(analyze()), withQty = S.old.rows.filter(function(r){ return r.count != null; }).length;
+  b.innerHTML = '<div class="ob"><div class="ot"><b>اللستة القديمة:</b> <span class="ltr">' + esc(S.old.name) + '</span><div class="hint">' + S.old.rows.length + ' صنف' + (withQty ? ' (' + withQty + ' فيها عدد)' : '') + ' · ' + S.old.sns.length + ' سيريال — ' +
+    'موجود سابقاً ' + (C.cnt.EXIST_FOUND + C.cnt.EXIST_MISSING) + ' · جديد انضاف ' + (C.cnt.NEWLIST_FOUND + C.cnt.NEWLIST_MISSING + C.cnt.NEW_FOUND) + ' · انشال ' + (C.cnt.REMOVED + C.cnt.REMOVED_FOUND) + '</div>' +
+    '<details class="sec" style="border:0;padding:4px 0 0"><summary style="font-size:13px;font-weight:600">شوف اللي انقرأ</summary><div class="hint" style="margin-top:6px">' + (S.old.notes || []).map(esc).join('<br>') + '</div><ul style="max-height:220px;overflow:auto">' +
+    S.old.rows.map(function(r){ var n = S.old.sns.filter(function(x){ return x.mat === r.pn; }).length; return '<li>' + L(r.pn) + (r.count != null ? ' — العدد ' + r.count : '') + (n ? ' — ' + n + ' سيريال' : '') + '</li>'; }).join('') + '</ul></details></div>' +
     '<div class="bar" style="gap:6px"><button class="btn sm" data-old="up">تغيير</button><button class="btn sm" data-old="rm">شيل</button></div></div>';
 }
 async function loadNewList(file){
@@ -1432,7 +1604,7 @@ function bind(){
     if (b.dataset.old === 'up') $('#oldIn').click();
     else { S.old = null; save(); renderAll(); }
   });
-  $('#oldIn').addEventListener('change', function(e){ var f = e.target.files[0]; if (f) loadOldList(f); e.target.value = ''; });
+  $('#oldIn').addEventListener('change', function(e){ var fs = Array.prototype.slice.call(e.target.files || []); e.target.value = ''; if (fs.length) loadOldList(fs).catch(function(er){ toast('خطأ: ' + (er.message || er), 5000); renderOld(); }); });
   $('#cDate').addEventListener('change', function(e){ S.countDate = e.target.value || todayISO(); save(); renderBrief(); });
   $('#btnMore').addEventListener('click', function(e){
     var m = $('#menu'), r = e.currentTarget.getBoundingClientRect();
@@ -1508,7 +1680,7 @@ function bind(){
 }
 
 load(); initCaps(); bind(); renderAll();
-window.__INV = { S: S, analyze: analyze, briefText: briefText, compareData: compareData, buildCompareWB: buildCompareWB };
+window.__INV = { S: S, analyze: analyze, briefText: briefText, compareData: compareData, buildCompareWB: buildCompareWB, parseGrid: parseGrid, newOut: newOut, finishOld: finishOld };
 })();
 </script>
 </body>

@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>صانع جدول المناوبات</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap">
+<style>
+:root{--p:#5B2E8A;--p2:#3E1F63;--pl:#EFE7F8;--bg:#F4F1F9;--ink:#241B33;--mut:#7A6A92;--line:#E6DEF0;--red:#D32F2F;--ok:#1F7A4A;--amb:#A35F00}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:'Tajawal',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.55;padding-bottom:96px;-webkit-text-size-adjust:100%}
+button,input,select{font:inherit;color:inherit}
+button{-webkit-tap-highlight-color:transparent}
+.top{max-width:1000px;margin:0 auto;padding:20px 16px 4px;display:flex;align-items:center;gap:12px}
+.logo{width:44px;height:44px;border-radius:13px;background:linear-gradient(135deg,#7A4FA8,#3E1F63);display:grid;place-items:center;flex:none;box-shadow:0 4px 12px rgba(62,31,99,.25)}
+.logo svg{width:24px;height:24px}
+.top h1{margin:0;font-size:21px;font-weight:800;color:var(--p2);line-height:1.2}
+.top p{margin:3px 0 0;color:var(--mut);font-size:13.5px}
+#sync{font-size:12px;margin-inline-start:6px;white-space:nowrap}
+main{max-width:1000px;margin:0 auto}
+.panel{display:block;background:#fff;border-radius:16px;box-shadow:0 1px 2px rgba(60,30,100,.05),0 4px 18px rgba(60,30,100,.06);margin:12px;padding:16px}
+.panel h2{margin:0 0 12px;font-size:16.5px;font-weight:800;color:var(--p2);display:flex;align-items:center;gap:8px}
+.panel h2 .n{width:24px;height:24px;border-radius:8px;background:var(--pl);color:var(--p);display:grid;place-items:center;font:800 13px Inter,sans-serif;flex:none}
+.panel h2 .sp{flex:1}
+details.panel>summary{list-style:none;cursor:pointer}
+details.panel>summary::-webkit-details-marker{display:none}
+details.panel>summary h2{margin:0}
+details.panel[open]>summary h2{margin-bottom:12px}
+.chev{color:var(--mut);transition:transform .2s;font-size:13px}
+details.panel[open] .chev{transform:rotate(180deg)}
+.hint{color:var(--mut);font-size:13px;margin:0 0 12px;line-height:1.6}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f>span{font-size:12.5px;color:var(--mut);font-weight:500}
+.f input,.f select{height:42px;border:1.5px solid var(--line);border-radius:10px;padding:0 10px;background:#FBFAFD;outline:none;width:100%;min-width:0}
+.f input:focus,.f select:focus{border-color:var(--p);background:#fff}
+.f.wide{grid-column:1/-1}
+.f[hidden]{display:none}
+input[dir=ltr]{text-align:left}
+.pills{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px}
+.pill{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:13px;font-weight:700;color:var(--p);cursor:pointer}
+#plen{font-size:12.5px;color:var(--mut);margin-inline-start:4px}
+/* staff */
+.person{border:1.5px solid var(--line);border-radius:14px;padding:10px;margin-bottom:10px;background:#FCFBFE}
+.pr1{display:flex;align-items:center;gap:6px}
+.pname{flex:1;min-width:0;height:40px;border:1.5px solid var(--line);border-radius:10px;padding:0 10px;font:800 15px Inter,sans-serif;letter-spacing:.5px;color:var(--p2);background:#fff;text-transform:uppercase;outline:none;text-align:left}
+.pname:focus{border-color:var(--p)}
+.ic{width:34px;height:34px;border-radius:10px;border:1.5px solid var(--line);background:#fff;color:var(--mut);cursor:pointer;flex:none;font-size:11px;display:grid;place-items:center;padding:0}
+.ic:disabled{opacity:.3;cursor:default}
+.ic.del{color:var(--red)}
+.pr2{display:flex;gap:6px;margin-top:8px;align-items:center}
+.seg{display:flex;background:var(--pl);border-radius:10px;padding:3px;flex:none}
+.seg button{border:0;background:transparent;padding:5px 10px;border-radius:8px;font-size:13px;font-weight:700;color:var(--mut);cursor:pointer}
+.seg button.is-on{background:#fff;color:var(--p);box-shadow:0 1px 3px rgba(60,30,100,.15)}
+.qs{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;flex:1;min-width:0}
+.q{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:10px;background:#fff;overflow:hidden}
+.q b{font:800 14px Inter,sans-serif;color:#fff;height:38px;min-width:34px;display:grid;place-items:center;flex:none}
+.q.qA b{background:#B7791F}.q.qN b{background:#2B3A8C}.q.qW b{background:#D32F2F}
+.q input{border:0;outline:none;height:38px;width:100%;min-width:0;padding:0 4px;background:transparent;font:700 15px Inter,sans-serif;text-align:center}
+.q input::placeholder{color:#B3A6C6;font:500 12.5px Tajawal,sans-serif}
+.pnote{font-size:12.5px;color:var(--mut);flex:1 1 200px}
+/* buttons */
+.btn{height:44px;border-radius:12px;border:1.5px solid var(--line);background:#fff;padding:0 16px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.btn.primary{background:var(--p);border-color:var(--p);color:#fff}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.45;cursor:default}
+.btn:active:not(:disabled){transform:translateY(1px)}
+.btn.wide{width:100%}
+.addbtn{width:100%;border-style:dashed;color:var(--p)}
+/* toggles */
+.toggles{margin:14px 0 6px;display:flex;flex-direction:column}
+.tg{display:flex;align-items:center;gap:10px;padding:7px 0;cursor:pointer;font-size:14.5px}
+.tg input{position:absolute;opacity:0;pointer-events:none}
+.tg i{width:42px;height:24px;border-radius:12px;background:#D9D0E6;position:relative;flex:none;transition:background .2s}
+.tg i::after{content:'';position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:right .2s}
+.tg input:checked+i{background:var(--p)}
+.tg input:checked+i::after{right:21px}
+.tg input:focus-visible+i{outline:2px solid var(--p);outline-offset:2px}
+/* roster */
+.rwrap{direction:ltr;overflow:auto;-webkit-overflow-scrolling:touch;margin:0 -16px;padding:0 16px 4px}
+.zoom{display:flex;gap:6px}
+.zoom .ic{font-size:17px;font-weight:700;color:var(--p)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:10px;font-size:12.5px;color:var(--mut)}
+.legend b{font:800 12.5px Inter,sans-serif;color:var(--ink)}
+.legend b.r{color:var(--red)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#C98A00;vertical-align:middle}
+.phm{display:inline-block;width:14px;height:4px;border-radius:2px;background:#F2B705;vertical-align:middle}
+.linkbtn{background:none;border:0;color:var(--p);font-weight:700;font-size:13px;cursor:pointer;padding:4px 0}
+/* fairness */
+.ftab{width:100%;border-collapse:collapse;font-size:14px}
+.ftab th{font-size:12px;color:var(--mut);font-weight:700;padding:6px 3px;border-bottom:1.5px solid var(--line);text-align:center}
+.ftab th:first-child{text-align:right}
+.ftab td{padding:8px 3px;border-bottom:1px solid #F0EBF6;text-align:center;font:700 14px Inter,sans-serif}
+.ftab td.nm{text-align:right;font:800 13px Inter,sans-serif;color:var(--p2);letter-spacing:.3px}
+.ftab tr.fx td{color:#A196B3}
+.ftab tr:last-child td{border-bottom:0}
+.chip{display:inline-flex;align-items:baseline;padding:2px 8px;border-radius:999px;font:800 13.5px Inter,sans-serif}
+.chip small{font-size:10.5px;opacity:.75;font-weight:700}
+.chip.ok{background:#E3F4EA;color:var(--ok)}
+.chip.amb{background:#FFF1D6;color:var(--amb)}
+.chip.bad{background:#FDE3E3;color:var(--red)}
+.fnote{font-size:12.5px;color:var(--mut);margin:10px 0 0;line-height:1.6}
+/* warnings */
+.warns{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.warns li{padding:9px 12px;border-radius:10px;font-size:14px;line-height:1.5}
+.warns li.err{background:#FDECEC;color:#9B1C1C}
+.warns li.warn{background:#FFF5E0;color:#7A4A00}
+.warns li.info{background:#EEF2FB;color:#2B3A6B}
+.warns li.ok{background:#E6F5EC;color:#1F6B40}
+/* export */
+.exp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.exp .btn{padding:0 6px}
+/* history */
+.hitem{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #F0EBF6}
+.hitem:last-child{border-bottom:0}
+.hb{flex:1;min-width:0}
+.hb b{display:block;font-size:14px;color:var(--p2);font-family:Inter,Tajawal,sans-serif;font-weight:700}
+.hb small{color:var(--mut);font-size:12.5px}
+.hc{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;direction:ltr;justify-content:flex-end}
+.hc span{font:700 11.5px Inter,sans-serif;background:var(--pl);color:var(--p2);padding:3px 8px;border-radius:8px}
+[hidden]{display:none!important}
+/* mode switch + counters */
+.modebar{display:flex;margin:0 0 12px}
+.seg.big{width:100%;padding:4px}
+.seg.big button{flex:1;padding:9px 10px;font-size:14.5px}
+.counters{position:sticky;top:0;z-index:6;background:#fff;margin:0 -16px 10px;padding:8px 16px 6px;border-bottom:1px solid var(--line);box-shadow:0 8px 10px -9px rgba(60,30,100,.3)}
+.ctab{width:100%;border-collapse:collapse}
+.ctab th{font-size:10.5px;color:var(--mut);font-weight:700;padding:0 2px 4px;text-align:center;line-height:1.15}
+.ctab th b{display:block;font:800 13px Inter,sans-serif;color:var(--ink)}
+.ctab th b.r{color:var(--red)}
+.ctab th:first-child{text-align:right;vertical-align:bottom}
+.ctab td{text-align:center;padding:3px 2px;font:800 14px Inter,sans-serif;border-top:1px solid #F3EEF8}
+.ctab td.nm{text-align:right;font:800 12.5px Inter,sans-serif;color:var(--p2);letter-spacing:.3px}
+.ctab td.z{color:#CFC5DD}
+.ctab tr.flash td{animation:fl .8s ease}
+@keyframes fl{0%{background:#EBDDFB}100%{background:transparent}}
+/* action bar */
+.actbar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(255,255,255,.94);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px}
+.abrow{display:flex;gap:8px;justify-content:center}
+.abrow .btn{flex:1;max-width:280px}
+.palette{display:grid;grid-template-columns:repeat(9,1fr);gap:5px;max-width:568px;width:100%;margin:0 auto}
+.palette button{height:42px;border-radius:10px;border:1.5px solid var(--line);background:#fff;font:800 14px Inter,sans-serif;color:#1E1A2B;cursor:pointer;padding:0 1px;line-height:1.05}
+.palette button.r{color:var(--red)}
+.palette button.sm{font-size:10px}
+.palette button.is-on{background:var(--p);border-color:var(--p);color:#fff}
+body.man{padding-bottom:156px}
+body.man .toast{bottom:150px}
+/* sheet */
+.sheet-bg{position:fixed;inset:0;background:rgba(30,15,50,.4);z-index:50;display:none;align-items:flex-end;justify-content:center}
+.sheet-bg.open{display:flex}
+.sheet{background:#fff;width:100%;max-width:520px;border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));max-height:88vh;overflow:auto;animation:up .2s ease}
+@keyframes up{from{transform:translateY(30px);opacity:.6}to{transform:none;opacity:1}}
+.sheet h3{margin:0 0 4px;font-size:17px;color:var(--p2)}
+.sheet .sub{margin:0 0 12px;color:var(--mut);font-size:13px}
+.codes{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.codes button{border:1.5px solid var(--line);background:#FCFBFE;border-radius:12px;padding:8px 2px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:58px;justify-content:center}
+.codes button b{font:800 15px Inter,sans-serif;color:#1E1A2B;white-space:nowrap}
+.codes button b.r{color:var(--red)}
+.codes button small{font-size:10.5px;color:var(--mut);line-height:1.2;text-align:center}
+.codes button.is-on{border-color:var(--p);background:var(--pl)}
+.srow{display:flex;gap:8px;margin-top:14px}
+.srow .btn{flex:1}
+.sheet img{width:100%;border-radius:10px;border:1px solid var(--line);margin-top:6px}
+/* toast */
+.toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%) translateY(16px);background:#2A1B40;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:60;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (max-width:420px){.panel{margin:10px 8px;padding:14px}.rwrap{margin:0 -14px;padding:0 14px 4px}.codes{grid-template-columns:repeat(4,1fr)}}
+
+/* ===== roster template (same as the approved horizontal roster) ===== */
+.tpl,.tpl *{box-sizing:border-box;margin:0;padding:0}
+.tpl{font-family:'Inter',sans-serif;background:#F3F0F8;padding:28px;display:inline-block;direction:ltr;text-align:left;line-height:normal;font-size:16px;color:#000;letter-spacing:normal;vertical-align:top}
+.tpl .card{background:#fff;border-radius:18px;box-shadow:0 6px 28px rgba(60,30,100,.12);padding:26px 26px 22px;overflow:hidden}
+.tpl .head{text-align:center;margin-bottom:18px}
+.tpl .head h1{font-size:25px;font-weight:800;color:#3E1F63;letter-spacing:.2px}
+.tpl .head p{font-size:13.5px;font-weight:600;color:#7A6A92;margin-top:5px;letter-spacing:.3px}
+.tpl .head .bar{width:64px;height:3px;border-radius:2px;background:#8E5BC4;margin:12px auto 0}
+.tpl table{border-collapse:separate;border-spacing:0;border:1.5px solid #5B2E8A;border-radius:12px;overflow:hidden}
+.tpl th,.tpl td{text-align:center;vertical-align:middle;white-space:nowrap}
+.tpl th{background:#5B2E8A;color:#fff;font-weight:700}
+.tpl td{color:#1E1A2B;font-weight:700}
+.tpl .off{color:#D32F2F;font-weight:800}
+.tpl .on{color:#1E1A2B}
+.tpl .short{font-size:.85em}
+.tpl td.lbl{background:#EFE7F8;color:#3E1F63}
+.tpl th{font-size:14px;padding:10px 0;border-right:1px solid #7A4FA8}
+.tpl th.dayh{font-size:11.5px;font-weight:600;background:#6E3FA0;letter-spacing:.4px}
+.tpl th.wkh{background:#3F6FA3}
+.tpl th.dayh.wkh{background:#4F80B3}
+.tpl th.corner{background:#4A2373;text-align:left;padding-left:14px;width:96px}
+.tpl th:last-child,.tpl td:last-child{border-right:none}
+.tpl td{font-size:14px;height:40px;min-width:38px;padding:0 4px;border-right:1px solid #CFC2E0;border-top:1.5px solid #B9A9D0}
+.tpl td.wkc{background:#D8E9F8}
+.tpl td.name{text-align:left;padding-left:14px;font-weight:800;font-size:13.5px;letter-spacing:.5px}
+/* editing helpers (preview only, never exported) */
+.tpl.edit th[data-i],.tpl.edit td[data-p]{cursor:pointer}
+.tpl.edit td[data-p]{position:relative}
+.tpl.edit td.lk::after{content:'';position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:#C98A00}
+.tpl.edit th.phh{box-shadow:inset 0 -4px 0 #F2B705}
+.tpl.edit td.flag{box-shadow:inset 0 0 0 2px #D32F2F}
+.tpl.edit td[data-p]:active{background:#E9DDF6}
+.tpl.edit.man td.lk::after{display:none}
+.tpl.edit.man td.gen span{opacity:.42}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4M7.5 13h2M11 13h2M14.5 13h2M7.5 17h2M11 17h2"/></svg></div>
+  <div><h1>صانع جدول المناوبات</h1><p>نفس قالب الجدول، والتوزيع بالعدل <span id="sync"></span></p></div>
+</header>
+<main>
+  <section class="panel">
+    <h2><span class="n">1</span>الفترة والعنوان</h2>
+    <div class="fields">
+      <label class="f"><span>من</span><input type="date" id="from"></label>
+      <label class="f"><span>إلى</span><input type="date" id="to"></label>
+    </div>
+    <div class="pills">
+      <button class="pill" data-len="28">٤ أسابيع</button>
+      <button class="pill" data-len="month">شهر كامل</button>
+      <button class="pill" data-len="next">الفترة اللي بعدها ←</button>
+      <span id="plen"></span>
+    </div>
+    <div class="fields" style="margin-top:12px">
+      <label class="f wide"><span>العنوان (يتغير مع التاريخ بروحه)</span><input id="title" dir="ltr" spellcheck="false"></label>
+      <label class="f wide"><span>تحت العنوان</span><input id="subtitle" dir="ltr" spellcheck="false"></label>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2><span class="n">2</span>الموظفين والأعداد</h2>
+    <p class="hint">خلّ الخانة <b>فاضية = تلقائي</b>: الكل ياخذ نفس النصيب حسب أيام دوامه. اكتب <b>رقم</b> لو تبي عدد محدد لهالشخص بهالفترة (مثلاً A 3).</p>
+    <div id="staffList"></div>
+    <button class="btn addbtn" id="addStaff">+ إضافة اسم</button>
+  </section>
+
+  <details class="panel" id="pRules">
+    <summary><h2><span class="n">3</span>التغطية والقوانين<span class="sp"></span><span class="chev">▼</span></h2></summary>
+    <div class="fields">
+      <label class="f"><span>الأفتر (A) بأيام الأسبوع</span><select data-k="cov.aMode"><option value="fixed">عدد ثابت كل يوم</option><option value="quota">حسب أرقام الموظفين</option></select></label>
+      <label class="f" data-show="aMode"><span>كم A كل يوم</span><input data-k="cov.a" type="number" min="0" max="9" inputmode="numeric"></label>
+      <label class="f"><span>كم W بكل يوم ويكند</span><input data-k="cov.w" type="number" min="0" max="9" inputmode="numeric"></label>
+      <label class="f"><span>كم يداوم بالعطلة الرسمية</span><input data-k="cov.ph" type="number" min="0" max="9" inputmode="numeric"></label>
+      <label class="f"><span>أقل عدد M باليوم</span><input data-k="cov.minM" type="number" min="0" max="9" inputmode="numeric"></label>
+      <label class="f"><span>أوف تعويض لكل ويكند</span><input data-k="cov.comp" type="number" min="0" max="4" inputmode="numeric"></label>
+      <label class="f"><span>أقصى أيام دوام ورا بعض</span><input data-k="rules.maxRun" type="number" min="3" max="14" inputmode="numeric"></label>
+    </div>
+    <div class="toggles">
+      <label class="tg"><input type="checkbox" data-k="cov.phComp"><i></i><span>اللي يداوم بالعطلة الرسمية ياخذ يوم <b dir="ltr">Ph</b> تعويض</span></label>
+      <label class="tg"><input type="checkbox" data-k="rules.noMafterA"><i></i><span>يفضّل ما يجي <b dir="ltr">M</b> بعد <b dir="ltr">A</b></span></label>
+      <label class="tg"><input type="checkbox" data-k="rules.useHist"><i></i><span>وازن مع الجداول المعتمدة اللي قبل</span></label>
+    </div>
+    <p class="hint" style="margin:6px 0 0">الـ <b dir="ltr">M</b> والـ <b dir="ltr">A</b> بأيام الأسبوع. الجمعة والسبت: واحد <b dir="ltr">W</b> بالدور والباقي <b dir="ltr">O</b>، واللي ياخذ <b dir="ltr">W</b> ياخذ أوف تعويض قبل الويكند وبعده.</p>
+  </details>
+
+  <section class="panel" id="pRoster">
+    <h2><span class="n">4</span>الجدول<span class="sp"></span><span class="zoom"><button class="ic" data-zoom="-1" aria-label="تصغير">−</button><button class="ic" data-zoom="1" aria-label="تكبير">+</button></span></h2>
+    <div class="modebar"><div class="seg big" id="modeSeg"><button data-mode="auto">🤖 تلقائي</button><button data-mode="manual">✍️ يدوي</button></div></div>
+    <p class="hint" id="rHint"></p>
+    <div class="counters" id="counters" hidden></div>
+    <div class="rwrap" id="rwrap"></div>
+    <div class="legend"><span><b>M</b> صباحي</span><span><b>A</b> أفتر</span><span><b class="r">W</b> ويكند</span><span><b class="r">O</b> أوف</span><span><b>PH</b> عطلة رسمية</span><span><b>Ph</b> تعويض عطلة</span><span><b>AL</b> إجازة</span></div>
+    <button class="linkbtn" id="unlockAll">فك كل الخانات المثبتة</button>
+  </section>
+
+  <section class="panel" id="pFair">
+    <h2><span class="n">5</span>العدالة</h2>
+    <div id="fair"></div>
+  </section>
+
+  <section class="panel">
+    <h2>الملاحظات</h2>
+    <ul class="warns" id="warns"></ul>
+  </section>
+
+  <section class="panel">
+    <h2><span class="n">6</span>التصدير والاعتماد</h2>
+    <div class="exp">
+      <button class="btn" data-exp="png">🖼️ صورة</button>
+      <button class="btn" data-exp="pdf">📄 PDF</button>
+      <button class="btn" data-exp="xlsx">📊 Excel</button>
+    </div>
+    <button class="btn primary wide" id="approve">✓ اعتمد الجدول</button>
+    <p class="hint" style="margin:10px 0 0">الاعتماد يحفظ أعداد كل واحد بالسجل، عشان الجدول اللي بعده يكمل دور الويكند ويعوّض اللي أخذ أكثر أو أقل.</p>
+  </section>
+
+  <section class="panel">
+    <h2>السجل</h2>
+    <div id="hist"></div>
+  </section>
+</main>
+
+<div class="actbar">
+  <div class="palette" id="palette" hidden></div>
+  <div class="abrow" id="abAuto"><button class="btn" id="arrange">⚡ رتّب</button><button class="btn primary" id="reroll">🎲 توزيع ثاني</button></div>
+  <div class="abrow" id="abMan" hidden><button class="btn" id="clearMan">🧹 فضّي</button><button class="btn primary" id="fillRest">⚡ كمّل الباقي تلقائي</button></div>
+</div>
+<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+/* ================= constants ================= */
+const DAYLBL=['SU','M','TU','W','TH','F','SA'];
+const AR_DAYS=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const WORK=new Set(['M','A','N','W','Short A']);
+const isA=c=>c==='A'||c==='Short A';
+const isEarly=c=>c==='M'||c==='W';
+const LS_KEY='roster-maker-v1';
+const CODE_INFO=[['M','صباحي'],['A','أفتر'],['W','ويكند'],['O','أوف'],['PH','عطلة رسمية'],['Ph','تعويض عطلة'],['Short A','أفتر قصير'],['AL','إجازة'],['','فاضي']];
+const PAL=[['M',''],['A',''],['O','r'],['W','r'],['PH',''],['Ph',''],['AL',''],['Short A','sm'],['⌫','']];
+const AUTO_HINT='اضغط على <b>التاريخ</b> = يصير عطلة رسمية <span class="phm"></span>. اضغط على <b>أي خانة</b> = غيّرها وتنثبت <span class="dot"></span>، والباقي يترتب حولها بروحه.';
+const MAN_HINT='اختار الرمز من تحت، بعدين اضغط على الخانات (تضغط مرة ثانية على نفس الرمز = تنمسح). الأعداد فوق تتحدث على طول. ولو تبي، اضغط <b>«كمّل الباقي تلقائي»</b> ويتعبى الفاضي حول اختياراتك؛ الخانات الباهتة هي اللي تعبّت بروحها.';
+let PAINT=null;
+const nextSeed=()=>(Math.imul(S.seed|0,48271)+12345)%2147483647||7;
+const ZOOMS=[1,.82,.64];
+const _='';
+const SUBTITLE='';
+const SEED=null; /* public copy: no names */
+
+/* ================= utils ================= */
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const T=iso=>{const[y,m,d]=iso.split('-').map(Number);return Date.UTC(y,m-1,d)};
+const ISO=t=>new Date(t).toISOString().slice(0,10);
+const addDays=(iso,n)=>ISO(T(iso)+n*864e5);
+const dowOf=iso=>new Date(T(iso)).getUTCDay();
+const diffDays=(a,b)=>Math.round((T(b)-T(a))/864e5);
+const validIso=s=>/^\d{4}-\d{2}-\d{2}$/.test(s||'')&&!isNaN(T(s));
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const K=p=>String(p.name||'').trim().toUpperCase();
+function rngOf(seed){let a=(seed>>>0)||1;return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function buildDays(from,to,phList){const n=diffDays(from,to)+1;const ph=new Set(phList||[]);const out=[];for(let i=0;i<n;i++){const iso=addDays(from,i);const w=dowOf(iso);out.push({i,iso,dn:+iso.slice(8),mo:+iso.slice(5,7),dow:w,lbl:DAYLBL[w],we:w===5||w===6,ph:ph.has(iso)})}return out}
+function autoTitle(from,to){const a=new Date(T(from)),b=new Date(T(to));const ma=MONTHS[a.getUTCMonth()],mb=MONTHS[b.getUTCMonth()],ya=a.getUTCFullYear(),yb=b.getUTCFullYear();
+  if(ya===yb&&a.getUTCMonth()===b.getUTCMonth())return`Duty Roster ${ma} ${ya}`;
+  if(ya===yb)return`Duty Roster ${ma} - ${mb.toUpperCase()} ${yb}`;
+  return`Duty Roster ${ma} ${ya} - ${mb.toUpperCase()} ${yb}`}
+const arDate=d=>`${AR_DAYS[d.dow]} ${d.dn}/${d.mo}`;
+const compK=(nW,comp)=>comp>0?Math.max(1,Math.round(comp*nW/2)):0;
+const intOr=(v,def,lo,hi)=>{const n=parseInt(String(v).replace(/[٠-٩]/g,c=>'٠١٢٣٤٥٦٧٨٩'.indexOf(c)),10);return isNaN(n)?def:clamp(n,lo,hi)};
+const quotaOf=v=>{if(v===null||v===undefined||String(v).trim()==='')return null;return intOr(v,null,0,99)};
+
+/* ================= summary of a roster (for history) ================= */
+function summarize(days,people,codeOf,comp){
+  const per={},lastW={},last={},pendComp={};
+  for(const p of people){
+    const c={type:p.type,M:0,A:0,N:0,W:0,O:0,PH:0,Ph:0,AL:0,PHW:0,avail:0,wAvail:0};
+    days.forEach((d,i)=>{const v=codeOf(p.key,i)||'';
+      if(v==='M')c.M++;else if(isA(v))c.A++;else if(v==='N')c.N++;else if(v==='W')c.W++;else if(v==='O')c.O++;else if(v==='PH')c.PH++;else if(v==='Ph')c.Ph++;else if(v==='AL')c.AL++;
+      if(d.we){if(v==='W'||v==='O')c.wAvail++;if(v==='W')lastW[p.key]=d.iso}
+      else if(d.ph){if(WORK.has(v))c.PHW++}
+      else if(v==='M'||isA(v)||v==='N')c.avail++;});
+    per[p.key]=c;last[p.key]=codeOf(p.key,days.length-1)||'';
+  }
+  // comp days still owed for the last weekend (when the roster ends on it)
+  let e=days.length-1;
+  if(e>=0&&days[e].we){let s=e;while(s>0&&days[s-1].we)s--;
+    for(const p of people){if(p.type==='fixed')continue;
+      let nW=0;for(let i=s;i<=e;i++)if(codeOf(p.key,i)==='W')nW++;
+      if(!nW)continue;const k=compK(nW,comp);let placed=0;
+      for(let i=Math.max(0,s-7);i<s;i++)if(!days[i].we&&codeOf(p.key,i)==='O')placed++;
+      if(k-placed>0)pendComp[p.key]=k-placed;}}
+  return{per,lastW,last,pendComp};
+}
+
+/* ================= state ================= */
+function upcomingSunday(){const t=new Date();const iso=ISO(Date.UTC(t.getFullYear(),t.getMonth(),t.getDate()));return addDays(iso,(7-dowOf(iso))%7)}
+function defaultState(){
+  const hasSeed=!!(SEED&&SEED.from);const from=hasSeed?addDays(SEED.to,1):upcomingSunday();
+  const people=hasSeed?SEED.people:[['NAME 1','rot'],['NAME 2','rot'],['NAME 3','rot'],['NAME 4','rot']];
+  const st={v:1,from,to:addDays(from,27),title:'',titleAuto:true,subtitle:SUBTITLE,
+    staff:people.map(([name,type],k)=>({id:'s'+(k+1),name,type,qA:null,qN:null,qW:null})),
+    cov:{aMode:'fixed',a:1,nMode:'quota',n:1,w:1,ph:1,minM:1,comp:2,phComp:true},
+    rules:{noMafterN:true,restAfterN:true,groupN:true,maxN:3,noMafterA:true,maxRun:6,useHist:true},
+    ph:[],cells:{},seed:1,history:[],gen:null,zoom:null,mode:'auto',updatedAt:0};
+  if(hasSeed){
+    const sd=buildDays(SEED.from,SEED.to,SEED.ph);
+    const sm=summarize(sd,SEED.people.map(([k,t])=>({key:k,type:t})),(k,i)=>SEED.people.find(p=>p[0]===k)[2][i],2);
+    st.history.push(Object.assign({id:'seed',label:SEED.label,note:'الجدول الأصلي',from:SEED.from,to:SEED.to,at:0},sm));
+  }
+  return st;
+}
+function fixState(s){
+  const d=defaultState();
+  for(const k of Object.keys(d))if(s[k]===undefined)s[k]=d[k];
+  s.cov=Object.assign({},d.cov,s.cov||{});s.rules=Object.assign({},d.rules,s.rules||{});
+  if(!Array.isArray(s.staff))s.staff=d.staff;if(!Array.isArray(s.history))s.history=[];if(!Array.isArray(s.ph))s.ph=[];
+  if(!s.cells||typeof s.cells!=='object')s.cells={};
+  if(!validIso(s.from)||!validIso(s.to)||diffDays(s.from,s.to)<0){s.from=d.from;s.to=d.to}
+  // no night shift in this roster: only M and A
+  s.cov.nMode='quota';s.staff.forEach(p=>{p.qN=null});
+  if(s.mode!=='manual')s.mode='auto';
+  return s;
+}
+function loadLocal(){try{const t=localStorage.getItem(LS_KEY);if(t){const o=JSON.parse(t);if(o&&o.v===1)return o}}catch(e){}return null}
+let S=fixState(loadLocal()||defaultState());
+let DAYS=[];let EV={counts:{},warns:[],flags:new Set()};
+const refreshDays=()=>{DAYS=buildDays(S.from,S.to,S.ph)};
+const curTitle=()=>S.titleAuto||!S.title?autoTitle(S.from,S.to):S.title;
+
+/* ================= persistence (this device + Claude cloud) ================= */
+let saveTimer=null,dbDoc=null,dbBusy=false,dbAgain=false;
+function save(bump){if(bump!==false)S.updatedAt=Date.now();try{localStorage.setItem(LS_KEY,JSON.stringify(S))}catch(e){}clearTimeout(saveTimer);saveTimer=setTimeout(dbSave,1200)}
+async function dbSave(){
+  if(!dbDoc||!S.updatedAt)return;if(dbBusy){dbAgain=true;return}dbBusy=true;
+  const body={json:JSON.stringify(S),updatedAt:S.updatedAt};
+  try{await dbDoc.set(body);setSync('cloud')}
+  catch(e){if(e&&e.code==='unavailable'){await sleep(700+Math.random()*800);try{await dbDoc.set(body);setSync('cloud')}catch(e2){setSync('err')}}else setSync('err')}
+  dbBusy=false;if(dbAgain){dbAgain=false;dbSave()}
+}
+function setSync(k){const el=$('#sync');if(!el)return;el.textContent=k==='cloud'?'· ☁️ محفوظ':k==='err'?'· ⚠️ ما انحفظ بالسحابة':'· 💾 محفوظ بهذا الجهاز'}
+async function initCloud(){
+  const c=window.claude;if(!c||typeof c.use!=='function'){setSync('local');return}
+  try{
+    const[user,db]=await Promise.all([c.use('user'),c.use('db')]);
+    if(!user||!db){setSync('local');return}
+    const uid=await user.id();if(!uid){setSync('local');return}
+    dbDoc=db.doc('data/users/'+uid+'/roster');
+    const snap=await Promise.race([dbDoc.get(),sleep(10000).then(()=>null)]);
+    if(!snap){setSync('local');return}
+    let remote=null;
+    if(snap.exists){const d=snap.data();if(d&&typeof d.json==='string'){try{remote=JSON.parse(d.json)}catch(e){}}}
+    if(remote&&remote.v===1&&(remote.updatedAt||0)>(S.updatedAt||0)){
+      S=fixState(remote);try{localStorage.setItem(LS_KEY,JSON.stringify(S))}catch(e){}
+      refreshDays();if(S.mode!=='manual'&&(!S.gen||S.gen.from!==S.from||S.gen.to!==S.to))runGenerate({stab:true,bump:false});else afterChange(false);renderAll();
+    }else if(S.updatedAt)dbSave();
+    setSync('cloud');
+  }catch(e){setSync('local')}
+}
+let DL=null;
+const STANDALONE=!(window.claude&&typeof window.claude.use==='function');
+function downloadBlob(name,blob){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;a.rel='noopener';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),8000);toast('جاري التنزيل ⬇️')}
+(async()=>{const c=window.claude;if(c&&typeof c.use==='function'){try{DL=await c.use('downloads')}catch(e){DL=null}}})();
+
+/* ================= history helpers ================= */
+function histInfo(){
+  const hs=S.history.filter(h=>h.to<S.from).sort((a,b)=>a.to<b.to?-1:1);
+  const recent=S.rules.useHist?hs.slice(-6):[];
+  const agg={};
+  for(const h of recent)for(const[k,c]of Object.entries(h.per||{})){const a=agg[k]||(agg[k]={A:0,N:0,W:0,PHW:0,avail:0,wAvail:0});a.A+=c.A||0;a.N+=c.N||0;a.W+=c.W||0;a.PHW+=c.PHW||0;a.avail+=c.avail||0;a.wAvail+=c.wAvail||0}
+  const lastW={};for(const h of hs)for(const[k,v]of Object.entries(h.lastW||{}))if(!lastW[k]||v>lastW[k])lastW[k]=v;
+  const prev=hs.length?hs[hs.length-1]:null;const contig=!!prev&&diffDays(prev.to,S.from)===1;
+  return{agg,lastW,last:contig?(prev.last||{}):{},pendComp:contig?(prev.pendComp||{}):{}};
+}
+function debtOf(agg,persons,field,availField){
+  let sx=0,sa=0;for(const p of persons){const a=agg[K(p)];if(a&&a[availField]>0){sx+=a[field];sa+=a[availField]}}
+  const rate=sa?sx/sa:0;
+  return p=>{const a=agg[K(p)];if(!a||!a[availField])return 0;return a[field]-a[availField]*rate};
+}
+function computeTargets(total,persons,weightFn,quotaFn,debtFn,rng){
+  const t={};let qsum=0;const autos=[];
+  for(const p of persons){const q=quotaFn(p);if(q!=null){t[p.id]=q;qsum+=q}else autos.push(p)}
+  let rem=total-qsum;const over=rem<0;if(rem<0)rem=0;
+  if(!autos.length)return{t,qsum,rem,over,noAuto:true};
+  const w=autos.map(weightFn);const W=w.reduce((a,b)=>a+b,0);
+  if(!W){autos.forEach(p=>t[p.id]=0);return{t,qsum,rem,over,noAuto:false}}
+  let raw=autos.map((p,k)=>w[k]?Math.max(0,rem*w[k]/W-clamp(debtFn(p),-2,2)):0);
+  const s=raw.reduce((a,b)=>a+b,0);raw=s>0?raw.map(x=>x*rem/s):autos.map((p,k)=>rem*w[k]/W);
+  const fl=raw.map(x=>Math.floor(x+1e-9));let left=rem-fl.reduce((a,b)=>a+b,0);
+  const tie=autos.map(()=>rng());
+  const order=autos.map((p,k)=>k).filter(k=>w[k]>0).sort((a,b)=>((raw[b]-fl[b])-(raw[a]-fl[a]))||(debtFn(autos[a])-debtFn(autos[b]))||(tie[a]-tie[b]));
+  let guard=0;while(left>0&&order.length&&guard++<1000){for(const k of order){if(left<=0)break;fl[k]++;left--}}
+  autos.forEach((p,k)=>t[p.id]=fl[k]);
+  return{t,qsum,rem,over,noAuto:false};
+}
+
+/* ================= the solver ================= */
+function generate(opts){
+  opts=opts||{};
+  const days=DAYS,n=days.length,cov=S.cov,rules=S.rules,staff=S.staff;
+  const R=staff.filter(p=>p.type!=='fixed');
+  const rng=rngOf(Math.imul(S.seed|0,2654435761)^0x9E3779B9);
+  const notes=[];const H=histInfo();
+  const row={},locked={},prevC={};
+  for(const p of staff){
+    row[p.id]=new Array(n).fill(null);locked[p.id]=new Array(n).fill(false);prevC[p.id]=new Array(n).fill(null);
+    const cs=S.cells[p.id]||{};
+    for(let i=0;i<n;i++){const c=cs[days[i].iso];if(!c)continue;if(c.l){row[p.id][i]=c.c;locked[p.id][i]=true}else prevC[p.id][i]=c.c}
+  }
+  for(const p of staff)if(p.type==='fixed')for(let i=0;i<n;i++)if(row[p.id][i]===null)row[p.id][i]=days[i].we?'O':'';
+  const free=(p,i)=>row[p.id][i]===null;
+  const WD=[];for(let i=0;i<n;i++)if(!days[i].we&&!days[i].ph)WD.push(i);
+  const WDset=new Set(WD);
+
+  /* ---- 1) weekends: W by rotation, the rest O ---- */
+  const weIdx=[];for(let i=0;i<n;i++)if(days[i].we)weIdx.push(i);
+  const blocks=[];for(const i of weIdx){const b=blocks[blocks.length-1];if(b&&b.end===i-1)b.end=i;else blocks.push({start:i,end:i})}
+  // W targets are worked out in whole weekends, then shown in days
+  const bl=blocks.length?weIdx.length/blocks.length:2;
+  const wDebt=debtOf(H.agg,R,'W','wAvail');
+  const tWres=computeTargets(blocks.length*cov.w,R,p=>blocks.filter(b=>{for(let i=b.start;i<=b.end;i++)if(!(free(p,i)||row[p.id][i]==='W'))return false;return true}).length,
+    p=>p.qW==null?null:Math.round(p.qW/bl),p=>wDebt(p)/bl,rng);
+  const tW={};for(const p of R)tW[p.id]=p.qW!=null?p.qW:Math.round((tWres.t[p.id]||0)*bl);
+  if(tWres.over)notes.push({t:'warn',m:`أرقام الـ W مجموعها ${R.reduce((s,p)=>s+(p.qW||0),0)} والجدول فيه ${weIdx.length*cov.w} يوم W بس`});
+  const wCnt={},lastW={};
+  for(const p of R){wCnt[p.id]=weIdx.filter(i=>row[p.id][i]==='W').length;lastW[p.id]=H.lastW[K(p)]||''}
+  const cntW=i=>staff.filter(p=>row[p.id][i]==='W').length;
+  const compJobs=[];
+  for(const b of blocks){
+    const bd=[];for(let i=b.start;i<=b.end;i++)bd.push(i);
+    for(const p of R)if(bd.some(i=>locked[p.id][i]&&row[p.id][i]==='W'))for(const i of bd)if(free(p,i)&&cntW(i)<cov.w){row[p.id][i]='W';wCnt[p.id]++}
+    let guard=0;
+    while(bd.some(i=>cntW(i)<cov.w)&&guard++<20){
+      const need=bd.filter(i=>cntW(i)<cov.w);
+      const notW=p=>!bd.some(i=>row[p.id][i]==='W');
+      let c=R.filter(p=>notW(p)&&need.every(i=>free(p,i)));
+      if(!c.length)c=R.filter(p=>notW(p)&&need.some(i=>free(p,i)));
+      if(!c.length){notes.push({t:'err',m:`ويكند ${arDate(days[b.start])}: ما في أحد فاضي للـ W`});break}
+      const sc=p=>{let s=(wCnt[p.id]-(tW[p.id]||0))*10;const lw=lastW[p.id];if(lw){const gap=diffDays(lw,days[b.start].iso);if(gap<=8)s+=50;s-=Math.min(gap,90)*.05}else s-=5;return s};
+      const tie=new Map(c.map(p=>[p.id,rng()]));
+      c.sort((a,x)=>sc(a)-sc(x)||tie.get(a.id)-tie.get(x.id));
+      const p=c[0];for(const i of need)if(free(p,i)){row[p.id][i]='W';wCnt[p.id]++}
+      lastW[p.id]=days[b.end].iso;
+    }
+    for(const p of R){const nW=bd.filter(i=>row[p.id][i]==='W').length;if(nW){lastW[p.id]=days[b.end].iso;const k=compK(nW,cov.comp);if(k)compJobs.push({p,b,k})}}
+  }
+  for(const i of weIdx)for(const p of R)if(free(p,i))row[p.id][i]='O';
+
+  /* ---- 2) public holidays on weekdays ---- */
+  const phW={};R.forEach(p=>phW[p.id]=0);const phJobs=[];
+  for(let i=0;i<n;i++){if(!days[i].ph||days[i].we)continue;
+    for(const p of R)if(locked[p.id][i]&&WORK.has(row[p.id][i])){phW[p.id]++;if(cov.phComp)phJobs.push({p,i})}
+    let need=cov.ph-staff.filter(p=>WORK.has(row[p.id][i])).length;
+    const tie=new Map(R.map(p=>[p.id,rng()]));const ph=p=>((H.agg[K(p)]||{}).PHW||0)+phW[p.id];
+    const c=R.filter(p=>free(p,i)).sort((a,b)=>ph(a)-ph(b)||tie.get(a.id)-tie.get(b.id));
+    for(const p of c){if(need<=0)break;row[p.id][i]='M';phW[p.id]++;need--;if(cov.phComp)phJobs.push({p,i})}
+    if(need>0)notes.push({t:'err',m:`${arDate(days[i])} (عطلة): ما في أحد فاضي يداوم`});
+    for(const p of R)if(free(p,i))row[p.id][i]='PH';
+  }
+
+  /* ---- 3) compensation days (O for weekends, Ph for holidays) ---- */
+  const qTot={A:0,N:0};for(const p of R){if(p.qA!=null)qTot.A+=p.qA;if(p.qN!=null)qTot.N+=p.qN}
+  const wdN=Math.max(1,WD.length);
+  const estDem=()=>cov.minM+(cov.aMode==='fixed'?cov.a:Math.ceil(qTot.A/wdN))+(cov.nMode==='fixed'?cov.n:Math.ceil(qTot.N/wdN));
+  const workers=i=>R.filter(p=>free(p,i)||(WORK.has(row[p.id][i])&&row[p.id][i]!=='W')).length;
+  const offCnt=i=>R.filter(p=>!free(p,i)&&!WORK.has(row[p.id][i])).length;
+  const canOff=(p,i)=>free(p,i)&&WDset.has(i)&&workers(i)-1>=estDem();
+  const pickOff=(p,cands,code)=>{let best=null,bs=1e9;for(const c of cands){if(!canOff(p,c.i))continue;const s=c.base+4*offCnt(c.i)+rng()*.2;if(s<bs){bs=s;best=c.i}}if(best===null)return false;row[p.id][best]=code;return true};
+  for(const p of R){let k=H.pendComp[K(p)]||0;while(k>0){if(!pickOff(p,WD.filter(i=>i<8).map(i=>({i,base:i*.5})),'O')){notes.push({t:'warn',m:`${p.name}: باقي له أوف تعويض من الجدول اللي قبل وما لقيت له مكان`});break}k--}}
+  compJobs.sort((a,b)=>a.b.start-b.b.start);
+  for(const{p,b,k}of compJobs){
+    const hasAfter=WD.some(i=>i>b.end),hasBefore=WD.some(i=>i<b.start);
+    let nb,na,carry=0;
+    if(!hasAfter){nb=Math.ceil(k/2);na=0;carry=k-nb}else if(!hasBefore){nb=0;na=k}else{nb=Math.floor(k/2);na=k-nb}
+    const before=w=>WD.filter(i=>i<b.start&&i>=b.start-w).map(i=>({i,base:b.start-i}));
+    const after=w=>WD.filter(i=>i>b.end&&i<=b.end+w).map(i=>({i,base:i-b.end}));
+    let miss=0;
+    for(let t=0;t<nb;t++)if(!(pickOff(p,before(6),'O')||pickOff(p,before(11),'O')))miss++;
+    if(hasAfter){na+=miss;miss=0}
+    for(let t=0;t<na;t++)if(!(pickOff(p,after(6),'O')||pickOff(p,after(11),'O')||(hasBefore&&pickOff(p,before(11),'O'))))miss++;
+    if(miss)notes.push({t:'warn',m:`${p.name}: ${miss} يوم أوف تعويض عن ويكند ${arDate(days[b.start])} ما لقيت له مكان`});
+    if(carry)notes.push({t:'info',m:`${p.name}: باقي له ${carry} يوم أوف تعويض عن آخر ويكند — بيدخل أول الجدول اللي بعده`});
+  }
+  for(const{p,i}of phJobs){
+    const after=WD.filter(j=>j>i&&j<=i+10).map(j=>({i:j,base:j-i})),before=WD.filter(j=>j<i&&j>=i-10).map(j=>({i:j,base:i-j+3}));
+    if(!(pickOff(p,after,'Ph')||pickOff(p,before,'Ph')))notes.push({t:'warn',m:`${p.name}: ما لقيت يوم Ph تعويض عن عطلة ${arDate(days[i])}`});
+  }
+
+  /* ---- 4) weekday shifts: targets + demand ---- */
+  const modes={A:cov.aMode,N:cov.nMode},per={A:cov.a,N:cov.n};
+  const isS=(S_,c)=>S_==='A'?isA(c):c===S_;
+  const lockedOn=(S_,i,arr)=>arr.filter(p=>locked[p.id][i]&&isS(S_,row[p.id][i])).length;
+  const dem={A:new Array(n).fill(0),N:new Array(n).fill(0)};
+  for(const i of WD){
+    const fr=R.filter(p=>free(p,i)).length;
+    let dN=modes.N==='fixed'?Math.max(0,per.N-lockedOn('N',i,staff)):0;
+    let dA=modes.A==='fixed'?Math.max(0,per.A-lockedOn('A',i,staff)):0;
+    if(dN+dA>fr){let s=dN+dA-fr;notes.push({t:'err',m:`${arDate(days[i])}: الناس ما يكفون (ناقص ${s})`});const ra=Math.min(dA,s);dA-=ra;s-=ra;dN-=Math.min(dN,s)}
+    else if(fr-dN-dA<cov.minM&&modes.A==='fixed'&&modes.N==='fixed')notes.push({t:'warn',m:`${arDate(days[i])}: ما يتبقى ${cov.minM} على M`});
+    dem.A[i]=dA;dem.N[i]=dN;
+  }
+  const wdWeight=p=>WD.filter(i=>free(p,i)||(locked[p.id][i]&&(row[p.id][i]==='M'||row[p.id][i]==='N'||isA(row[p.id][i])))).length;
+  const tgt={A:{},N:{}},tot={A:0,N:0};
+  for(const S_ of['A','N']){
+    const qf=p=>S_==='A'?p.qA:p.qN;
+    if(modes[S_]==='fixed'){
+      const total=WD.reduce((s,i)=>s+dem[S_][i]+lockedOn(S_,i,R),0);tot[S_]=total;
+      const res=computeTargets(total,R,wdWeight,qf,debtOf(H.agg,R,S_,'avail'),rng);tgt[S_]=res.t;
+      if(res.over)notes.push({t:'warn',m:`أرقام الـ ${S_} اللي كتبتها مجموعها ${res.qsum} والجدول فيه ${total} خانة ${S_} بس`});
+      else if(res.noAuto&&res.rem>0)notes.push({t:'info',m:`الجدول يحتاج ${total} ${S_} وأرقامك مجموعها ${res.qsum} — الزايد (${res.rem}) يتوزع على الكل`});
+    }else{
+      for(const p of R)tgt[S_][p.id]=Math.min(qf(p)||0,wdWeight(p));
+      tot[S_]=R.reduce((s,p)=>s+tgt[S_][p.id],0);
+    }
+  }
+  if(opts.dry)return{A:tgt.A,W:tW};
+  /* ---- 5) optimise (simulated annealing) ---- */
+  const Rn=R.length;
+  if(Rn&&WD.length){
+    solveWeekdays({Rn,n,rows:R.map(p=>row[p.id]),mov:R.map(p=>days.map((d,i)=>WDset.has(i)&&row[p.id][i]===null)),
+      WD,tA:R.map(p=>tgt.A[p.id]),tN:R.map(p=>tgt.N[p.id]),
+      wA:R.map(p=>modes.A==='quota'||p.qA!=null?60:12),wN:R.map(p=>modes.N==='quota'||p.qN!=null?60:12),lastCode:R.map(p=>H.last[K(p)]||''),prevC:R.map(p=>prevC[p.id]),
+      stab:opts.stab?5:0,qShifts:['A','N'].filter(S_=>modes[S_]==='quota'&&tot[S_]>0),qTot:tot,modes,dem,rng,rules,minM:cov.minM,
+      fixedM:days.map((d,i)=>staff.filter(p=>p.type==='fixed'&&row[p.id][i]==='M').length)});
+  }
+  for(const p of staff)for(let i=0;i<n;i++)if(row[p.id][i]===null)row[p.id][i]=days[i].we?'O':'M';
+
+  /* ---- write back ---- */
+  const inRange=new Set(days.map(d=>d.iso));
+  for(const p of staff){
+    const old=S.cells[p.id]||{};const cs={};
+    for(const[iso,c]of Object.entries(old))if(c&&c.l)cs[iso]=c;
+    for(let i=0;i<n;i++)if(!locked[p.id][i])cs[days[i].iso]={c:row[p.id][i],l:0};
+    for(const iso of Object.keys(cs))if(!inRange.has(iso)&&!cs[iso].l)delete cs[iso];
+    S.cells[p.id]=cs;
+  }
+  for(const id of Object.keys(S.cells))if(!staff.some(p=>p.id===id))delete S.cells[id];
+  const tg={};for(const p of R)tg[p.id]={A:tgt.A[p.id],N:tgt.N[p.id],W:tW[p.id]};
+  S.gen={from:S.from,to:S.to,seed:S.seed,notes,tgt:tg,tot:{A:tot.A,N:tot.N,W:weIdx.length*cov.w},modes:{A:modes.A,N:modes.N}};
+}
+
+function solveWeekdays(o){
+  const{Rn,n,rows,mov,WD,tA,tN,wA,wN,lastCode,prevC,stab,qShifts,qTot,modes,dem,rng,rules,minM,fixedM}=o;
+  const WDn=Math.max(1,WD.length);const isWD=new Uint8Array(n);WD.forEach(i=>isWD[i]=1);
+  const movDays=[];for(let pi=0;pi<Rn;pi++){const a=[];for(const i of WD)if(mov[pi][i])a.push(i);movDays.push(a)}
+  const dayMov=new Array(n);for(const i of WD){const a=[];for(let pi=0;pi<Rn;pi++)if(mov[pi][i])a.push(pi);dayMov[i]=a}
+  const tg={A:tA,N:tN};
+  const avgQ={A:qTot.A/WDn,N:qTot.N/WDn},capQ={A:Math.max(1,Math.ceil(qTot.A/WDn-1e-9)),N:Math.max(1,Math.ceil(qTot.N/WDn-1e-9))};
+  function personCost(pi){
+    const r=rows[pi];let c=0,a=0,nn=0,prev=lastCode[pi]||'',nRun=0,aRun=0;
+    for(let i=0;i<n;i++){const cur=r[i]||'';
+      if(cur==='N')nn++;else if(isA(cur))a++;
+      if(prev==='N'){if(isEarly(cur)){if(rules.noMafterN)c+=1000}else if(isA(cur)&&rules.restAfterN)c+=60}
+      if(isA(prev)&&isEarly(cur)&&rules.noMafterA)c+=20;
+      if(cur==='N'){if(prev==='N'){nRun++;if(nRun>rules.maxN)c+=80}else{nRun=1;if(rules.groupN)c+=25}}
+      if(isA(cur)){if(isA(prev)){aRun++;if(aRun>3)c+=30}else{aRun=1;c+=3}}
+      if(stab&&mov[pi][i]&&prevC[pi][i]&&prevC[pi][i]!==cur)c+=stab;
+      prev=cur}
+    if(tA[pi]!=null)c+=wA[pi]*(a-tA[pi])*(a-tA[pi]);
+    if(tN[pi]!=null)c+=wN[pi]*(nn-tN[pi])*(nn-tN[pi]);
+    return c;
+  }
+  function dayCost(i){
+    if(!qShifts.length||!isWD[i])return 0;
+    let m=fixedM[i]||0,a=0,nn=0;for(let pi=0;pi<Rn;pi++){const c=rows[pi][i];if(c==='M')m++;else if(isA(c))a++;else if(c==='N')nn++}
+    let c=0;for(const S_ of qShifts){const k=S_==='A'?a:nn;if(k>capQ[S_])c+=150*(k-capQ[S_]);c+=4*(k-avgQ[S_])*(k-avgQ[S_])}
+    if(m<minM)c+=300*(minM-m);return c;
+  }
+  const isS=(S_,c)=>S_==='A'?isA(c):c===S_;
+  function init(){
+    for(let pi=0;pi<Rn;pi++)for(const i of movDays[pi])rows[pi][i]=null;
+    const cnt={A:[],N:[]},dayCnt={A:new Array(n).fill(0),N:new Array(n).fill(0)};
+    for(let pi=0;pi<Rn;pi++){cnt.A[pi]=0;cnt.N[pi]=0;for(let i=0;i<n;i++){const c=rows[pi][i];if(c==null)continue;if(isA(c)){cnt.A[pi]++;if(isWD[i])dayCnt.A[i]++}else if(c==='N'){cnt.N[pi]++;if(isWD[i])dayCnt.N[i]++}}}
+    for(const S_ of qShifts){
+      const order=[...Array(Rn).keys()].map(k=>[k,rng()]).sort((x,y)=>x[1]-y[1]).map(x=>x[0]);
+      for(const pi of order){
+        let need=(tg[S_][pi]||0)-cnt[S_][pi],guard=0;
+        while(need>0&&guard++<80){
+          const maxLen=S_==='N'?(rules.groupN?Math.min(need,rules.maxN):1):Math.min(need,2);
+          let best=null,bs=1e9;
+          for(const i of movDays[pi]){if(rows[pi][i]!==null)continue;
+            let len=0,sc=0,j=i;
+            while(len<maxLen&&j<n&&isWD[j]&&mov[pi][j]&&rows[pi][j]===null){sc+=dayCnt[S_][j]*10+(stab&&prevC[pi][j]&&prevC[pi][j]!==S_?3:0);len++;j++}
+            const nx=rows[pi][i+len];if(S_==='N'&&nx!=null&&isEarly(nx))sc+=40;
+            sc=sc/len-len*3+rng()*2;if(sc<bs){bs=sc;best=[i,len]}}
+          if(!best)break;
+          for(let j=best[0];j<best[0]+best[1];j++){rows[pi][j]=S_;dayCnt[S_][j]++;cnt[S_][pi]++;need--}
+        }
+      }
+    }
+    for(const i of WD)for(const S_ of['N','A']){
+      if(modes[S_]!=='fixed')continue;let need=dem[S_][i];if(!need)continue;
+      const c=dayMov[i].filter(pi=>rows[pi][i]===null);
+      const prev=pi=>i>0?rows[pi][i-1]:lastCode[pi];
+      const sc=new Map(c.map(pi=>[pi,((cnt[S_][pi]-(tg[S_][pi]||0))*3)+(S_==='A'&&prev(pi)==='N'?2:0)+(S_==='N'&&prev(pi)==='N'?-1:0)+(stab&&prevC[pi][i]===S_?-2:0)+rng()]));
+      c.sort((x,y)=>sc.get(x)-sc.get(y));
+      for(const pi of c.slice(0,need)){rows[pi][i]=S_;cnt[S_][pi]++}
+    }
+    for(let pi=0;pi<Rn;pi++)for(const i of movDays[pi])if(rows[pi][i]===null)rows[pi][i]='M';
+  }
+  let bestRows=null,bestCost=Infinity;
+  const restarts=stab?2:3;const iters=Math.min(200000,Math.max(30000,WD.length*Rn*600));
+  for(let r=0;r<restarts;r++){
+    init();
+    const pc=[];for(let pi=0;pi<Rn;pi++)pc.push(personCost(pi));
+    const dc=new Array(n).fill(0);for(const i of WD)dc[i]=dayCost(i);
+    let total=pc.reduce((a,b)=>a+b,0)+dc.reduce((a,b)=>a+b,0);
+    let lb=total,lr=rows.map(x=>x.slice());
+    let Tm=40;const alpha=Math.pow(.15/Tm,1/iters);
+    for(let it=0;it<iters;it++){
+      Tm*=alpha;
+      const mv=rng();
+      if(mv<.3){
+        /* swap a run of 2–3 days between two people (moves a whole block of nights/afters) */
+        const i=WD[(rng()*WD.length)|0],L=dayMov[i];if(!L||L.length<2)continue;
+        const a=L[(rng()*L.length)|0],b=L[(rng()*L.length)|0];if(a===b)continue;
+        const len=2+((rng()*2)|0);let ok=true,diff=false;
+        for(let d=i;d<i+len;d++){if(d>=n||!isWD[d]||!mov[a][d]||!mov[b][d]){ok=false;break}if(rows[a][d]!==rows[b][d])diff=true}
+        if(!ok||!diff)continue;
+        for(let d=i;d<i+len;d++){const x=rows[a][d];rows[a][d]=rows[b][d];rows[b][d]=x}
+        const na=personCost(a),nb=personCost(b),delta=na-pc[a]+nb-pc[b];
+        if(delta<=0||rng()<Math.exp(-delta/Tm)){pc[a]=na;pc[b]=nb;total+=delta}
+        else for(let d=i;d<i+len;d++){const x=rows[a][d];rows[a][d]=rows[b][d];rows[b][d]=x}
+      }else if(qShifts.length&&mv<.6){
+        const pi=(rng()*Rn)|0,md=movDays[pi];if(md.length<2)continue;
+        const S_=qShifts[(rng()*qShifts.length)|0];
+        const i=md[(rng()*md.length)|0],j=md[(rng()*md.length)|0];if(i===j)continue;
+        const ci=rows[pi][i],cj=rows[pi][j];
+        if(!((isS(S_,ci)&&cj==='M')||(ci==='M'&&isS(S_,cj))))continue;
+        rows[pi][i]=cj;rows[pi][j]=ci;
+        const np=personCost(pi),di=dayCost(i),dj=dayCost(j);const delta=np-pc[pi]+di-dc[i]+dj-dc[j];
+        if(delta<=0||rng()<Math.exp(-delta/Tm)){pc[pi]=np;dc[i]=di;dc[j]=dj;total+=delta}else{rows[pi][i]=ci;rows[pi][j]=cj}
+      }else{
+        const i=WD[(rng()*WD.length)|0],L=dayMov[i];if(!L||L.length<2)continue;
+        const a=L[(rng()*L.length)|0],b=L[(rng()*L.length)|0];if(a===b)continue;
+        const ca=rows[a][i],cb=rows[b][i];if(ca===cb)continue;
+        rows[a][i]=cb;rows[b][i]=ca;
+        const na=personCost(a),nb=personCost(b),delta=na-pc[a]+nb-pc[b];
+        if(delta<=0||rng()<Math.exp(-delta/Tm)){pc[a]=na;pc[b]=nb;total+=delta}else{rows[a][i]=ca;rows[b][i]=cb}
+      }
+      if(total<lb-1e-9){lb=total;lr=rows.map(x=>x.slice())}
+    }
+    if(lb<bestCost){bestCost=lb;bestRows=lr}
+  }
+  if(bestRows)for(let pi=0;pi<Rn;pi++)for(let i=0;i<n;i++)rows[pi][i]=bestRows[pi][i];
+  return bestCost;
+}
+
+/* ================= evaluation (counts + warnings) ================= */
+function evaluate(){
+  const days=DAYS,n=days.length,cov=S.cov,rules=S.rules,staff=S.staff;
+  const code=(p,i)=>{const c=(S.cells[p.id]||{})[days[i].iso];return c?c.c:null};
+  const counts={},warns=[],flags=new Set();let empty=0;
+  const man=S.mode==='manual';let emptyAll=0;
+  for(const p of staff){const c={M:0,A:0,N:0,W:0,O:0,PH:0,Ph:0,AL:0,work:0,empty:0};
+    for(let i=0;i<n;i++){const v=code(p,i);if(v===null){c.empty++;emptyAll++;if(p.type!=='fixed')empty++;continue}
+      if(v==='M')c.M++;else if(isA(v))c.A++;else if(v==='N')c.N++;else if(v==='W')c.W++;else if(v==='O')c.O++;else if(v==='PH')c.PH++;else if(v==='Ph')c.Ph++;else if(v==='AL')c.AL++;
+      if(WORK.has(v))c.work++}
+    counts[p.id]=c}
+  const cv=[];
+  for(let i=0;i<n;i++){const d=days[i];let a=0,nn=0,m=0,w=0,work=0;
+    if(man&&staff.some(p=>p.type!=='fixed'&&code(p,i)===null))continue;
+    for(const p of staff){const v=code(p,i)||'';if(v==='M')m++;else if(isA(v))a++;else if(v==='N')nn++;else if(v==='W')w++;if(WORK.has(v))work++}
+    if(d.we){if(w<cov.w)cv.push(`${arDate(d)}: W ${w} من ${cov.w}`)}
+    else if(d.ph){if(work<cov.ph)cv.push(`${arDate(d)} (عطلة): يداوم ${work} من ${cov.ph}`)}
+    else{if(cov.aMode==='fixed'&&a<cov.a)cv.push(`${arDate(d)}: A ${a} من ${cov.a}`);if(cov.nMode==='fixed'&&nn<cov.n)cv.push(`${arDate(d)}: N ${nn} من ${cov.n}`);if(m<cov.minM)cv.push(`${arDate(d)}: M ${m} بس`)}}
+  if(cv.length)warns.push({t:'err',m:'تغطية ناقصة — '+cv.slice(0,6).join('، ')+(cv.length>6?` (+${cv.length-6})`:'')});
+  const H=histInfo();
+  for(const p of staff){if(p.type==='fixed')continue;
+    let prev=H.last[K(p)]||'',run=0,rs=0;const nm=[],runs=[];
+    for(let i=0;i<n;i++){const v=code(p,i)||'';
+      if(rules.noMafterN&&prev==='N'&&isEarly(v)){nm.push(arDate(days[i]));flags.add(p.id+'|'+i)}
+      if(WORK.has(v)){if(!run)rs=i;run++}else{if(run>rules.maxRun)runs.push([rs,i-1]);run=0}
+      prev=v}
+    if(run>rules.maxRun)runs.push([rs,n-1]);
+    if(nm.length)warns.push({t:'err',m:`${p.name}: دوام صبح بعد نايت — ${nm.join('، ')}`});
+    for(const[a,b]of runs)warns.push({t:'warn',m:`${p.name}: ${b-a+1} أيام دوام ورا بعض (من ${arDate(days[a])} إلى ${arDate(days[b])})`});
+    const c=counts[p.id];
+    for(const[f,lab]of[['qA','A'],['qW','W']])if(p[f]!=null&&c[lab]!==p[f])warns.push({t:'warn',m:`${p.name}: طلبت ${p[f]} ${lab} وطلع ${c[lab]}`});
+  }
+  if(man){if(emptyAll)warns.unshift({t:'info',m:`باقي ${emptyAll} خانة فاضية`})}
+  else if(empty)warns.unshift({t:'info',m:`في ${empty} خانة فاضية — اضغط «رتّب»`});
+  if(S.gen&&S.gen.from===S.from&&S.gen.to===S.to)for(const x of S.gen.notes||[])warns.push(x);
+  return{counts,warns,flags};
+}
+
+/* ================= rendering ================= */
+function codeHTML(v){if(!v)return'';let cls=(v==='O'||v==='W')?'off':'on';if(v==='Short A')cls+=' short';return`<span class="${cls}">${esc(v)}</span>`}
+function templateHTML(edit,flags){
+  const days=DAYS,sub=S.subtitle||'',man=edit&&S.mode==='manual';
+  let h=`<div class="tpl${edit?' edit':''}${man?' man':''}"><div class="card"><div class="head"><h1><span>${esc(curTitle())}</span></h1>${sub?`<p><span>${esc(sub)}</span></p>`:''}<div class="bar"></div></div><table><thead><tr><th class="corner"><span>Date</span></th>`;
+  days.forEach((d,i)=>{h+=`<th class="${d.we?'wkh':''}${edit&&d.ph?' phh':''}"${edit?` data-i="${i}"`:''}><span>${d.dn}</span></th>`});
+  h+=`</tr><tr><th class="corner"><span>Day</span></th>`;
+  days.forEach((d,i)=>{h+=`<th class="dayh${d.we?' wkh':''}${edit&&d.ph?' phh':''}"${edit?` data-i="${i}"`:''}><span>${d.lbl}</span></th>`});
+  h+='</tr></thead><tbody>';
+  for(const p of S.staff){
+    h+=`<tr><td class="lbl name"><span>${esc(p.name)}</span></td>`;
+    const cs=S.cells[p.id]||{};
+    days.forEach((d,i)=>{const c=cs[d.iso];const cl=[];if(d.we)cl.push('wkc');if(edit&&c&&c.l)cl.push('lk');if(man&&c&&!c.l)cl.push('gen');if(edit&&flags&&flags.has(p.id+'|'+i))cl.push('flag');
+      h+=`<td${cl.length?` class="${cl.join(' ')}"`:''}${edit?` data-p="${p.id}" data-i="${i}"`:''}>${codeHTML(c?c.c:'')}</td>`});
+    h+='</tr>';
+  }
+  return h+'</tbody></table></div></div>';
+}
+function renderPeriod(){
+  $('#from').value=S.from;$('#to').value=S.to;
+  const t=$('#title');if(document.activeElement!==t)t.value=curTitle();
+  const st=$('#subtitle');if(document.activeElement!==st)st.value=S.subtitle||'';
+  const n=DAYS.length;$('#plen').textContent=`${n} يوم`+(n%7===0?` (${n/7} أسابيع)`:'');
+}
+function renderStaff(){
+  $('#staffList').innerHTML=S.staff.map((p,k)=>`
+  <div class="person" data-sid="${p.id}">
+    <div class="pr1">
+      <input class="pname" data-f="name" value="${esc(p.name)}" dir="ltr" spellcheck="false" autocomplete="off" aria-label="الاسم">
+      <div class="seg"><button data-act="type" data-v="rot" class="${p.type!=='fixed'?'is-on':''}">توزيع</button><button data-act="type" data-v="fixed" class="${p.type==='fixed'?'is-on':''}">ثابت</button></div>
+      <button class="ic del" data-act="del" aria-label="حذف">✕</button>
+    </div>
+    <div class="pr2">
+      ${p.type==='fixed'?'<span class="pnote">ما يدخل التوزيع: أيام الأسبوع فاضية والويكند O، وتقدر تعدّل خاناته من الجدول.</span>':
+      `<div class="qs">${['qA','qW'].map(f=>`<label class="q ${f}"><b>${f.slice(1)}</b><input data-f="${f}" inputmode="numeric" placeholder="تلقائي" value="${p[f]==null?'':p[f]}" aria-label="${f.slice(1)}"></label>`).join('')}</div>`}
+      <button class="ic" data-act="up" ${k===0?'disabled':''} aria-label="فوق">▲</button>
+      <button class="ic" data-act="down" ${k===S.staff.length-1?'disabled':''} aria-label="تحت">▼</button>
+    </div>
+  </div>`).join('');
+}
+function renderRules(){
+  document.querySelectorAll('#pRules [data-k]').forEach(el=>{const[a,b]=el.dataset.k.split('.');const v=S[a][b];
+    if(el.type==='checkbox')el.checked=!!v;else if(document.activeElement!==el)el.value=v});
+  document.querySelector('[data-show="aMode"]').hidden=S.cov.aMode!=='fixed';
+}
+function zoomIdx(){if(S.zoom==null)return window.innerWidth<700?1:0;return clamp(S.zoom,0,ZOOMS.length-1)}
+function renderRoster(){
+  const w=$('#rwrap');const sl=w.scrollLeft,st=w.scrollTop;
+  w.innerHTML=templateHTML(true,EV.flags);
+  const t=w.querySelector('.tpl');if(t)t.style.zoom=ZOOMS[zoomIdx()];
+  w.scrollLeft=sl;w.scrollTop=st;
+}
+function renderFair(){
+  const g=(S.gen&&S.gen.from===S.from&&S.gen.to===S.to)?S.gen:null;const tg=g?g.tgt:{};
+  const chip=(v,t)=>{if(t==null||(t===0&&v===0))return`<td>${v}</td>`;const d=Math.abs(v-t);return`<td><span class="chip ${d===0?'ok':d===1?'amb':'bad'}" dir="ltr">${v}<small>/${t}</small></span></td>`};
+  let h='<table class="ftab"><thead><tr><th>الاسم</th><th>M</th><th>A</th><th>W</th><th>أوف</th><th>دوام</th></tr></thead><tbody>';
+  for(const p of S.staff){const c=EV.counts[p.id]||{};const t=p.type==='fixed'?{}:(tg[p.id]||{});
+    h+=`<tr class="${p.type==='fixed'?'fx':''}"><td class="nm">${esc(p.name)}</td><td>${c.M||0}</td>${chip(c.A||0,t.A)}${chip(c.W||0,t.W)}<td>${(c.O||0)+(c.PH||0)+(c.Ph||0)}</td><td>${c.work||0}</td></tr>`}
+  h+='</tbody></table>';
+  let note='الرقم الصغير = نصيبه العادل. <span class="chip ok">أخضر</span> مضبوط، <span class="chip amb">برتقالي</span> فرق ١، <span class="chip bad">أحمر</span> أكثر.';
+  if(g){const parts=[];if(g.modes.A==='fixed')parts.push(`<b dir="ltr">A</b> ${g.tot.A} خانة`);else if(g.tot.A)parts.push(`<b dir="ltr">A</b> ${g.tot.A} حسب أرقامك`);
+    parts.push(`<b dir="ltr">W</b> ${g.tot.W} يوم`);
+    note+=`<br>بهالفترة: ${parts.join('، ')} — تتوزع بالتساوي حسب أيام دوام كل واحد`+(S.rules.useHist&&S.history.some(h=>h.to<S.from)?'، مع تعويض الفرق من الجداول اللي قبل.':'.');}
+  $('#fair').innerHTML=h+`<p class="fnote">${note}</p>`;
+}
+function renderWarns(){
+  const w=EV.warns;
+  $('#warns').innerHTML=w.length?w.map(x=>`<li class="${x.t}">${esc(x.m)}</li>`).join(''):'<li class="ok">✓ كل شي مضبوط: التغطية كاملة والقوانين ماشية.</li>';
+}
+function renderHist(){
+  const hs=[...S.history].sort((a,b)=>a.from<b.from?1:-1);
+  $('#hist').innerHTML=hs.length?hs.map(h=>`<div class="hitem"><div class="hb"><b dir="ltr">${esc(h.label)}</b><small>${h.note?esc(h.note)+' · ':''}${h.from} → ${h.to}</small>
+    <div class="hc">${Object.entries(h.per||{}).filter(([k,c])=>c.type!=='fixed').map(([k,c])=>`<span>${esc(k)} · A${c.A} W${c.W}</span>`).join('')}</div></div>
+    <button class="ic del" data-hdel="${esc(h.id)}" aria-label="حذف">✕</button></div>`).join(''):'<p class="hint" style="margin:0">ما في جداول معتمدة للحين.</p>';
+}
+function renderMode(){
+  const man=S.mode==='manual';
+  document.body.classList.toggle('man',man);
+  document.querySelectorAll('#modeSeg [data-mode]').forEach(b=>b.classList.toggle('is-on',b.dataset.mode===S.mode));
+  $('#rHint').innerHTML=man?MAN_HINT:AUTO_HINT;
+  $('#palette').hidden=!man;$('#abMan').hidden=!man;$('#abAuto').hidden=man;
+  $('#pFair').hidden=man;$('#unlockAll').hidden=man;$('#counters').hidden=!man;
+  $('#palette').innerHTML=PAL.map(([c,cl])=>`<button data-pal="${esc(c)}" class="${cl}${PAINT===c?' is-on':''}" aria-label="${c==='⌫'?'مسح':esc(c)}">${esc(c)}</button>`).join('');
+}
+/* live per-person counts above the table (manual mode) */
+function renderCounters(){
+  if(S.mode!=='manual')return;
+  let tg={A:{},W:{}};try{tg=generate({dry:true})||tg}catch(e){}
+  const val=(v,t)=>{if(t==null)return`<td class="${v?'':'z'}">${v}</td>`;const d=Math.abs(v-t);return`<td><span class="chip ${d===0?'ok':d===1?'amb':'bad'}" dir="ltr">${v}<small>/${t}</small></span></td>`};
+  let h='<table class="ctab"><thead><tr><th>الاسم</th><th><b>M</b>صباحي</th><th><b>A</b>أفتر</th><th><b class="r">O</b>أوف</th><th><b class="r">W</b>ويكند</th><th><b>□</b>فاضي</th></tr></thead><tbody>';
+  for(const p of S.staff){const c=EV.counts[p.id]||{};const fx=p.type==='fixed';
+    h+=`<tr data-crow="${p.id}"><td class="nm">${esc(p.name)}</td><td class="${c.M?'':'z'}">${c.M||0}</td>${val(c.A||0,fx?null:tg.A[p.id])}<td class="${c.O?'':'z'}">${c.O||0}</td>${val(c.W||0,fx?null:tg.W[p.id])}<td class="${c.empty?'':'z'}">${c.empty||0}</td></tr>`}
+  $('#counters').innerHTML=h+'</tbody></table>';
+}
+function flashRow(pid){const r=document.querySelector(`[data-crow="${pid}"]`);if(r){r.classList.remove('flash');void r.offsetWidth;r.classList.add('flash')}}
+function renderAll(){refreshDays();renderMode();renderPeriod();renderStaff();renderRules();EV=evaluate();renderRoster();renderCounters();renderFair();renderWarns();renderHist()}
+function afterChange(bump){EV=evaluate();renderRoster();renderCounters();renderFair();renderWarns();save(bump)}
+/* in manual mode nothing is generated unless asked */
+function regen(o){if(S.mode==='manual'){refreshDays();afterChange(o&&o.bump);return}runGenerate(o)}
+function setMode(m){
+  if(S.mode===m)return;S.mode=m;PAINT=null;
+  if(m==='manual'){
+    for(const cs of Object.values(S.cells))for(const k of Object.keys(cs))if(!cs[k].l)delete cs[k];
+    S.gen=null;refreshDays();renderMode();afterChange();toast('الجدول فاضي — اختار الرمز من تحت واضغط على الخانات');
+  }else{renderMode();runGenerate({stab:false});toast('ترتّب تلقائي، واختياراتك ما تغيرت')}
+}
+function paintCell(pid,i){
+  const d=DAYS[i];if(!d)return;const cs=S.cells[pid]||(S.cells[pid]={});const cur=cs[d.iso];
+  if(PAINT==='⌫'||(cur&&cur.l&&cur.c===PAINT))delete cs[d.iso];else cs[d.iso]={c:PAINT,l:1};
+  afterChange();flashRow(pid);
+}
+
+/* ================= actions ================= */
+let busy=false;
+function runGenerate(o){
+  o=o||{};refreshDays();
+  const t0=performance.now();
+  try{generate({stab:o.stab!==false&&!!S.gen})}catch(e){console.error(e);toast('صار خطأ بالتوزيع')}
+  window.__lastGenMs=performance.now()-t0;
+  afterChange(o.bump);
+}
+let genTimer=null;
+function scheduleGen(){clearTimeout(genTimer);genTimer=setTimeout(()=>{regen({stab:true});renderPeriod()},350)}
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),2400)}
+function openSheet(html){$('#sheet').innerHTML=html;$('#sheetBg').classList.add('open')}
+function closeSheet(){$('#sheetBg').classList.remove('open');$('#sheet').innerHTML='';sheetHandler=null}
+let sheetHandler=null;
+function confirmSheet(title,msg,okLabel,fn){
+  openSheet(`<h3>${title}</h3><p class="sub">${msg}</p><div class="srow"><button class="btn primary" data-ok>${okLabel}</button><button class="btn ghost" data-close>إلغاء</button></div>`);
+  sheetHandler=e=>{if(e.target.closest('[data-ok]')){closeSheet();fn()}};
+}
+function openCell(pid,i){
+  const p=S.staff.find(x=>x.id===pid);const d=DAYS[i];if(!p||!d)return;
+  const cur=(S.cells[pid]||{})[d.iso];const man=S.mode==='manual';
+  openSheet(`<h3><bdi dir="ltr">${esc(p.name)}</bdi> — ${arDate(d)}</h3><p class="sub">${man?'اختار الرمز لهالخانة.':cur&&cur.l?'هالخانة مثبتة 🔒':'اختار الرمز، والخانة تنثبت وما يغيرها التوزيع.'}</p>
+   <div class="codes">${CODE_INFO.map(([c,l])=>`<button data-code="${esc(c)}" class="${cur&&cur.c===c?'is-on':''}"><b class="${c==='O'||c==='W'?'r':''}">${c||'—'}</b><small>${l}</small></button>`).join('')}</div>
+   <div class="srow"><button class="btn" data-code="__auto" ${cur&&(man||cur.l)?'':'disabled'}>${man?'⌫ امسح الخانة':'↺ رجّعها تلقائي'}</button><button class="btn ghost" data-close>إلغاء</button></div>`);
+  sheetHandler=e=>{const b=e.target.closest('[data-code]');if(!b||b.disabled)return;const c=b.dataset.code;
+    const cs=S.cells[pid]||(S.cells[pid]={});
+    if(c==='__auto'){if(man)delete cs[d.iso];else if(cs[d.iso])cs[d.iso].l=0}else cs[d.iso]={c,l:1};
+    closeSheet();if(man){afterChange();flashRow(pid)}else runGenerate({stab:true});};
+}
+async function exportFile(kind){
+  try{
+    const base=`Duty-Roster_${S.from}_${S.to}`;
+    if(kind==='png'){const cv=await renderCanvas(3);const blob=await new Promise(r=>cv.toBlob(r,'image/png'));
+      if(DL)return deliver(base+'.png',blob,()=>showImage(cv));if(STANDALONE)return downloadBlob(base+'.png',blob);return showImage(cv)}
+    if(!DL&&!STANDALONE)return toast('التحميل مب متاح بهالشاشة — افتح الصفحة من claude.ai');
+    const out=(name,b)=>DL?deliver(name,b):downloadBlob(name,b);
+    if(kind==='pdf'){const cv=await renderCanvas(3);return out(base+'.pdf',buildPdf(cv))}
+    if(kind==='xlsx')return out(base+'.xlsx',buildXlsx());
+  }catch(e){console.error(e);toast('ما قدرت أجهز الملف')}
+}
+async function deliver(name,data,fallback){
+  try{await DL.save({filename:name,data});toast('جاهز ✓')}
+  catch(e){const c=e&&e.code;if(c==='declined')return;if(c==='rate_limited')return toast('في نافذة حفظ مفتوحة، جرّب بعد شوي');if(fallback)return fallback();toast('ما قدرت أحفظ الملف هنا')}
+}
+function showImage(cv){openSheet(`<h3>صورة الجدول</h3><p class="sub">اضغط على الصورة مطوّل واحفظها.</p><img alt="الجدول" src="${cv.toDataURL('image/png')}"><div class="srow"><button class="btn ghost" data-close>تم</button></div>`)}
+function approve(){
+  const days=DAYS;const people=S.staff.map(p=>({key:K(p),type:p.type}));
+  const byKey={};S.staff.forEach(p=>byKey[K(p)]=p);
+  const sm=summarize(days,people,(k,i)=>{const c=(S.cells[byKey[k].id]||{})[days[i].iso];return c?c.c:''},S.cov.comp);
+  const entry=Object.assign({id:'h'+Date.now().toString(36),label:curTitle(),from:S.from,to:S.to,at:Date.now()},sm);
+  S.history=S.history.filter(h=>!(h.from===S.from&&h.to===S.to));S.history.push(entry);
+  S.history.sort((a,b)=>a.from<b.from?-1:1);if(S.history.length>14)S.history=S.history.slice(-14);
+  save();renderHist();
+  const n=days.length,nf=addDays(S.to,1),nt=addDays(nf,n-1);
+  openSheet(`<h3>اعتمدته ✓</h3><p class="sub">انحفظ بالسجل. تبي أجهّز الفترة اللي بعده (${nf} → ${nt})؟ يكمل دور الويكند وتعويض الأوف من هالجدول.</p><div class="srow"><button class="btn primary" data-next>جهّز اللي بعده</button><button class="btn ghost" data-close>لا، خلاص</button></div>`);
+  sheetHandler=e=>{if(e.target.closest('[data-next]')){closeSheet();S.from=nf;S.to=nt;S.titleAuto=true;S.gen=null;regen({stab:false});renderAll();window.scrollTo({top:0,behavior:'smooth'})}};
+}
+function setRange(from,to){
+  if(!validIso(from)||!validIso(to))return;
+  if(diffDays(from,to)<0){toast('تاريخ النهاية قبل البداية');renderPeriod();return}
+  if(diffDays(from,to)>69){toast('أقصى شي 70 يوم');to=addDays(from,69)}
+  S.from=from;S.to=to;refreshDays();renderPeriod();regen({stab:true});
+}
+
+/* ================= events ================= */
+document.addEventListener('click',e=>{
+  const t=e.target;
+  if(t.closest('#sheetBg')){if(t.id==='sheetBg'||t.closest('[data-close]')){closeSheet();return}if(sheetHandler)sheetHandler(e);return}
+  const th=t.closest('#rwrap th[data-i]');
+  if(th){const d=DAYS[+th.dataset.i];if(!d)return;if(d.we){toast('الجمعة والسبت ويكند أصلاً');return}
+    const k=S.ph.indexOf(d.iso);if(k>=0)S.ph.splice(k,1);else S.ph.push(d.iso);
+    toast(k>=0?`${arDate(d)} رجع يوم عادي`:`${arDate(d)} صار عطلة رسمية`);regen({stab:true});return}
+  const td=t.closest('#rwrap td[data-p]');if(td){if(S.mode==='manual'&&PAINT)paintCell(td.dataset.p,+td.dataset.i);else openCell(td.dataset.p,+td.dataset.i);return}
+  const md=t.closest('[data-mode]');if(md){setMode(md.dataset.mode);return}
+  const pb=t.closest('[data-pal]');if(pb){PAINT=PAINT===pb.dataset.pal?null:pb.dataset.pal;renderMode();return}
+  if(t.closest('#fillRest')){S.seed=nextSeed();runGenerate({stab:false});toast('تعبّى الباقي ✓ — اضغط مرة ثانية لتوزيع غيره');return}
+  if(t.closest('#clearMan')){openSheet(`<h3>تفضية الجدول</h3><p class="sub">وش تبي تمسح؟</p><div class="srow"><button class="btn" data-clr="gen">اللي تعبّى بروحه بس</button><button class="btn primary" data-clr="all">الجدول كامل</button></div><div class="srow"><button class="btn ghost" data-close>إلغاء</button></div>`);
+    sheetHandler=e2=>{const b=e2.target.closest('[data-clr]');if(!b)return;const all=b.dataset.clr==='all';const inR=new Set(DAYS.map(d=>d.iso));for(const cs of Object.values(S.cells))for(const k of Object.keys(cs))if(inR.has(k)&&(all||!cs[k].l))delete cs[k];S.gen=null;closeSheet();afterChange();toast(all?'الجدول فاضي':'انمسح اللي تعبّى بروحه')};return}
+  const z=t.closest('[data-zoom]');if(z){S.zoom=clamp(zoomIdx()+(z.dataset.zoom==='1'?-1:1),0,ZOOMS.length-1);renderRoster();save(false);return}
+  const pill=t.closest('[data-len]');if(pill){const v=pill.dataset.len;
+    if(v==='28')setRange(S.from,addDays(S.from,27));
+    else if(v==='month'){const d=new Date(T(S.from));const e2=Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,d.getUTCDate())-864e5;setRange(S.from,ISO(e2))}
+    else{const n=DAYS.length;const nf=addDays(S.to,1);setRange(nf,addDays(nf,n-1))}return}
+  const act=t.closest('[data-act]');
+  if(act){const sid=act.closest('[data-sid]').dataset.sid;const k=S.staff.findIndex(p=>p.id===sid);if(k<0)return;const p=S.staff[k];
+    const a=act.dataset.act;
+    if(a==='type'){if(p.type===act.dataset.v)return;p.type=act.dataset.v;delete S.cells[p.id];renderStaff();regen({stab:true})}
+    else if(a==='up'&&k>0){S.staff.splice(k-1,0,S.staff.splice(k,1)[0]);renderStaff();afterChange()}
+    else if(a==='down'&&k<S.staff.length-1){S.staff.splice(k+1,0,S.staff.splice(k,1)[0]);renderStaff();afterChange()}
+    else if(a==='del')confirmSheet('حذف الاسم',`أكيد تبي تحذف ${esc(p.name)} من الجدول؟`,'احذف',()=>{S.staff.splice(k,1);delete S.cells[p.id];renderStaff();regen({stab:true})});
+    return}
+  if(t.closest('#addStaff')){const id='s'+Date.now().toString(36);S.staff.push({id,name:'NEW',type:'rot',qA:null,qN:null,qW:null});renderStaff();regen({stab:true});
+    const inp=document.querySelector(`[data-sid="${id}"] .pname`);if(inp){inp.focus();inp.select()}return}
+  const hd=t.closest('[data-hdel]');if(hd){const h=S.history.find(x=>x.id===hd.dataset.hdel);if(!h)return;
+    confirmSheet('حذف من السجل',`تحذف «${esc(h.label)}» من السجل؟ العدالة والدور بيتحسبون بدونه.`,'احذف',()=>{S.history=S.history.filter(x=>x!==h);renderHist();regen({stab:true})});return}
+  const ex=t.closest('[data-exp]');if(ex){exportFile(ex.dataset.exp);return}
+  if(t.closest('#approve')){approve();return}
+  if(t.closest('#arrange')){runGenerate({stab:true});toast('ترتّب ✓');return}
+  if(t.closest('#reroll')){S.seed=nextSeed();S.gen=null;runGenerate({stab:false});toast('توزيع جديد 🎲');return}
+  if(t.closest('#unlockAll')){confirmSheet('فك التثبيت','كل الخانات اللي غيرتها بيدك ترجع تلقائي، والعطل الرسمية تبقى.','فك الكل',()=>{for(const cs of Object.values(S.cells))for(const c of Object.values(cs))c.l=0;runGenerate({stab:false})});return}
+});
+document.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.id==='title'){S.title=t.value;S.titleAuto=t.value.trim()==='';renderRoster();save();return}
+  if(t.id==='subtitle'){S.subtitle=t.value;renderRoster();save();return}
+  const f=t.dataset&&t.dataset.f;
+  if(f){const sid=t.closest('[data-sid]').dataset.sid;const p=S.staff.find(x=>x.id===sid);if(!p)return;
+    if(f==='name'){p.name=t.value.toUpperCase();EV=evaluate();renderRoster();renderFair();save();return}
+    p[f]=quotaOf(t.value);scheduleGen();return}
+  const k=t.dataset&&t.dataset.k;
+  if(k&&t.type!=='checkbox'&&t.tagName==='INPUT'){const[a,b]=k.split('.');if(t.value==='')return;const lo=+t.min||0,hi=+t.max||99;S[a][b]=intOr(t.value,S[a][b],lo,hi);scheduleGen()}
+});
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.id==='from'||t.id==='to'){const f=$('#from').value,to=$('#to').value;if(validIso(f)&&validIso(to))setRange(f,to);return}
+  if(t.id==='title'&&t.value.trim()===''){S.titleAuto=true;renderPeriod();renderRoster();save();return}
+  if(t.dataset&&t.dataset.f==='name'&&!t.value.trim()){t.value='NEW';t.dispatchEvent(new Event('input',{bubbles:true}));return}
+  const k=t.dataset&&t.dataset.k;if(!k)return;const[a,b]=k.split('.');
+  if(t.type==='checkbox')S[a][b]=t.checked;
+  else if(t.tagName==='SELECT')S[a][b]=t.value;
+  else{S[a][b]=intOr(t.value,S[a][b],+t.min||0,+t.max||99);t.value=S[a][b]}
+  renderRules();scheduleGen();
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#sheetBg').classList.contains('open'))closeSheet()});
+
+/* ================= export: canvas (pixel copy of the template) ================= */
+async function renderCanvas(scale){
+  const host=document.createElement('div');host.style.cssText='position:fixed;left:-20000px;top:0;pointer-events:none';
+  host.innerHTML=templateHTML(false);document.body.appendChild(host);
+  try{await Promise.all([document.fonts.load('800 25px Inter'),document.fonts.load('700 14px Inter'),document.fonts.load('600 13.5px Inter')]);await document.fonts.ready}catch(e){}
+  try{
+    const root=host.querySelector('.tpl'),R0=root.getBoundingClientRect();
+    const W=Math.ceil(R0.width),Hh=Math.ceil(R0.height);
+    scale=Math.min(scale,7000/W,7000/Hh);
+    const cv=document.createElement('canvas');cv.width=Math.round(W*scale);cv.height=Math.round(Hh*scale);
+    const ctx=cv.getContext('2d');ctx.scale(scale,scale);
+    const rel=el=>{const r=el.getBoundingClientRect();return{x:r.left-R0.left,y:r.top-R0.top,w:r.width,h:r.height}};
+    const rr=(x,y,w,h,r)=>{ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()};
+    ctx.fillStyle='#F3F0F8';ctx.fillRect(0,0,W,Hh);
+    const card=rel(root.querySelector('.card'));
+    ctx.save();ctx.shadowColor='rgba(60,30,100,.12)';ctx.shadowBlur=28;ctx.shadowOffsetY=6;rr(card.x,card.y,card.w,card.h,18);ctx.fillStyle='#fff';ctx.fill();ctx.restore();
+    const bar=rel(root.querySelector('.bar'));ctx.fillStyle='#8E5BC4';rr(bar.x,bar.y,bar.w,bar.h,1.5);ctx.fill();
+    const tbl=root.querySelector('table'),tr=rel(tbl);
+    ctx.save();rr(tr.x,tr.y,tr.w,tr.h,12);ctx.clip();ctx.fillStyle='#fff';ctx.fillRect(tr.x,tr.y,tr.w,tr.h);
+    tbl.querySelectorAll('th,td').forEach(cell=>{
+      const r=rel(cell),cs=getComputedStyle(cell);
+      ctx.fillStyle=cs.backgroundColor;ctx.fillRect(r.x,r.y,r.w,r.h);
+      const br=parseFloat(cs.borderRightWidth)||0;if(br){ctx.fillStyle=cs.borderRightColor;ctx.fillRect(r.x+r.w-br,r.y,br,r.h)}
+      const bt=parseFloat(cs.borderTopWidth)||0;if(bt){ctx.fillStyle=cs.borderTopColor;ctx.fillRect(r.x,r.y,r.w,bt)}
+    });
+    ctx.restore();
+    ctx.lineWidth=1.5;ctx.strokeStyle='#5B2E8A';rr(tr.x+.75,tr.y+.75,tr.w-1.5,tr.h-1.5,11.25);ctx.stroke();
+    root.querySelectorAll('span').forEach(sp=>{
+      const txt=sp.textContent;if(!txt)return;const r=rel(sp),s=getComputedStyle(sp);
+      ctx.font=`${s.fontWeight} ${s.fontSize} ${s.fontFamily}`;ctx.fillStyle=s.color;
+      if('letterSpacing' in ctx)ctx.letterSpacing=s.letterSpacing==='normal'?'0px':s.letterSpacing;
+      ctx.textAlign='center';const m=ctx.measureText(txt);
+      if(m.fontBoundingBoxAscent!==undefined){ctx.textBaseline='alphabetic';ctx.fillText(txt,r.x+r.w/2,r.y+(r.h-(m.fontBoundingBoxAscent+m.fontBoundingBoxDescent))/2+m.fontBoundingBoxAscent)}
+      else{ctx.textBaseline='middle';ctx.fillText(txt,r.x+r.w/2,r.y+r.h/2)}
+    });
+    return cv;
+  }finally{host.remove()}
+}
+
+/* ================= export: PDF (A4 landscape, image) ================= */
+function buildPdf(cv){
+  const jpg=b64bytes(cv.toDataURL('image/jpeg',.93).split(',')[1]);
+  const pw=841.89,ph=595.28,m=22,iw=cv.width,ih=cv.height,s=Math.min((pw-2*m)/iw,(ph-2*m)/ih),w=iw*s,h=ih*s,x=(pw-w)/2,y=(ph-h)/2;
+  const enc=new TextEncoder();const chunks=[];let len=0;const offs=[];
+  const push=b=>{const u=typeof b==='string'?enc.encode(b):b;chunks.push(u);len+=u.length};
+  const content=`q ${w.toFixed(2)} 0 0 ${h.toFixed(2)} ${x.toFixed(2)} ${y.toFixed(2)} cm /Im0 Do Q`;
+  push('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+  const obj=(k,body)=>{offs[k]=len;push(`${k} 0 obj\n`);body();push('\nendobj\n')};
+  obj(1,()=>push('<< /Type /Catalog /Pages 2 0 R >>'));
+  obj(2,()=>push('<< /Type /Pages /Kids [3 0 R] /Count 1 >>'));
+  obj(3,()=>push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pw} ${ph}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`));
+  obj(4,()=>{push(`<< /Type /XObject /Subtype /Image /Width ${iw} /Height ${ih} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpg.length} >>\nstream\n`);push(jpg);push('\nendstream')});
+  obj(5,()=>push(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`));
+  const xref=len;let xr='xref\n0 6\n0000000000 65535 f \n';for(let k=1;k<=5;k++)xr+=String(offs[k]).padStart(10,'0')+' 00000 n \n';
+  push(xr+`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+  return new Blob(chunks,{type:'application/pdf'});
+}
+function b64bytes(b){const s=atob(b);const u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u}
+
+/* ================= export: XLSX (styled, same colours) ================= */
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc32(u){let c=0xFFFFFFFF;for(let i=0;i<u.length;i++)c=CRC[(c^u[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0}
+function zipStore(files){
+  const enc=new TextEncoder();const parts=[],cent=[];let off=0,csize=0;
+  for(const f of files){const nm=enc.encode(f.name),data=typeof f.data==='string'?enc.encode(f.data):f.data,crc=crc32(data);
+    const h=new DataView(new ArrayBuffer(30));h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(8,0,true);h.setUint16(10,0,true);h.setUint16(12,0x21,true);h.setUint32(14,crc,true);h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,nm.length,true);h.setUint16(28,0,true);
+    parts.push(new Uint8Array(h.buffer),nm,data);
+    const c=new DataView(new ArrayBuffer(46));c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(10,0,true);c.setUint16(12,0,true);c.setUint16(14,0x21,true);c.setUint32(16,crc,true);c.setUint32(20,data.length,true);c.setUint32(24,data.length,true);c.setUint16(28,nm.length,true);c.setUint32(42,off,true);
+    cent.push(new Uint8Array(c.buffer),nm);csize+=46+nm.length;off+=30+nm.length+data.length}
+  const e=new DataView(new ArrayBuffer(22));e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,csize,true);e.setUint32(16,off,true);
+  return new Blob([...parts,...cent,new Uint8Array(e.buffer)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+function buildXlsx(){
+  const days=DAYS,n=days.length,x=s=>esc(s);
+  const col=c=>{let s='';c++;while(c>0){const m=(c-1)%26;s=String.fromCharCode(65+m)+s;c=Math.floor((c-1)/26)}return s};
+  const last=col(n);
+  const cell=(r,c,s,v,str)=>v===''||v==null?`<c r="${col(c)}${r}" s="${s}"/>`:str?`<c r="${col(c)}${r}" s="${s}" t="inlineStr"><is><t xml:space="preserve">${x(v)}</t></is></c>`:`<c r="${col(c)}${r}" s="${s}"><v>${v}</v></c>`;
+  let rows=`<row r="1" ht="32" customHeight="1">${cell(1,0,1,curTitle(),1)}</row>`;
+  rows+=`<row r="2" ht="20" customHeight="1">${cell(2,0,2,S.subtitle||'',1)}</row><row r="3" ht="8" customHeight="1"/>`;
+  rows+=`<row r="4" ht="24" customHeight="1">${cell(4,0,3,'Date',1)}${days.map((d,i)=>cell(4,i+1,d.we?5:4,d.dn)).join('')}</row>`;
+  rows+=`<row r="5" ht="20" customHeight="1">${cell(5,0,3,'Day',1)}${days.map((d,i)=>cell(5,i+1,d.we?7:6,d.lbl,1)).join('')}</row>`;
+  const wide=new Set();
+  S.staff.forEach((p,k)=>{const r=6+k;const cs=S.cells[p.id]||{};
+    rows+=`<row r="${r}" ht="26" customHeight="1">${cell(r,0,8,p.name,1)}${days.map((d,i)=>{const v=(cs[d.iso]||{}).c||'';if(v.length>2)wide.add(i);const off=v==='O'||v==='W',sh=v==='Short A';const s=(off?11:sh?13:9)+(d.we?1:0);return cell(r,i+1,s,v,1)}).join('')}</row>`});
+  let cols=`<col min="1" max="1" width="14" customWidth="1"/>`;for(let i=0;i<n;i++)cols+=`<col min="${i+2}" max="${i+2}" width="${wide.has(i)?8.5:5.6}" customWidth="1"/>`;
+  const sheet=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="A1:${last}${5+S.staff.length}"/><sheetViews><sheetView workbookViewId="0" showGridLines="0"/></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols>${cols}</cols><sheetData>${rows}</sheetData><mergeCells count="2"><mergeCell ref="A1:${last}1"/><mergeCell ref="A2:${last}2"/></mergeCells><pageMargins left="0.3" right="0.3" top="0.4" bottom="0.4" header="0.2" footer="0.2"/><pageSetup orientation="landscape" paperSize="9" fitToWidth="1" fitToHeight="0"/></worksheet>`;
+  const font=(b,sz,rgb)=>`<font>${b?'<b/>':''}<sz val="${sz}"/><color rgb="FF${rgb}"/><name val="Calibri"/><family val="2"/></font>`;
+  const fill=rgb=>`<fill><patternFill patternType="solid"><fgColor rgb="FF${rgb}"/><bgColor indexed="64"/></patternFill></fill>`;
+  const bd=rgb=>`<border><left style="thin"><color rgb="FF${rgb}"/></left><right style="thin"><color rgb="FF${rgb}"/></right><top style="thin"><color rgb="FF${rgb}"/></top><bottom style="thin"><color rgb="FF${rgb}"/></bottom><diagonal/></border>`;
+  const xf=(f,fi,b,h,ind)=>`<xf numFmtId="0" fontId="${f}" fillId="${fi}" borderId="${b}" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="${h}" vertical="center"${ind?' indent="1"':''}/></xf>`;
+  const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="9"><font><sz val="11"/><name val="Calibri"/><family val="2"/></font>${font(1,16,'3E1F63')}${font(1,11,'7A6A92')}${font(1,11,'FFFFFF')}${font(1,9,'FFFFFF')}${font(1,11,'3E1F63')}${font(1,11,'1E1A2B')}${font(1,11,'D32F2F')}${font(1,9,'1E1A2B')}</fonts><fills count="9"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>${fill('4A2373')}${fill('5B2E8A')}${fill('3F6FA3')}${fill('6E3FA0')}${fill('4F80B3')}${fill('EFE7F8')}${fill('D8E9F8')}</fills><borders count="3"><border><left/><right/><top/><bottom/><diagonal/></border>${bd('B9A9D0')}${bd('7A4FA8')}</borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="15"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>${xf(1,0,0,'center')}${xf(2,0,0,'center')}${xf(3,2,2,'left',1)}${xf(3,3,2,'center')}${xf(3,4,2,'center')}${xf(4,5,2,'center')}${xf(4,6,2,'center')}${xf(5,7,1,'left',1)}${xf(6,0,1,'center')}${xf(6,8,1,'center')}${xf(7,0,1,'center')}${xf(7,8,1,'center')}${xf(8,0,1,'center')}${xf(8,8,1,'center')}</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  const H='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+  return zipStore([
+    {name:'[Content_Types].xml',data:H+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>'},
+    {name:'_rels/.rels',data:H+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
+    {name:'xl/workbook.xml',data:H+'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Roster" sheetId="1" r:id="rId1"/></sheets></workbook>'},
+    {name:'xl/_rels/workbook.xml.rels',data:H+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'},
+    {name:'xl/worksheets/sheet1.xml',data:sheet},
+    {name:'xl/styles.xml',data:styles}]);
+}
+
+/* ================= boot ================= */
+refreshDays();
+if(S.mode!=='manual'&&(!S.gen||S.gen.from!==S.from||S.gen.to!==S.to))runGenerate({stab:false,bump:false});
+renderAll();setSync('local');initCloud();
+window.__RM={setMode,paint:(c)=>{PAINT=c;renderMode()},state:()=>S,days:()=>DAYS,evaluate,runGenerate,renderCanvas,buildPdf,buildXlsx,setRange,renderAll,approve};
+})();
+</script>
+</body>
+</html>

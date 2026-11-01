@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d2a4a">
+<title>جرد مخزن BIW 2046</title>
+<style>
+:root{
+  --navy:#0d2a4a;--navy2:#163d66;--ink:#1b2430;--muted:#6b7684;--line:#e3e7ec;--bg:#f3f5f8;--card:#fff;
+  --ok:#1f8f4e;--okbg:#e5f5ec;--bad:#c93636;--badbg:#fde8e8;--warn:#b7791f;--warnbg:#fff4d6;
+  --ext:#c05621;--extbg:#feebdc;--info:#2b6cb0;--infobg:#e6f0fb;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",Tahoma,"Noto Sans Arabic","Geeza Pro",Arial,sans-serif;font-size:15px;-webkit-text-size-adjust:100%}
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) calc(env(safe-area-inset-bottom) + 24px) env(safe-area-inset-left)}
+button,input,select{font:inherit;color:inherit}
+.top{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:16px 16px 14px}
+.top h1{margin:0;font-size:19px;font-weight:700;letter-spacing:.2px}
+.top .sub{margin-top:4px;font-size:12.5px;opacity:.82;overflow-wrap:anywhere}
+.wrap{max-width:980px;margin:0 auto;padding:12px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 14px;font-weight:600;cursor:pointer;min-height:44px;user-select:none}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn.green{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.btn.sm{min-height:34px;padding:6px 10px;font-size:13px;border-radius:8px}
+.date{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:10px;padding:4px 10px;min-height:44px}
+.date input{border:0;background:transparent;font-weight:600;color:var(--ink)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:12px}
+.card h2{margin:0 0 10px;font-size:16px}
+.hint{color:var(--muted);font-size:13px;line-height:1.6}
+.prog{margin-top:12px}
+.pbar{height:8px;background:#dfe5ec;border-radius:99px;overflow:hidden}
+.pbar>i{display:block;height:100%;width:0;background:var(--navy2);transition:width .3s}
+.ptext{font-size:13px;margin-top:6px;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.stat{border-radius:10px;padding:10px;background:#f7f9fb;border:1px solid var(--line)}
+.stat b{display:block;font-size:22px;line-height:1.1}
+.stat span{font-size:12.5px;color:var(--muted)}
+.stat.ok b{color:var(--ok)}.stat.bad b{color:var(--bad)}.stat.warn b{color:var(--warn)}.stat.ext b{color:var(--ext)}.stat.info b{color:var(--info)}
+details.sec{border-top:1px solid var(--line);padding:8px 0}
+details.sec summary{cursor:pointer;font-weight:600;font-size:14px;list-style:none;display:flex;justify-content:space-between;align-items:center}
+details.sec summary::-webkit-details-marker{display:none}
+details.sec summary::after{content:"▾";color:var(--muted)}
+details.sec[open] summary::after{content:"▴"}
+.sec ul{margin:8px 0 0;padding:0 18px 0 0;font-size:13.5px;line-height:1.7}
+.ltr{direction:ltr;unicode-bidi:isolate}
+.mono{font-family:var(--mono)}
+.tabs{display:flex;gap:6px;margin-top:14px;position:sticky;top:0;z-index:5;background:var(--bg);padding:6px 0}
+.tab{flex:1;border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px;font-weight:700;cursor:pointer;text-align:center}
+.tab.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.chipf{border:1px solid var(--line);background:#fff;border-radius:99px;padding:6px 12px;font-size:13px;cursor:pointer}
+.chipf.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.search{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;min-height:44px}
+.list{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.lh,.lr{display:grid;grid-template-columns:1fr 64px 58px 108px;gap:8px;align-items:center;padding:9px 12px}
+.lh{background:#eef2f6;font-size:12px;font-weight:700;color:var(--muted)}
+.lr{border-top:1px solid var(--line);cursor:pointer}
+.lr.b-bad{background:#fff7f7}.lr.b-info{background:#f4f8fd}.lr.b-warn{background:#fffbef}.lr.b-ok{background:#f6fcf8}
+.lr .pn{font-family:var(--mono);font-weight:700;font-size:13.5px;direction:ltr;text-align:right;word-break:break-all}
+.lr .ds{font-size:12px;color:var(--muted);direction:ltr;text-align:right;margin-top:2px;line-height:1.35}
+.lr .ty{display:inline-block;font-size:10.5px;border:1px solid var(--line);border-radius:5px;padding:0 4px;margin-inline-start:4px;color:var(--muted);font-family:var(--mono)}
+.exp{width:100%;border:1px solid var(--line);border-radius:8px;padding:6px 4px;text-align:center;min-height:36px;background:#fbfcfd;font-weight:700}
+.exp.auto{color:var(--info);background:#f3f7fc;font-weight:600}
+.ty.sn-b{color:var(--info);border-color:#c9dbef}
+.sn{display:inline-block;font-family:var(--mono);font-size:12px;border-radius:6px;padding:1px 6px;margin:2px 0 2px 4px;background:#eef1f4;direction:ltr}
+.sn.ok{background:var(--okbg);color:var(--ok)}.sn.bad{background:var(--badbg);color:var(--bad)}
+b.dch{color:var(--bad);text-decoration:underline}
+.fnd{text-align:center;font-weight:800;font-size:17px}
+.st{display:inline-block;font-size:12px;font-weight:700;border-radius:99px;padding:4px 8px;text-align:center;white-space:nowrap}
+.st.ok{background:var(--okbg);color:var(--ok)}.st.bad{background:var(--badbg);color:var(--bad)}.st.warn{background:var(--warnbg);color:var(--warn)}
+.st.ext{background:var(--extbg);color:var(--ext)}.st.info{background:var(--infobg);color:var(--info)}.st.idle{background:#eef1f4;color:var(--muted)}
+.lx{grid-column:1/-1;font-size:13px;background:#f7f9fb;border-radius:8px;padding:8px 10px;margin-top:4px;line-height:1.7}
+.src{background:#fff;border:1px solid var(--line);border-radius:14px;margin-top:10px;overflow:hidden}
+.srch{display:flex;gap:10px;padding:10px;align-items:flex-start}
+.thumb{width:92px;height:92px;flex:0 0 92px;border-radius:10px;object-fit:cover;background:#e9edf2;cursor:zoom-in;border:1px solid var(--line)}
+.srcmeta{flex:1;min-width:0}
+.srcmeta .nm{font-weight:700;font-size:13.5px;word-break:break-all}
+.srcmeta .ss{font-size:12.5px;color:var(--muted);margin-top:3px}
+.item{border-top:1px dashed var(--line);padding:10px;display:grid;grid-template-columns:1.3fr 1fr 64px 40px;gap:8px;align-items:end}
+.item label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:3px}
+.item input{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;min-height:40px;font-family:var(--mono);direction:ltr;text-align:left;background:#fbfcfd}
+.item .del{min-height:40px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;color:var(--bad);font-weight:800}
+.item .flags{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px}
+.item .note{grid-column:1/-1;font-size:12.5px;color:var(--muted)}
+.empty{text-align:center;color:var(--muted);padding:28px 10px;font-size:14px}
+.modal{position:fixed;inset:0;background:rgba(10,18,28,.72);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal.on{display:flex}
+.mbox{background:#fff;border-radius:14px;max-width:440px;width:100%;padding:16px}
+.mbox h3{margin:0 0 8px;font-size:16px}
+.mbox .row{display:flex;gap:8px;justify-content:flex-start;margin-top:14px;flex-wrap:wrap}
+.mbox .row .btn.blk{width:100%;justify-content:flex-start;text-align:right;line-height:1.4}
+.btn.ghost{background:transparent;color:var(--muted)}
+.ob{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.ob .ot{flex:1;min-width:200px}
+.viewer img{max-width:100%;max-height:86vh;border-radius:8px;display:block;margin:auto}
+.menu{position:absolute;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.14);padding:6px;z-index:40;display:none;min-width:220px}
+.menu.on{display:block}
+.menu button{display:block;width:100%;text-align:right;border:0;background:none;padding:11px 12px;border-radius:8px;cursor:pointer;font-weight:600}
+.menu button:hover{background:#f1f4f7}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1b2430;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;z-index:60;display:none;max-width:92vw;text-align:center}
+.toast.on{display:block}
+.legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.nw{white-space:nowrap}
+.flags .st{white-space:normal;text-align:right;line-height:1.45}
+.frow{display:flex;align-items:center;gap:8px;border-top:1px solid var(--line);padding:8px 0}
+.frow .fn{flex:1;min-width:0;font-weight:700;font-size:13px;overflow-wrap:anywhere;text-align:right}
+.frow .fm{font-size:12.5px;color:var(--muted);white-space:nowrap}
+.gh{display:flex;justify-content:space-between;gap:10px;padding:12px;background:#f3f6f9;align-items:flex-start}
+.gh .ds{font-size:12px;color:var(--muted);margin-top:2px;text-align:right}
+.gt{text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;color:var(--muted);min-width:84px}
+.gt b{font-size:24px;color:var(--ink);line-height:1}
+.gi{display:flex;gap:10px;padding:8px 12px;border-top:1px dashed var(--line);align-items:flex-start;font-size:13.5px}
+.gi .ss{font-size:12px;color:var(--muted)}
+.tmini{width:52px;height:52px;border-radius:8px;object-fit:cover;cursor:zoom-in;border:1px solid var(--line);flex:0 0 52px}
+@media (max-width:560px){ .frow{flex-wrap:wrap} .frow .fm{white-space:normal} }
+@media (max-width:560px){
+  .lh,.lr{grid-template-columns:1fr 54px 44px 92px;gap:6px;padding:9px 10px}
+  .item{grid-template-columns:1fr 60px 40px;}
+  .item .p{grid-column:1/-1}
+  .top h1{font-size:17px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>جرد مخزن BIW — Plant 2046</h1>
+  <div class="sub" id="listName"></div>
+</header>
+
+<div class="wrap">
+  <div class="bar">
+    <label class="btn primary" id="btnUpload">📄 ارفع PDF أو صور (ملف أو أكثر)
+      <input type="file" id="fileIn" accept="application/pdf,image/*" multiple hidden>
+    </label>
+    <button class="btn green" id="btnExport">⬇ ملفات Excel</button>
+    <label class="date">تاريخ الجرد <input type="date" id="cDate"></label>
+    <button class="btn" id="btnMore" aria-label="المزيد">⋯</button>
+  </div>
+  <div class="menu" id="menu">
+    <button data-act="copy">📋 نسخ الملخص</button>
+    <button data-act="newlist">📥 تحميل قائمة جرد جديدة (Excel)</button>
+    <button data-act="origlist">↩ الرجوع للقائمة الأصلية</button>
+    <button data-act="clear">🗑 مسح نتائج الجرد</button>
+  </div>
+  <input type="file" id="listIn" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+
+  <p class="hint" style="margin:8px 2px 0">تقدر تختار أكثر من ملف PDF مرة وحدة، أو ترفع ملف بعد ملف — كلها تنضاف لنفس الجرد.</p>
+  <div class="card" id="oldBox"></div>
+  <input type="file" id="oldIn" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+  <div class="card" id="filesBox" hidden></div>
+
+  <div class="prog card" id="prog" hidden>
+    <div class="pbar"><i id="pfill"></i></div>
+    <div class="ptext" id="ptext"></div>
+  </div>
+
+  <section class="card" id="brief"></section>
+
+  <nav class="tabs">
+    <button class="tab on" data-tab="list" id="tabListBtn">القائمة</button>
+    <button class="tab" data-tab="scans" id="tabScansBtn">الصور والقطع</button>
+  </nav>
+
+  <section id="tabList">
+    <div class="filters" id="filters"></div>
+    <input class="search" id="q" placeholder="ابحث برقم القطعة أو الوصف…" autocomplete="off">
+    <div class="list" style="margin-top:10px">
+      <div class="lh"><div>رقم القطعة / الوصف</div><div style="text-align:center">المتوقع</div><div style="text-align:center">الموجود</div><div style="text-align:center">الحالة</div></div>
+      <div id="rows"></div>
+    </div>
+    <p class="hint">خانة «المتوقع» اختيارية: إذا عندك العدد المسجّل بالنظام اكتبه، والبرنامج يحسب النقص والزيادة بالضبط. إذا تركتها فاضية، الحكم يكون على الوجود فقط (موجود / غير موجود).</p>
+  </section>
+
+  <section id="tabScans" hidden>
+    <div class="filters" id="viewSw"><button class="chipf on" data-v="photo">حسب الصور</button><button class="chipf" data-v="pn">حسب رقم القطعة</button></div>
+    <div id="srcs"></div>
+  </section>
+</div>
+
+<datalist id="pnList"></datalist>
+<div class="modal" id="modal"><div class="mbox" id="mbox"></div></div>
+<div class="modal viewer" id="viewer"><img id="vimg" alt=""></div>
+<div class="toast" id="toast"></div>
+
+<script src="libs/pdf.min.js"></script>
+<script src="libs/exceljs.min.js"></script>
+<script src="data.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* ================= إعدادات ================= */
+var PROXY_URL = 'https://szomlyrlpznrdyewknec.supabase.co/functions/v1/claude-proxy';
+var APP_TOKEN = 'biw-fss-2026';
+var LS_KEY = 'biw-inv-2046.v1';
+var MAX_EDGE = 2000;      // أطول ضلع للصورة المرسلة للقراءة
+var CONC_PROXY = 3, CONC_SAMPLE = 2;
+
+if (window.pdfjsLib) { pdfjsLib.GlobalWorkerOptions.workerSrc = 'libs/pdf.worker.min.js'; }
+
+/* ================= أدوات ================= */
+function $(s, r){ return (r || document).querySelector(s); }
+function $$(s, r){ return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function uid(){ return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); }
+function pad(n){ return (n < 10 ? '0' : '') + n; }
+function todayISO(){ var d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function dmy(iso, sep, shortYear){ var p = String(iso || todayISO()).split('-'); return p[2] + sep + p[1] + sep + (shortYear ? p[0].slice(2) : p[0]); }
+function sleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+function toast(msg, ms){ var t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(t._h); t._h = setTimeout(function(){ t.classList.remove('on'); }, ms || 2600); }
+
+/* توحيد رقم القطعة للمقارنة */
+function normPN(s){
+  return String(s || '').toUpperCase()
+    .replace(/^\s*(P\/N|PN|PART\s*(NO|NUMBER|#)?|MATERIAL|MAT\.?|CAT\.?\s*NO|ITEM)\s*[:#.\-]?\s*/, '')
+    .replace(/[‐-―−_]/g, '-').replace(/\s+/g, '').replace(/^[:#\-]+|[:#.\-]+$/g, '');
+}
+function bareN(s){ return normPN(s).replace(/[^A-Z0-9]/g, ''); }
+function confN(s){ return bareN(s).replace(/O/g, '0').replace(/[IL]/g, '1'); }
+function normSN(s){
+  return String(s || '').toUpperCase()
+    .replace(/^\s*(S\/N|SN|SER(IAL)?\.?\s*(NO|NUMBER|#)?)\s*[:#.\-]?\s*/, '')
+    .replace(/[‐-―−_]/g, '-').replace(/\s+/g, '');
+}
+function snShape(s){ return normSN(s).replace(/[A-Z]/g, 'A').replace(/[0-9]/g, '9'); }
+function lev(a, b){
+  if (a === b) return 0; var m = a.length, n = b.length; if (!m) return n; if (!n) return m;
+  var prev = [], cur = [], i, j;
+  for (j = 0; j <= n; j++) prev[j] = j;
+  for (i = 1; i <= m; i++){
+    cur = [i];
+    for (j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[n];
+}
+function b64ToBytes(b64){ var bin = atob(b64), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; }
+function bytesToB64(u8){ var s = '', CH = 0x8000; for (var i = 0; i < u8.length; i += CH) s += String.fromCharCode.apply(null, u8.subarray(i, i + CH)); return btoa(s); }
+
+/* ================= الحالة ================= */
+var S = {
+  listName: INV_DATA.fileName,
+  list: INV_DATA.rows,
+  snList: INV_DATA.snList || [],
+  templateB64: null,          // null = القالب الأصلي المدمج
+  expected: {},
+  sources: [],                // {id,label,fileKey,thumb,status,err,count}
+  files: [],                  // {key,name,size}
+  old: null,                  // اللستة القديمة للمقارنة {name,rows,sns}
+  scans: [],                  // {id,srcId,pn,sn,qty,desc,match,pnClear,snClear,note}
+  countDate: todayISO()
+};
+var BLOBS = {};               // srcId -> jpeg base64 (للإعادة، ما ينحفظ)
+var UI = { tab: 'list', filter: 'all', q: '', open: {}, view: 'photo' };
+
+function load(){
+  try{
+    var raw = localStorage.getItem(LS_KEY); if (!raw) return;
+    var d = JSON.parse(raw);
+    ['listName','list','snList','templateB64','expected','sources','scans','countDate','files','old'].forEach(function(k){ if (d[k] !== undefined) S[k] = d[k]; });
+    S.sources.forEach(function(s){ if (s.status === 'pending' || s.status === 'reading'){ s.status = 'err'; s.err = 'انقطعت القراءة — ارفع الملف مرة ثانية'; } });
+  }catch(e){}
+}
+function save(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }
+  catch(e){
+    try{
+      var lite = JSON.parse(JSON.stringify(S)); lite.sources.forEach(function(s){ s.thumb = ''; });
+      localStorage.setItem(LS_KEY, JSON.stringify(lite));
+    }catch(e2){}
+  }
+}
+
+/* ================= قدرات البيئة (رابط GitHub أو صفحة Claude) ================= */
+var SAMPLE = null, DOWNLOADS = null, CAPS = null;
+function initCaps(){
+  if (!(window.claude && typeof window.claude.use === 'function')) return;
+  var a = Promise.resolve(), b = Promise.resolve();
+  try{ a = window.claude.use('sample').then(function(s){ SAMPLE = s || null; }).catch(function(){}); }catch(e){}
+  try{ b = window.claude.use('downloads').then(function(d){ DOWNLOADS = d || null; }).catch(function(){}); }catch(e){}
+  CAPS = Promise.all([a, b]);
+}
+
+/* ================= التعليمات للقراءة ================= */
+function buildPrompt(){
+  var ref = S.list.map(function(r){ return r.pn + ' | ' + r.desc; }).join('\n');
+  return [
+    'You are reading warehouse inventory photos (ITT BIW Connector Systems, Oman, plant 2046 — ESP power connectors, penetrators, feedthrus, splice kits, o-rings, fittings).',
+    'The image may contain one or more items, tags, labels, name-plates, bags or boxes. Return ONE entry for EVERY physical unit whose identification label is visible.',
+    'Read every character EXACTLY as printed. Never guess, never "correct" a number to fit the reference list. If a character cannot be read, write "?" in its place and set the matching *_clear flag to false.',
+    'Fields:',
+    '- pn: part / material / catalog number exactly as printed (it may be labelled P/N, PART NO, MATERIAL, CAT NO, ITEM, ASSY). Do not include the label word itself.',
+    '- sn: serial number exactly as printed (S/N, SERIAL, SER NO). "" when no serial is visible. Lot / batch / PO / work-order / date codes are NOT serial numbers: mention them in note instead. (In this warehouse SAP serial numbers are usually 6 digits, e.g. 473370, and SAP batch numbers usually 7 digits, e.g. 1378348 — do not put a batch number in sn. A number explicitly marked S/N or SERIAL is always the sn, whatever its length.)',
+    '- qty: quantity printed on the label (e.g. "QTY 10" on a bag of o-rings). 1 when no quantity is printed.',
+    '- desc: description printed on the label, "" if none.',
+    '- match: the material number from the REFERENCE LIST that this unit corresponds to, or "" if none clearly fits. Fill it only when the printed pn (or, if no pn is printed, the printed description) clearly corresponds to that entry.',
+    '- pn_clear, sn_clear: true only if every character is fully legible.',
+    '- note: short remark if something is worth flagging (damaged or partly hidden label, two different part numbers on one item, lot number, handwritten number, etc.). "" otherwise.',
+    '- count: how qty was obtained — "unit" (one labelled piece), "label" (quantity printed on the label/bag) or "visual" (pieces you counted in the photo).',
+    '- count_sure: false if you are not fully sure of qty (pieces hidden, overlapping, cut off by the photo edge).',
+    'PART NUMBER AND SERIAL PRINTED TOGETHER: some labels print both in one string or one line (e.g. "P175-0110-473370", "P175-0110 SN 473370", "473370 / P175-0110") or as the text under a barcode / QR code. Split them: pn = the part number only, sn = the serial only.',
+    'COUNTING PIECES WITHOUT SERIALS: when the photo shows several identical pieces of the SAME part number and the pieces have NO individual serial numbers (a bin, shelf, tray or box of fittings, o-rings, insulators, splice tubes, brackets, loose parts, identical unlabelled bags), COUNT the physical pieces one by one and return ONE entry for them with qty = that count and count = "visual". The part number may come from a bin / shelf / box / bag label instead of each piece. If some pieces are hidden or overlapping, give your best count, set count_sure to false and say what is uncertain in note.',
+    'If identical sealed packages each print their own quantity (e.g. 3 bags each "QTY 10"), return one entry per package with its printed qty and count = "label". If each piece carries its own serial number, return one entry per piece (qty 1, count = "unit").',
+    'If the same unit\'s label appears twice in this one image, list it once. If no label is readable at all, return {"items":[]}.',
+    '',
+    'REFERENCE LIST (material number | description):',
+    ref,
+    '',
+    'Return ONLY this JSON, nothing else:',
+    '{"items":[{"pn":"","sn":"","qty":1,"count":"unit","count_sure":true,"desc":"","match":"","pn_clear":true,"sn_clear":true,"note":""}]}'
+  ].join('\n');
+}
+
+function parseAI(obj){
+  if (typeof obj === 'string'){
+    var t = obj.replace(/```json|```/g, ''); var a = t.indexOf('{'), b = t.lastIndexOf('}');
+    if (a < 0 || b < 0) throw new Error('رد غير مفهوم من القراءة');
+    obj = JSON.parse(t.slice(a, b + 1));
+  }
+  if (obj && obj.error) throw new Error(obj.error);
+  var arr = (obj && Array.isArray(obj.items)) ? obj.items : [];
+  return arr.map(function(x){
+    var q = parseInt(x.qty, 10), cm = String(x.count || '').toLowerCase();
+    q = (isFinite(q) && q > 0) ? q : 1;
+    return {
+      pn: String(x.pn || '').trim(), sn: String(x.sn || '').trim(),
+      qty: q, cnt: (cm === 'visual' || cm === 'label' || cm === 'unit') ? cm : (q > 1 ? 'label' : 'unit'), cntSure: x.count_sure !== false,
+      desc: String(x.desc || '').trim(),
+      match: String(x.match || '').trim(),
+      pnClear: x.pn_clear !== false, snClear: x.sn_clear !== false,
+      note: String(x.note || '').trim()
+    };
+  });
+}
+
+/* رقم القطعة والسيريال مكتوبين مع بعض (P175-0110-473370) → نفصلهم */
+function splitPair(str){
+  var n = normPN(str); if (!n) return null;
+  var list = S.list.map(function(r){ return { pn: r.pn, n: normPN(r.pn) }; }).sort(function(a, b){ return b.n.length - a.n.length; });
+  if (list.some(function(x){ return x.n === n; })) return null;
+  var ok = function(rest){ return rest.length >= 4 && (rest.match(/[0-9]/g) || []).length >= 3 && /^[A-Z0-9\-]+$/.test(rest); };
+  for (var i = 0; i < list.length; i++){
+    var lp = list[i].n, rest;
+    if (n.indexOf(lp) === 0){
+      rest = n.slice(lp.length).replace(/^[\-\/:#.]*(S\/?N|SN|SER(IAL)?(NO)?)?[\-\/:#.]*/, '');
+      if (ok(rest)) return { pn: list[i].pn, sn: rest };
+    }
+    if (n.length > lp.length && n.slice(-lp.length) === lp){
+      rest = n.slice(0, n.length - lp.length).replace(/^(S\/?N|SN)[\-:#.]*/, '').replace(/[\-\/:#.]+$/, '');
+      if (ok(rest)) return { pn: list[i].pn, sn: rest };
+    }
+  }
+  return null;
+}
+function splitCombined(it){
+  var a = splitPair(it.pn);
+  if (a && (!it.sn || normSN(it.sn) === normSN(a.sn) || normSN(it.sn) === normPN(it.pn))){ it.pnRaw = it.pn; it.pn = a.pn; it.sn = a.sn; it.split = true; return; }
+  var b = splitPair(it.sn);
+  if (b && (!it.pn || normPN(it.pn) === normPN(b.pn) || normPN(it.pn) === normPN(it.sn))){ it.pnRaw = it.pn || it.sn; it.pn = b.pn; it.sn = b.sn; it.split = true; }
+}
+function b64ToBlob(b64, type){ return new Blob([b64ToBytes(b64)], { type: type }); }
+
+async function aiOnce(b64){
+  var prompt = buildPrompt();
+  if (!SAMPLE && CAPS) await CAPS;
+  if (SAMPLE){
+    var r = await SAMPLE(prompt, { images: [b64ToBlob(b64, 'image/jpeg')], modelTier: 'default' });
+    return parseAI(r && r.text);
+  }
+  var res = await fetch(PROXY_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-App-Token': APP_TOKEN },
+    body: JSON.stringify({ block: { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } }, prompt: prompt })
+  });
+  var j = null; try{ j = await res.json(); }catch(e){}
+  if (!res.ok) { var er = new Error((j && j.error) || ('HTTP ' + res.status)); er.status = res.status; throw er; }
+  return parseAI(j);
+}
+async function aiRead(b64){
+  var last;
+  for (var k = 0; k < 3; k++){
+    try{ return await aiOnce(b64); }
+    catch(e){
+      last = e;
+      if (e && (e.code === 'not_granted' || e.code === 'unavailable' || e.status === 401 || e.status === 400)) break;
+      await sleep(k === 0 ? 1500 : 4500);
+    }
+  }
+  throw last;
+}
+
+/* ================= تحضير الصور ================= */
+function canvasFrom(w, h){ var c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h)); return c; }
+function fitCanvas(src, maxEdge){
+  var w = src.width, h = src.height, k = Math.min(1, maxEdge / Math.max(w, h));
+  if (k >= 1 && src.tagName === 'CANVAS') return src;
+  var c = canvasFrom(w * k, h * k), x = c.getContext('2d');
+  x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+  x.imageSmoothingQuality = 'high'; x.drawImage(src, 0, 0, c.width, c.height);
+  return c;
+}
+function jpegB64(canvas, maxEdge, q){ return fitCanvas(canvas, maxEdge).toDataURL('image/jpeg', q).split(',')[1]; }
+
+function imgObjToCanvas(img){
+  if (!img) return null;
+  if (img.bitmap){ var cb = canvasFrom(img.bitmap.width, img.bitmap.height); cb.getContext('2d').drawImage(img.bitmap, 0, 0); return cb; }
+  if (!img.data || !img.width || !img.height) return null;
+  var w = img.width, h = img.height, d = img.data, c = canvasFrom(w, h), x = c.getContext('2d');
+  var id = x.createImageData(w, h), o = id.data, i, j, k;
+  if (img.kind === 3){ o.set(d.subarray(0, w * h * 4)); }
+  else if (img.kind === 2){ for (i = 0, k = 0; i < w * h; i++){ o[k++] = d[i * 3]; o[k++] = d[i * 3 + 1]; o[k++] = d[i * 3 + 2]; o[k++] = 255; } }
+  else if (img.kind === 1){
+    var rb = (w + 7) >> 3;
+    for (j = 0; j < h; j++) for (i = 0; i < w; i++){
+      var v = ((d[j * rb + (i >> 3)] >> (7 - (i & 7))) & 1) ? 255 : 0, p = (j * w + i) * 4;
+      o[p] = o[p + 1] = o[p + 2] = v; o[p + 3] = 255;
+    }
+  } else return null;
+  x.putImageData(id, 0, 0); return c;
+}
+function getPdfObj(page, name){
+  return new Promise(function(resolve){
+    var done = false, store = name.indexOf('g_') === 0 ? page.commonObjs : page.objs;
+    var t = setTimeout(function(){ if (!done){ done = true; resolve(null); } }, 6000);
+    try{ store.get(name, function(o){ if (!done){ done = true; clearTimeout(t); resolve(o); } }); }
+    catch(e){ clearTimeout(t); resolve(null); }
+  });
+}
+async function embeddedImages(page){
+  var ops = await page.getOperatorList(), O = pdfjsLib.OPS, out = [], seen = {};
+  for (var i = 0; i < ops.fnArray.length; i++){
+    var fn = ops.fnArray[i], a = ops.argsArray[i], obj = null;
+    if (fn === O.paintImageXObject || fn === O.paintImageXObjectRepeat || (O.paintJpegXObject && fn === O.paintJpegXObject)){
+      if (!a || seen[a[0]]) continue; seen[a[0]] = 1; obj = await getPdfObj(page, a[0]);
+    } else if (fn === O.paintInlineImageXObject){ obj = a && a[0]; }
+    if (!obj) continue;
+    var w = obj.width || (obj.bitmap && obj.bitmap.width) || 0, h = obj.height || (obj.bitmap && obj.bitmap.height) || 0;
+    if (w < 300 || h < 300) continue;
+    var c = imgObjToCanvas(obj); if (c) out.push(c);
+  }
+  return out;
+}
+async function renderPage(page){
+  var v1 = page.getViewport({ scale: 1 }), sc = Math.min(4, MAX_EDGE / Math.max(v1.width, v1.height));
+  var vp = page.getViewport({ scale: sc }), c = canvasFrom(vp.width, vp.height), x = c.getContext('2d');
+  x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+  await page.render({ canvasContext: x, viewport: vp }).promise;
+  return c;
+}
+async function pdfImages(file, emit){
+  var data = new Uint8Array(await file.arrayBuffer());
+  var pdf = await pdfjsLib.getDocument({ data: data, isEvalSupported: false }).promise;
+  for (var p = 1; p <= pdf.numPages; p++){
+    setProg(null, 'تجهيز ' + file.name + ' — صفحة ' + p + ' من ' + pdf.numPages);
+    var page = await pdf.getPage(p), canv = [];
+    try{
+      var tc = await page.getTextContent();
+      var tl = tc.items.map(function(t){ return t.str || ''; }).join('').replace(/\s/g, '').length;
+      if (tl < 15) canv = await embeddedImages(page);   // صفحة صور فقط → نقرأ كل صورة بدقتها الأصلية
+    }catch(e){ canv = []; }
+    if (!canv.length) canv = [await renderPage(page)]; // فيها كتابة أو ما فيها صور منفصلة → نقرأ الصفحة كاملة
+    for (var i = 0; i < canv.length; i++){
+      emit(canv[i], file.name + ' — ص' + p + (canv.length > 1 ? (' / صورة ' + (i + 1)) : ''));
+      canv[i].width = canv[i].height = 0;
+    }
+    page.cleanup();
+  }
+  try{ pdf.destroy(); }catch(e){}
+}
+function loadImageFile(file){
+  return new Promise(function(res, rej){
+    var url = URL.createObjectURL(file), im = new Image();
+    im.onload = function(){ var c = fitCanvas(im, 4000); URL.revokeObjectURL(url); res(c); };
+    im.onerror = function(){ URL.revokeObjectURL(url); rej(new Error('ما قدرت أفتح الصورة')); };
+    im.src = url;
+  });
+}
+
+/* ================= طابور القراءة ================= */
+var Q = { queue: [], active: 0, total: 0, done: 0, failed: 0, producing: 0 };
+function setProg(frac, text){
+  var box = $('#prog'); box.hidden = false;
+  if (frac != null) $('#pfill').style.width = Math.round(frac * 100) + '%';
+  if (text) $('#ptext').textContent = text;
+}
+function progText(){
+  return 'قراءة الصور: ' + Q.done + ' من ' + Q.total + (Q.failed ? (' — تعذّر ' + Q.failed) : '');
+}
+function enqueue(srcId){ Q.queue.push(srcId); Q.total++; Q.added = (Q.added || 0) + 1; pump(); }
+function pump(){
+  var lim = SAMPLE ? CONC_SAMPLE : CONC_PROXY;
+  while (Q.active < lim && Q.queue.length){ runJob(Q.queue.shift()); }
+  setProg(Q.total ? Q.done / Q.total : 0, progText());
+  if (!Q.active && !Q.queue.length && !Q.producing && Q.total){
+    setProg(1, 'خلصت القراءة: ' + Q.done + ' صورة' + (Q.failed ? (' — تعذّر ' + Q.failed + ' (اضغط «إعادة» عندها)') : ''));
+    if (Q.failed) { UI.tab = 'scans'; }
+    renderAll();
+    Q.total = Q.done = Q.failed = 0;
+  }
+}
+async function runJob(srcId){
+  Q.active++;
+  var src = findSrc(srcId);
+  try{
+    src.status = 'reading'; renderSources();
+    var items = await aiRead(BLOBS[srcId]);
+    S.scans = S.scans.filter(function(s){ return s.srcId !== srcId; });
+    items.forEach(function(it){ splitCombined(it); it.id = uid(); it.srcId = srcId; S.scans.push(it); });
+    src.status = 'ok'; src.err = ''; src.count = items.length;
+  }catch(e){
+    src.status = 'err'; src.err = (e && (e.message || e.code)) ? String(e.message || e.code) : 'خطأ غير معروف'; Q.failed++;
+  }
+  Q.active--; Q.done++;
+  save(); renderAll(); pump();
+}
+function findSrc(id){ for (var i = 0; i < S.sources.length; i++) if (S.sources[i].id === id) return S.sources[i]; return null; }
+
+var CUR_FILE = '';
+function addSource(canvas, label){
+  var id = uid();
+  BLOBS[id] = jpegB64(canvas, MAX_EDGE, 0.88);
+  S.sources.push({ id: id, label: label, fileKey: CUR_FILE, thumb: 'data:image/jpeg;base64,' + jpegB64(canvas, 360, 0.66), status: 'pending', err: '', count: 0 });
+  enqueue(id);
+}
+function fileKey(f){ return f.name + '|' + f.size; }
+
+async function handleFiles(files){
+  files = Array.prototype.slice.call(files || []);
+  if (!files.length) return;
+  setProg(0, 'تجهيز الملفات…');
+  Q.producing++; var added0 = Q.added || 0, skipped = 0, opened = 0;
+  for (var f = 0; f < files.length; f++){
+    var file = files[f], key = fileKey(file);
+    if (S.files.some(function(x){ return x.key === key; })){
+      var again = await dialog('الملف مرفوع قبل', 'الملف <b class="ltr">' + esc(file.name) + '</b> مرفوع من قبل بهذا الجرد. إذا رفعته مرة ثانية بتنعد قطعه مرتين.', [{ t: 'تخطّاه', v: false, cls: 'primary' }, { t: 'ارفعه مرة ثانية', v: true }]);
+      if (!again){ skipped++; continue; }
+      key = key + '|' + uid();
+    }
+    S.files.push({ key: key, name: file.name, size: file.size });
+    CUR_FILE = key; opened++;
+    try{
+      if (/pdf$/i.test(file.type) || /\.pdf$/i.test(file.name)){
+        if (!window.pdfjsLib) throw new Error('مكتبة PDF ما تحمّلت');
+        await pdfImages(file, addSource);
+      } else if (/^image\//i.test(file.type) || /\.(jpe?g|png|webp|heic|heif)$/i.test(file.name)){
+        var c = await loadImageFile(file); addSource(c, file.name); c.width = c.height = 0;
+      } else { toast('نوع ملف غير مدعوم: ' + file.name); }
+    }catch(e){ toast('تعذّر فتح ' + file.name + ': ' + (e.message || e), 4000); }
+  }
+  Q.producing--; CUR_FILE = '';
+  save(); renderAll(); pump();
+  if ((Q.added || 0) === added0){
+    if (skipped && !opened) setProg(1, 'ما انضاف شي — الملف مرفوع من قبل');
+    else setProg(0, 'ما لقيت صور بالملف');
+  }
+}
+
+/* ================= التحليل ================= */
+var REASON = {
+  near: 'رقم القطعة المقروء يختلف عن القائمة',
+  bysn: 'رقم القطعة أخذناه من السيريال المسجل بالنظام',
+  extra: 'رقم غير موجود في القائمة (زيادة)',
+  dup: 'سيريال مكرر — انحسب مرة وحدة',
+  unclear_sn: 'السيريال غير واضح',
+  unclear_pn: 'رقم القطعة غير واضح',
+  nosn: 'ما ظهر سيريال (القطعة لها سيريالات بالنظام)',
+  snnotinsys: 'السيريال مو مسجل بالنظام لهذي القطعة',
+  snwrongpn: 'السيريال مسجل بالنظام على قطعة ثانية',
+  pattern: 'صيغة السيريال تختلف عن باقي نفس القطعة',
+  snconf: 'نفس السيريال ظهر على رقم قطعة ثاني',
+  nopn: 'ما ظهر رقم قطعة',
+  visual: 'الحبات انعدّت من الصورة',
+  countunsure: 'العدد مو أكيد — بعض الحبات مخفية أو متراكبة',
+  multisrc: 'نفس القطعة انعدّت بأكثر من صورة — تأكد إنها مو نفس الحبات',
+  split: 'P/N و S/N مكتوبين مع بعض — انفصلوا'
+};
+var WARN_C = { extra: 'ext', dup: 'bad', snwrongpn: 'bad', snnotinsys: 'bad', visual: 'info', split: 'info' };
+var INFO_F = { extra: 1, visual: 1, split: 1 };
+var _ref = { src: null, v: null };
+function refIndex(){
+  if (_ref.src === S.snList) return _ref.v;
+  var bySN = {}, byMat = {};
+  (S.snList || []).forEach(function(x){ bySN[normSN(x.sn)] = x; (byMat[x.mat] = byMat[x.mat] || []).push(x); });
+  _ref = { src: S.snList, v: { bySN: bySN, byMat: byMat } };
+  return _ref.v;
+}
+function analyze(){
+  var REF = refIndex();
+  var byPN = {}, byBare = {}, byConf = {};
+  var rows = S.list.map(function(r){
+    var o = { pn: r.pn, desc: r.desc, plant: r.plant, type: r.type, sloc: r.sloc, found: 0, units: [], warn: 0,
+              sysSN: REF.byMat[r.pn] || [], cover: {}, missingSN: [], unknownSN: [] };
+    o.sys = o.sysSN.length;
+    byPN[normPN(r.pn)] = o; byBare[bareN(r.pn)] = o; byConf[confN(r.pn)] = o;
+    return o;
+  });
+  var srcMap = {}; S.sources.forEach(function(s){ srcMap[s.id] = s; });
+  var res = [];
+  S.scans.forEach(function(s){
+    var r = { s: s, row: null, kind: 'extra', flags: [], counted: true, sugg: '' };
+    var n = normPN(s.pn), b = bareN(s.pn), snk = normSN(s.sn), refx = snk ? REF.bySN[snk] : null;
+    r.snk = snk; r.refx = refx;
+    if (n && byPN[n]) { r.row = byPN[n]; r.kind = 'exact'; }
+    else if (b && byBare[b]) { r.row = byBare[b]; r.kind = 'exact'; }
+    else if (refx && byPN[normPN(refx.mat)]) { r.row = byPN[normPN(refx.mat)]; r.kind = 'bysn'; }
+    else if (b && byConf[confN(s.pn)]) { r.row = byConf[confN(s.pn)]; r.kind = 'near'; }
+    else {
+      var best = null, bd = 99, bd2 = 99;
+      if (b) rows.forEach(function(o){ var d = lev(b, bareN(o.pn)); if (d < bd){ bd2 = bd; bd = d; best = o; } else if (d < bd2) bd2 = d; });
+      var mm = s.match ? byPN[normPN(s.match)] : null;
+      if (best && b.length >= 6 && bd <= 2 && bd2 > bd) { r.row = best; r.kind = 'near'; }
+      else if (mm && (!b || lev(b, bareN(mm.pn)) <= Math.max(3, Math.round(bareN(mm.pn).length * 0.3)))) { r.row = mm; r.kind = 'near'; }
+    }
+    if (!b && r.kind !== 'bysn') r.flags.push('nopn');
+    if (r.kind === 'near') r.flags.push('near');
+    if (r.kind === 'bysn') r.flags.push('bysn');
+    if (r.kind === 'extra') r.flags.push('extra');
+    if (!s.pnClear) r.flags.push('unclear_pn');
+    if (s.sn && (!s.snClear || /\?/.test(s.sn))) r.flags.push('unclear_sn');
+    if (s.cnt === 'visual') r.flags.push('visual');
+    if (s.cntSure === false) r.flags.push('countunsure');
+    if (s.split) r.flags.push('split');
+    if (r.row){
+      if (!snk && r.row.sys > 0) r.flags.push('nosn');
+      if (snk && !refx && /\?/.test(snk) && r.row.sys > 0){
+        // سيريال فيه حروف غير واضحة: نطابق الباقي مع سيريالات النظام لنفس القطعة
+        var rx = new RegExp('^' + snk.replace(/[.*+^${}()|[\]\\]/g, '\\$&').replace(/\?/g, '.') + '$');
+        var pc = r.row.sysSN.filter(function(x){ return rx.test(normSN(x.sn)); });
+        if (pc.length === 1){ refx = r.refx = pc[0]; r.probable = true; r.sugg = pc[0].sn; }
+        else if (pc.length > 1) r.sugg = pc.map(function(x){ return x.sn; }).join(' / ');
+      }
+      if (refx && refx.mat !== r.row.pn){ r.flags.push('snwrongpn'); r.refMat = refx.mat; }
+      if (snk && !refx && r.row.sys > 0 && !(/\?/.test(snk) && r.sugg)){
+        r.flags.push('snnotinsys');
+        var cand = r.row.sysSN.filter(function(x){ return lev(snk, normSN(x.sn)) <= 1; });
+        if (cand.length === 1) r.sugg = cand[0].sn;
+      }
+    }
+    r.src = srcMap[s.srcId];
+    res.push(r);
+  });
+  // تكرار السيريال
+  var seen = {}, snPN = {};
+  res.forEach(function(r){
+    if (!r.snk) return;
+    var key = (r.row ? r.row.pn : 'X:' + bareN(r.s.pn)) + '|' + r.snk;
+    if (seen[key]) { r.flags.push('dup'); r.counted = false; r.dupOf = seen[key]; }
+    else seen[key] = r;
+    var pk = r.row ? r.row.pn : bareN(r.s.pn);
+    (snPN[r.snk] = snPN[r.snk] || {})[pk] = 1;
+  });
+  res.forEach(function(r){ if (r.snk && Object.keys(snPN[r.snk]).length > 1 && r.flags.indexOf('snconf') < 0 && r.flags.indexOf('snwrongpn') < 0) r.flags.push('snconf'); });
+  // العدّ وتغطية السيريالات
+  var byPNraw = {}; rows.forEach(function(o){ byPNraw[o.pn] = o; });
+  res.forEach(function(r){
+    if (r.row && r.counted) r.row.found += r.s.qty;
+    if (r.row) r.row.units.push(r);
+    if (r.counted && r.refx && byPNraw[r.refx.mat]) byPNraw[r.refx.mat].cover[normSN(r.refx.sn)] = r;
+    if (r.counted && r.row && r.flags.indexOf('snnotinsys') >= 0) r.row.unknownSN.push(r);
+  });
+  // عدّ بالصورة لنفس القطعة في أكثر من صورة → تنبيه احتمال عدّ مكرر
+  rows.concat([]).forEach(function(o){
+    var ns = o.units.filter(function(r){ return r.counted && !r.snk; });
+    if (!ns.some(function(r){ return r.s.cnt === 'visual'; })) return;
+    var srcs = {}; ns.forEach(function(r){ srcs[r.s.srcId] = 1; });
+    if (Object.keys(srcs).length > 1) ns.forEach(function(r){ if (r.flags.indexOf('multisrc') < 0) r.flags.push('multisrc'); });
+  });
+  // صيغة السيريال (للقطع اللي ما لها سيريالات بالنظام)
+  rows.forEach(function(o){
+    if (o.sys) return;
+    var u = o.units.filter(function(r){ return r.counted && r.snk; });
+    if (u.length < 3) return;
+    var cnt = {}, top = '', tc = 0;
+    u.forEach(function(r){ var sh = snShape(r.s.sn); cnt[sh] = (cnt[sh] || 0) + 1; if (cnt[sh] > tc){ tc = cnt[sh]; top = sh; } });
+    if (tc / u.length < 0.6) return;
+    u.forEach(function(r){ if (snShape(r.s.sn) !== top) r.flags.push('pattern'); });
+  });
+  // حالة كل صنف
+  var hasScans = S.scans.length > 0;
+  rows.forEach(function(o){
+    o.missingSN = o.sysSN.filter(function(x){ return !o.cover[normSN(x.sn)]; });
+    o.warn = o.units.filter(function(r){ return r.flags.some(function(f){ return !INFO_F[f]; }); }).length;
+    var e = S.expected[o.pn];
+    o.expUser = !(e === '' || e == null || !isFinite(+e));
+    o.exp = o.expUser ? +e : (o.sys > 0 ? o.sys : null);
+    if (o.exp != null){
+      var d = o.found - o.exp;
+      o.st = !hasScans ? 'idle' : (d < 0 ? (o.found === 0 ? 'missing' : 'short') : d > 0 ? 'over' : 'match'); o.diff = d;
+      if (o.st === 'missing' && o.exp === 0) o.st = 'match';
+    } else o.st = !hasScans ? 'idle' : (o.found > 0 ? 'found' : 'missing');
+    if (hasScans && o.found > 0 && o.missingSN.length && o.st !== 'short') o.warn++;
+  });
+  // الزيادات (غير موجودة بالقائمة)
+  var extras = {}, exList = [];
+  res.forEach(function(r){
+    if (r.row) return;
+    var k = bareN(r.s.pn) || ('?' + r.s.id);
+    if (!extras[k]) { extras[k] = { pn: r.s.pn || '(بدون رقم)', desc: r.s.desc, qty: 0, units: [] }; exList.push(extras[k]); }
+    if (r.counted) extras[k].qty += r.s.qty;
+    extras[k].units.push(r);
+  });
+  var A = { rows: rows, res: res, extras: exList, hasScans: hasScans };
+  A.totalUnits = rows.reduce(function(a, o){ return a + o.found; }, 0);
+  A.found = rows.filter(function(o){ return o.found > 0; });
+  A.missing = rows.filter(function(o){ return hasScans && o.found === 0 && (o.exp == null || o.exp > 0); });
+  A.short = rows.filter(function(o){ return o.st === 'short'; });
+  A.over = rows.filter(function(o){ return o.st === 'over'; });
+  A.dups = res.filter(function(r){ return r.flags.indexOf('dup') >= 0; });
+  A.unclear = res.filter(function(r){ return r.flags.indexOf('unclear_sn') >= 0 || r.flags.indexOf('nosn') >= 0 || r.flags.indexOf('unclear_pn') >= 0 || (r.flags.indexOf('nopn') >= 0 && r.kind !== 'bysn'); });
+  A.near = res.filter(function(r){ return r.flags.indexOf('near') >= 0 || (r.flags.indexOf('bysn') >= 0 && normPN(r.s.pn)); });
+  A.pattern = res.filter(function(r){ return r.flags.indexOf('pattern') >= 0 || r.flags.indexOf('snconf') >= 0; });
+  A.visual = res.filter(function(r){ return r.counted && r.s.cnt === 'visual'; });
+  A.snUnknown = res.filter(function(r){ return r.counted && r.flags.indexOf('snnotinsys') >= 0; });
+  A.snWrong = res.filter(function(r){ return r.counted && r.flags.indexOf('snwrongpn') >= 0; });
+  A.extraUnits = exList.reduce(function(a, x){ return a + x.qty; }, 0);
+  A.sysTotal = (S.snList || []).length;
+  A.sysFound = rows.reduce(function(a, o){ return a + Object.keys(o.cover).length; }, 0);
+  A.snMissingRows = rows.filter(function(o){ return o.missingSN.length; });
+  A.snMissingCount = rows.reduce(function(a, o){ return a + o.missingSN.length; }, 0);
+  A.failedSrc = S.sources.filter(function(s){ return s.status === 'err'; });
+  return A;
+}
+function rowStatus(o){
+  switch (o.st){
+    case 'short': return { c: 'bad', t: 'نقص ' + (-o.diff) };
+    case 'over': return { c: 'info', t: 'زيادة ' + o.diff };
+    case 'match': return o.warn ? { c: 'warn', t: 'مطابق ⚠' } : { c: 'ok', t: 'مطابق' };
+    case 'found': return o.warn ? { c: 'warn', t: 'موجود ⚠' } : { c: 'ok', t: 'موجود' };
+    case 'missing': return { c: 'bad', t: 'غير موجود' };
+    default: return { c: 'idle', t: '—' };
+  }
+}
+function unitLine(r){ return r.s.cnt === 'visual' && !r.s.sn ? ('عدّ بالصورة: ' + r.s.qty + ' حبة' + (r.s.cntSure === false ? ' (تقريبي)' : '')) : ((r.s.sn ? ('S/N ' + r.s.sn) : 'بدون سيريال') + (r.s.qty > 1 ? (' × ' + r.s.qty) : '')); }
+function L(t){ return '<span class="ltr mono' + (String(t == null ? '' : t).length <= 24 ? ' nw' : '') + '">' + esc(t) + '</span>'; }
+function uL(r){ return (r.s.cnt === 'visual' && !r.s.sn) ? esc(unitLine(r)) : L(unitLine(r)); }
+function srcL(r){ return r && r.src ? esc(r.src.label) : ''; }
+/* يلوّن الحروف المختلفة بين المقروء والقائمة */
+function diffPN(read, ref){
+  var a = String(read || ''), b = String(ref || '');
+  if (normPN(a).length !== normPN(b).length) return L(a);
+  var na = normPN(a), nb = normPN(b), out = '';
+  for (var i = 0; i < na.length; i++) out += na[i] === nb[i] ? esc(na[i]) : '<b class="dch">' + esc(na[i]) + '</b>';
+  return '<span class="ltr mono">' + out + '</span>';
+}
+function flagText(r, f){
+  if (f === 'snwrongpn') return REASON[f] + ': ' + r.refMat;
+  if (f === 'snnotinsys' && r.sugg) return REASON[f] + ' — قريب من ' + r.sugg + ' (يمكن خطأ قراءة)';
+  if (f === 'near' && r.row) return REASON[f] + ' — الأقرب ' + r.row.pn;
+  if (f === 'unclear_sn' && r.sugg) return REASON[f] + ' — يحتمل ' + r.sugg + (r.probable ? ' (الوحيد المطابق بالنظام)' : '');
+  return REASON[f];
+}
+
+/* ================= العرض ================= */
+function renderAll(){ renderHead(); renderOld(); renderBrief(); renderList(); renderSources(); renderTabs(); }
+function renderHead(){
+  $('#listName').textContent = S.listName + ' · ' + S.list.length + ' صنف' + ((S.snList || []).length ? (' · ' + S.snList.length + ' سيريال بالنظام') : '');
+  $('#cDate').value = S.countDate;
+  $('#pnList').innerHTML = S.list.map(function(r){ return '<option value="' + esc(r.pn) + '">' + esc(r.desc) + '</option>'; }).join('');
+}
+function li(html){ return '<li>' + html + '</li>'; }
+function stat(c, v, t){ return '<div class="stat ' + c + '"><b>' + v + '</b><span>' + t + '</span></div>'; }
+function sec(title, items, open){ return '<details class="sec"' + (open ? ' open' : '') + '><summary>' + title + '</summary><ul>' + items.join('') + '</ul></details>'; }
+function snChunk(list){ return list.map(function(x){ return L(x.sn); }).join('، '); }
+function renderBrief(){
+  var A = analyze(), h = '';
+  if (!A.hasScans){
+    h = '<h2>جاهز للجرد</h2><p class="hint">القائمة محمّلة: ' + S.list.length + ' صنف' + (A.sysTotal ? (' و' + A.sysTotal + ' سيريال مسجل بالنظام (ورقة SN list)') : '') + '. ارفع ملف PDF فيه صور القطع أو صور مباشرة، والبرنامج يقرأ رقم القطعة والسيريال من كل صورة، يطابقها مع القائمة والسيريالات المسجلة، ويطلع لك الملخص وملف Excel.</p>' +
+        '<p class="hint">للدقة: كل صورة يكون فيها ملصق القطعة واضح (P/N و S/N). القطع اللي بأكياس (O-rings وغيرها) صوّر ملصق الكيس وفيه العدد.</p>';
+    if (A.failedSrc.length) h += '<p class="hint" style="color:var(--bad)">تعذّرت قراءة ' + A.failedSrc.length + ' صورة — شوف تبويب «الصور والقطع».</p>';
+    $('#brief').innerHTML = h; return;
+  }
+  h += '<h2>الملخص — ' + dmy(S.countDate, '/', false) + '</h2><div class="stats">' +
+    stat('ok', A.found.length + ' / ' + S.list.length, 'أصناف موجودة') +
+    stat('bad', A.missing.length, 'أصناف غير موجودة') +
+    stat('bad', A.short.length, 'أصناف فيها نقص') +
+    stat('info', A.over.length, 'أصناف فيها زيادة') +
+    stat('info', A.totalUnits, 'إجمالي القطع المعدودة') +
+    stat('ext', A.extraUnits, 'قطع مو بالقائمة') +
+    (A.sysTotal ? stat('ok', A.sysFound + ' / ' + A.sysTotal, 'سيريالات النظام اللي لقيناها') : '') +
+    (A.sysTotal ? stat('bad', A.snUnknown.length + A.snWrong.length, 'سيريال غلط / مو مسجل') : '') +
+    stat('warn', A.dups.length, 'سيريال مكرر') +
+    stat('warn', A.unclear.length, 'غير واضح أو ناقص') +
+    stat('warn', A.near.length, 'رقم قطعة فيه اختلاف') +
+    (A.failedSrc.length ? stat('bad', A.failedSrc.length, 'صور تعذّرت قراءتها') : '') +
+    '</div>';
+  if (A.short.length) h += sec('نقص بالعدد (' + A.short.length + ')', A.short.map(function(o){
+    return li(L(o.pn) + ' — المتوقع ' + o.exp + (o.expUser ? '' : ' (بالنظام)') + '، الموجود ' + o.found + ' → <b style="color:var(--bad)">نقص ' + (-o.diff) + '</b>' + (o.missingSN.length ? '<br><span class="hint">السيريالات الناقصة: ' + snChunk(o.missingSN) + '</span>' : ''));
+  }), true);
+  if (A.over.length) h += sec('زيادة بالعدد (' + A.over.length + ')', A.over.map(function(o){
+    return li(L(o.pn) + ' — المتوقع ' + o.exp + (o.expUser ? '' : ' (بالنظام)') + '، الموجود ' + o.found + ' → <b style="color:var(--info)">زيادة ' + o.diff + '</b>' + (o.unknownSN.length ? '<br><span class="hint">سيريالات مو مسجلة: ' + o.unknownSN.map(function(r){ return L(r.s.sn); }).join('، ') + '</span>' : ''));
+  }), true);
+  if (A.missing.length) h += sec('غير موجودة بالصور (' + A.missing.length + ')', A.missing.map(function(o){ return li(L(o.pn) + ' — ' + L(o.desc) + (o.sys ? ' <span class="hint">(' + o.sys + ' سيريال بالنظام)</span>' : '')); }), A.missing.length <= 12);
+  var partialSN = A.snMissingRows.filter(function(o){ return o.found > 0 && o.st !== 'short'; });
+  if (partialSN.length) h += sec('العدد مطابق لكن سيريالات النظام ما تطابق (' + partialSN.length + ')', partialSN.map(function(o){ return li(L(o.pn) + ' — ناقص من النظام: ' + snChunk(o.missingSN)); }), true);
+  if (A.snWrong.length) h += sec('سيريال مسجل على قطعة ثانية (' + A.snWrong.length + ')', A.snWrong.map(function(r){ return li('الملصق ' + L(r.s.pn) + ' / ' + L(r.s.sn) + ' ← بالنظام هذا السيريال على ' + L(r.refMat) + ' — ' + srcL(r)); }), true);
+  if (A.snUnknown.length) h += sec('سيريال مو مسجل بالنظام (' + A.snUnknown.length + ')', A.snUnknown.map(function(r){ return li(L(r.row.pn) + ' — ' + L(r.s.sn) + (r.sugg ? ' — قريب من ' + L(r.sugg) + ' (يمكن خطأ قراءة أو ملصق)' : '') + ' — ' + srcL(r)); }), true);
+  if (A.extras.length) h += sec('زيادة — أرقام مو موجودة بالقائمة (' + A.extras.length + ')', A.extras.map(function(x){ return li(L(x.pn) + (x.desc ? ' — ' + L(x.desc) : '') + ' — العدد ' + x.qty + ' — ' + x.units.map(function(r){ return uL(r); }).join('، ')); }), true);
+  if (A.near.length) h += sec('رقم القطعة فيه اختلاف (' + A.near.length + ')', A.near.map(function(r){ return li('المقروء ' + diffPN(r.s.pn, r.row.pn) + ' ← بالقائمة ' + L(r.row.pn) + (r.kind === 'bysn' ? ' (حسب السيريال)' : '') + ' — ' + uL(r) + ' — ' + srcL(r)); }), true);
+  if (A.dups.length) h += sec('سيريال مكرر (' + A.dups.length + ')', A.dups.map(function(r){ return li(L(r.row ? r.row.pn : r.s.pn) + ' — ' + L(r.s.sn) + ' — ' + srcL(r) + ' (نفس ' + srcL(r.dupOf) + ')'); }), true);
+  if (A.unclear.length) h += sec('غير واضح / ناقص (' + A.unclear.length + ')', A.unclear.map(function(r){ return li(L(r.s.pn || '—') + ' — ' + uL(r) + ' — ' + r.flags.filter(function(f){ return /unclear|nosn|nopn/.test(f); }).map(function(f){ return REASON[f]; }).join('، ') + ' — ' + srcL(r)); }), A.unclear.length <= 10);
+  if (A.visual.length){
+    var vg = {}, vo = [];
+    A.visual.forEach(function(r){ var k = r.row ? r.row.pn : (r.s.pn || '?'); if (!vg[k]){ vg[k] = { pn: k, tot: 0, parts: [] }; vo.push(vg[k]); } vg[k].tot += r.s.qty; vg[k].parts.push(r); });
+    vo.sort(function(a, b){ return a.pn < b.pn ? -1 : 1; });
+    h += sec('عدّ الحبات من الصور — بدون سيريال (' + vo.length + ')', vo.map(function(g){ return li(L(g.pn) + ' — <b>' + g.tot + ' حبة</b> — ' + g.parts.map(function(r){ return r.s.qty + (r.s.cntSure === false ? '≈' : '') + ' من ' + srcL(r); }).join('، ') + (g.parts.some(function(r){ return r.flags.indexOf('multisrc') >= 0; }) ? ' <span style="color:var(--warn)">⚠ انعدّت بأكثر من صورة — تأكد إنها مو نفس الحبات</span>' : '')); }), true);
+  }
+  if (A.pattern.length) h += sec('سيريال يحتاج مراجعة (' + A.pattern.length + ')', A.pattern.map(function(r){ return li(L(r.row ? r.row.pn : r.s.pn) + ' — ' + L(r.s.sn) + ' — ' + r.flags.filter(function(f){ return f === 'pattern' || f === 'snconf'; }).map(function(f){ return REASON[f]; }).join('، ')); }), true);
+  if (S.old){
+    var C = compareData(A);
+    h += sec('المقارنة مع اللستة القديمة', [
+      li('موجود سابقاً وانلقى: <b>' + C.cnt.EXIST_FOUND + '</b>'),
+      li('موجود سابقاً وما انلقى: <b style="color:var(--bad)">' + C.cnt.EXIST_MISSING + '</b>'),
+      li('جديد انضاف للقائمة: <b>' + (C.cnt.NEWLIST_FOUND + C.cnt.NEWLIST_MISSING) + '</b> (انلقى ' + C.cnt.NEWLIST_FOUND + ' · ما انلقى ' + C.cnt.NEWLIST_MISSING + ')'),
+      li('جديد انلقى بالجرد ومو بأي لستة: <b>' + C.cnt.NEW_FOUND + '</b>'),
+      li('انشال من القائمة: <b>' + (C.cnt.REMOVED + C.cnt.REMOVED_FOUND) + '</b>' + (C.cnt.REMOVED_FOUND ? ' (منهم ' + C.cnt.REMOVED_FOUND + ' لسا موجودين بالمخزن)' : ''))
+    ], true);
+  }
+  h += '<p class="hint" style="margin-top:10px">المتوقع للقطع اللي لها سيريال = عدد سيريالاتها بورقة SN list. القطع بدون سيريال (HALB وغيرها) ما لها عدد بالملف، فحكمها موجود / غير موجود — وإذا تعرف العدد اكتبه بخانة «المتوقع».</p>';
+  $('#brief').innerHTML = h;
+}
+
+var FILTERS = [['all','الكل'],['found','موجود'],['missing','غير موجود'],['diff','نقص / زيادة'],['warn','ملاحظات']];
+function renderList(){
+  var A = analyze();
+  $('#filters').innerHTML = FILTERS.map(function(f){ return '<button class="chipf' + (UI.filter === f[0] ? ' on' : '') + '" data-f="' + f[0] + '">' + f[1] + '</button>'; }).join('');
+  var q = UI.q.trim().toUpperCase();
+  var rows = A.rows.filter(function(o){
+    if (q && (o.pn + ' ' + o.desc).toUpperCase().indexOf(q) < 0 && bareN(o.pn).indexOf(bareN(q)) < 0 && !o.sysSN.some(function(x){ return x.sn.indexOf(q) >= 0; })) return false;
+    switch (UI.filter){
+      case 'found': return o.found > 0;
+      case 'missing': return o.st === 'missing';
+      case 'warn': return o.warn > 0;
+      case 'diff': return o.st === 'short' || o.st === 'over' || (o.st === 'missing' && o.exp != null);
+      default: return true;
+    }
+  });
+  var h = rows.map(function(o){
+    var st = rowStatus(o), cls = st.c === 'bad' ? 'b-bad' : st.c === 'warn' ? 'b-warn' : (st.c === 'ok' ? 'b-ok' : (st.c === 'info' ? 'b-info' : ''));
+    var ex = '';
+    if (UI.open[o.pn]){
+      var parts = [];
+      if (o.sys){
+        parts.push('<div><b>سيريالات النظام (' + o.sys + '):</b> ' + o.sysSN.map(function(x){
+          var c = o.cover[normSN(x.sn)];
+          return c ? '<span class="sn ok" title="' + srcL(c) + '">✔ ' + esc(x.sn) + '</span>' : (A.hasScans ? '<span class="sn bad">✖ ' + esc(x.sn) + '</span>' : '<span class="sn">' + esc(x.sn) + '</span>');
+        }).join(' ') + '</div>');
+      }
+      parts.push('<div style="margin-top:6px"><b>المقروء من الصور:</b> ' + (o.units.length ? '<br>' + o.units.map(function(r){
+        return '• ' + uL(r) + (r.flags.length ? ' — <span style="color:var(--warn)">' + r.flags.map(function(f){ return flagText(r, f); }).join('، ') + '</span>' : '') + ' <span style="color:var(--muted)">(' + srcL(r) + ')</span>';
+      }).join('<br>') : 'ولا قطعة.') + '</div>');
+      ex = '<div class="lx">' + parts.join('') + '</div>';
+    }
+    var expAttr = o.expUser ? '' : ' auto';
+    return '<div class="lr ' + cls + '" data-pn="' + esc(o.pn) + '">' +
+      '<div><div class="pn">' + esc(o.pn) + '<span class="ty">' + esc(o.type) + '</span>' + (o.sys ? '<span class="ty sn-b">SN ' + o.sys + '</span>' : '') + '</div><div class="ds">' + esc(o.desc) + '</div></div>' +
+      '<div><input class="exp' + expAttr + '" inputmode="numeric" data-exp="' + esc(o.pn) + '" value="' + (o.exp != null ? o.exp : '') + '" placeholder="—"></div>' +
+      '<div class="fnd">' + (A.hasScans ? o.found : '—') + '</div>' +
+      '<div style="text-align:center"><span class="st ' + st.c + '">' + st.t + '</span></div>' + ex + '</div>';
+  }).join('');
+  if (UI.filter === 'all' && !q && A.extras.length){
+    h += A.extras.map(function(x){
+      return '<div class="lr" style="background:#fff8f2;cursor:default"><div><div class="pn">' + esc(x.pn) + '</div><div class="ds">' + esc(x.desc || '') + '</div></div><div></div><div class="fnd">' + x.qty + '</div><div style="text-align:center"><span class="st ext">مو بالقائمة</span></div></div>';
+    }).join('');
+  }
+  $('#rows').innerHTML = h || '<div class="empty">ما في نتائج</div>';
+}
+
+function srcStatus(s){
+  if (s.status === 'pending') return '<span class="st idle">بالانتظار</span>';
+  if (s.status === 'reading') return '<span class="st info">جاري القراءة…</span>';
+  if (s.status === 'err') return '<span class="st bad">تعذّرت القراءة</span>';
+  return '<span class="st ok">' + s.count + ' قطعة</span>';
+}
+function renderFiles(){
+  var box = $('#filesBox');
+  if (!S.files.length){ box.hidden = true; return; }
+  box.hidden = false;
+  box.innerHTML = '<h2 style="font-size:15px;margin:0 0 6px">الملفات المرفوعة (' + S.files.length + ')</h2>' + S.files.map(function(f){
+    var src = S.sources.filter(function(x){ return x.fileKey === f.key; });
+    var items = S.scans.filter(function(x){ return src.some(function(y){ return y.id === x.srcId; }); }).length;
+    var busy = src.some(function(x){ return x.status === 'pending' || x.status === 'reading'; }), bad = src.filter(function(x){ return x.status === 'err'; }).length;
+    return '<div class="frow"><div class="fn ltr">' + esc(f.name) + '</div><div class="fm">' + src.length + ' صورة · ' + items + ' قطعة' + (busy ? ' · <span style="color:var(--info)">جاري القراءة…</span>' : '') + (bad ? ' · <span style="color:var(--bad)">تعذّر ' + bad + '</span>' : '') + '</div>' +
+      '<button class="btn sm" data-rmfile="' + esc(f.key) + '">حذف الملف</button></div>';
+  }).join('');
+}
+function renderByPN(A){
+  var groups = {}, order = [];
+  A.res.forEach(function(r){
+    var k = r.row ? r.row.pn : ('~' + (r.s.pn || 'بدون رقم'));
+    if (!groups[k]){ groups[k] = { k: k, row: r.row, pn: r.row ? r.row.pn : (r.s.pn || 'بدون رقم'), desc: r.row ? r.row.desc : r.s.desc, items: [], tot: 0, photos: {} }; order.push(groups[k]); }
+    var g = groups[k]; g.items.push(r); if (r.counted) g.tot += r.s.qty; g.photos[r.s.srcId] = 1;
+  });
+  order.sort(function(a, b){ return a.k < b.k ? -1 : a.k > b.k ? 1 : 0; });
+  if (!order.length) return '<div class="empty">ما في قطع مقروءة للحين.</div>';
+  return order.map(function(g){
+    var st = g.row ? rowStatus(g.row) : { c: 'ext', t: 'مو بالقائمة' };
+    return '<div class="src"><div class="gh"><div><div class="pn ltr mono" style="font-weight:800">' + esc(g.pn) + '</div><div class="ds ltr">' + esc(g.desc || '') + '</div></div>' +
+      '<div class="gt"><b>' + g.tot + '</b><span>حبة · ' + Object.keys(g.photos).length + ' صورة</span>' + (g.row && g.row.exp != null ? '<span>المتوقع ' + g.row.exp + '</span>' : '') + '<span class="st ' + st.c + '">' + st.t + '</span></div></div>' +
+      g.items.map(function(r){
+        var src = r.src || {};
+        return '<div class="gi">' + (src.thumb ? '<img class="tmini" src="' + src.thumb + '" data-view="' + src.id + '" alt="">' : '') +
+          '<div style="flex:1;min-width:0"><div>' + uL(r) + (r.counted ? '' : ' <span class="st bad">ما انحسب</span>') + '</div><div class="ss">' + srcL(r) + '</div>' +
+          (r.flags.length ? '<div class="flags" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">' + r.flags.map(function(f){ return '<span class="st ' + (WARN_C[f] || 'warn') + '">' + esc(flagText(r, f)) + '</span>'; }).join('') + '</div>' : '') +
+          '</div></div>';
+      }).join('') + '</div>';
+  }).join('');
+}
+function renderSources(){
+  renderFiles();
+  if (UI.tab !== 'scans') return;
+  var A = analyze(), bySrc = {};
+  $$('#viewSw .chipf').forEach(function(b){ b.classList.toggle('on', b.dataset.v === UI.view); });
+  if (UI.view === 'pn'){ $('#srcs').innerHTML = renderByPN(A); return; }
+  A.res.forEach(function(r){ (bySrc[r.s.srcId] = bySrc[r.s.srcId] || []).push(r); });
+  if (!S.sources.length){ $('#srcs').innerHTML = '<div class="empty">ما رفعت صور للحين. اضغط «ارفع PDF أو صور».</div>'; return; }
+  var active = document.activeElement, keep = active && active.dataset && active.dataset.k ? active.dataset.k : null, selS = keep ? active.selectionStart : null;
+  $('#srcs').innerHTML = S.sources.map(function(s){
+    var items = (bySrc[s.id] || []).map(function(r){
+      var it = r.s, fl = [];
+      if ((r.kind === 'exact' || r.kind === 'bysn') && r.counted) fl.push('<span class="st ok">✔ ' + esc(r.row.pn) + '</span>');
+      if (r.refx && r.row && r.refx.mat === r.row.pn && !r.probable) fl.push('<span class="st ok">✔ السيريال مسجل بالنظام</span>');
+      r.flags.forEach(function(f){ fl.push('<span class="st ' + (WARN_C[f] || 'warn') + '">' + esc(flagText(r, f)) + '</span>'); });
+      return '<div class="item" data-id="' + it.id + '">' +
+        '<div class="p"><label>رقم القطعة P/N</label><input list="pnList" data-k="pn:' + it.id + '" value="' + esc(it.pn) + '"></div>' +
+        '<div class="s"><label>السيريال S/N</label><input data-k="sn:' + it.id + '" value="' + esc(it.sn) + '"></div>' +
+        '<div class="q"><label>العدد</label><input inputmode="numeric" data-k="qty:' + it.id + '" value="' + it.qty + '"></div>' +
+        '<div class="d"><label>&nbsp;</label><button class="del" data-del="' + it.id + '" title="حذف">×</button></div>' +
+        '<div class="flags">' + fl.join('') + '</div>' +
+        ((it.desc || it.note) ? '<div class="note ltr">' + esc([it.desc, it.note === 'manual' ? 'manual entry' : it.note].filter(Boolean).join(' — ')) + '</div>' : '') +
+        '</div>';
+    }).join('');
+    return '<div class="src" data-src="' + s.id + '"><div class="srch">' +
+      (s.thumb ? '<img class="thumb" src="' + s.thumb + '" data-view="' + s.id + '" alt="">' : '<div class="thumb"></div>') +
+      '<div class="srcmeta"><div class="nm">' + esc(s.label) + '</div><div class="ss">' + srcStatus(s) + (s.err ? ' <span style="color:var(--bad)">' + esc(s.err) + '</span>' : '') + '</div>' +
+      '<div class="bar" style="margin-top:8px;gap:6px">' +
+        (BLOBS[s.id] && s.status !== 'reading' && s.status !== 'pending' ? '<button class="btn sm" data-retry="' + s.id + '">↻ ' + (s.status === 'err' ? 'إعادة' : 'إعادة القراءة') + '</button>' : '') +
+        '<button class="btn sm" data-add="' + s.id + '">＋ قطعة</button>' +
+        '<button class="btn sm" data-rmsrc="' + s.id + '">حذف</button>' +
+      '</div></div></div>' + items + '</div>';
+  }).join('');
+  if (keep){ var el = $('[data-k="' + keep + '"]'); if (el){ el.focus(); try{ el.setSelectionRange(selS, selS); }catch(e){} } }
+}
+function renderTabs(){
+  $('#tabList').hidden = UI.tab !== 'list';
+  $('#tabScans').hidden = UI.tab !== 'scans';
+  $('#tabListBtn').classList.toggle('on', UI.tab === 'list');
+  $('#tabScansBtn').classList.toggle('on', UI.tab === 'scans');
+  $('#tabListBtn').textContent = 'القائمة (' + S.list.length + ')';
+  $('#tabScansBtn').textContent = 'الصور والقطع (' + S.sources.length + ' / ' + S.scans.length + ')';
+  if (UI.tab === 'scans') renderSources();
+}
+
+/* ================= نوافذ ================= */
+function dialog(title, body, buttons){
+  return new Promise(function(resolve){
+    var mb = $('#mbox');
+    mb.innerHTML = '<h3>' + title + '</h3><div class="hint">' + body + '</div><div class="row">' +
+      buttons.map(function(b, i){ return '<button class="btn ' + (b.cls || '') + '" data-i="' + i + '">' + b.t + '</button>'; }).join('') + '</div>';
+    $('#modal').classList.add('on');
+    mb.onclick = function(e){ var b = e.target.closest('[data-i]'); if (!b) return; $('#modal').classList.remove('on'); resolve(buttons[+b.dataset.i].v); };
+  });
+}
+
+/* ================= ملخص نصي ================= */
+function briefText(){
+  var A = analyze(), T = [];
+  T.push('ملخص جرد مخزن BIW — Plant 2046 — ' + dmy(S.countDate, '/', false));
+  T.push('القائمة: ' + S.listName);
+  T.push('الأصناف الموجودة: ' + A.found.length + ' من ' + S.list.length + ' | غير موجودة: ' + A.missing.length);
+  T.push('أصناف فيها نقص: ' + A.short.length + ' | فيها زيادة: ' + A.over.length);
+  T.push('إجمالي القطع المعدودة: ' + A.totalUnits + ' | قطع مو بالقائمة: ' + A.extraUnits);
+  if (A.sysTotal) T.push('سيريالات النظام اللي لقيناها: ' + A.sysFound + ' من ' + A.sysTotal + ' | سيريال مو مسجل: ' + A.snUnknown.length + ' | مسجل على قطعة ثانية: ' + A.snWrong.length);
+  T.push('سيريال مكرر: ' + A.dups.length + ' | غير واضح/ناقص: ' + A.unclear.length + ' | رقم فيه اختلاف: ' + A.near.length);
+  if (S.old){ var C = compareData(A); T.push('المقارنة مع ' + S.old.name + ': موجود سابقاً ' + (C.cnt.EXIST_FOUND + C.cnt.EXIST_MISSING) + ' (ما انلقى ' + C.cnt.EXIST_MISSING + ') | جديد انضاف ' + (C.cnt.NEWLIST_FOUND + C.cnt.NEWLIST_MISSING + C.cnt.NEW_FOUND) + ' | انشال ' + (C.cnt.REMOVED + C.cnt.REMOVED_FOUND)); }
+  if (A.short.length){ T.push(''); T.push('— نقص:'); A.short.forEach(function(o){ T.push(o.pn + ': المتوقع ' + o.exp + ' / الموجود ' + o.found + ' (نقص ' + (-o.diff) + ')' + (o.missingSN.length ? ' — الناقص: ' + o.missingSN.map(function(x){ return x.sn; }).join(', ') : '')); }); }
+  if (A.over.length){ T.push(''); T.push('— زيادة بالعدد:'); A.over.forEach(function(o){ T.push(o.pn + ': المتوقع ' + o.exp + ' / الموجود ' + o.found + ' (زيادة ' + o.diff + ')'); }); }
+  if (A.missing.length){ T.push(''); T.push('— غير موجودة:'); A.missing.forEach(function(o){ T.push(o.pn + ' — ' + o.desc + (o.sys ? ' (' + o.sys + ' S/N بالنظام)' : '')); }); }
+  if (A.snWrong.length){ T.push(''); T.push('— سيريال على قطعة ثانية:'); A.snWrong.forEach(function(r){ T.push(r.s.pn + ' / ' + r.s.sn + ' ← بالنظام على ' + r.refMat); }); }
+  if (A.snUnknown.length){ T.push(''); T.push('— سيريال مو مسجل بالنظام:'); A.snUnknown.forEach(function(r){ T.push(r.row.pn + ' / ' + r.s.sn + (r.sugg ? ' (قريب من ' + r.sugg + ')' : '')); }); }
+  if (A.extras.length){ T.push(''); T.push('— مو بالقائمة:'); A.extras.forEach(function(x){ T.push(x.pn + (x.desc ? ' — ' + x.desc : '') + ' — العدد ' + x.qty + ' — ' + x.units.map(unitLine).join(', ')); }); }
+  if (A.near.length){ T.push(''); T.push('— رقم فيه اختلاف:'); A.near.forEach(function(r){ T.push('المقروء ' + r.s.pn + ' ← ' + r.row.pn + ' — ' + unitLine(r)); }); }
+  if (A.dups.length){ T.push(''); T.push('— سيريال مكرر:'); A.dups.forEach(function(r){ T.push((r.row ? r.row.pn : r.s.pn) + ' — ' + r.s.sn); }); }
+  if (A.unclear.length){ T.push(''); T.push('— غير واضح/ناقص:'); A.unclear.forEach(function(r){ T.push((r.s.pn || '—') + ' — ' + unitLine(r)); }); }
+  if (A.visual.length){ T.push(''); T.push('— عدّ من الصور (بدون سيريال):'); A.visual.slice().sort(function(a, b){ return (a.row ? a.row.pn : a.s.pn) < (b.row ? b.row.pn : b.s.pn) ? -1 : 1; }).forEach(function(r){ T.push((r.row ? r.row.pn : r.s.pn) + ' — ' + r.s.qty + (r.s.cntSure === false ? ' (تقريبي)' : '') + ' حبة — ' + (r.src ? r.src.label : '')); }); }
+  if (A.pattern.length){ T.push(''); T.push('— سيريال يحتاج مراجعة:'); A.pattern.forEach(function(r){ T.push((r.row ? r.row.pn : r.s.pn) + ' — ' + r.s.sn); }); }
+  return T.join('\n');
+}
+
+/* ================= Excel ================= */
+var FILL = {
+  bad:  { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC7CE' } },
+  warn: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFEB9C' } },
+  info: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDDEBF7' } },
+  ext:  { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8CBAD' } },
+  ok:   { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC6EFCE' } },
+  head: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F3A5F' } },
+  grey: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } }
+};
+var THIN = { style: 'thin', color: { argb: 'FFBFBFBF' } };
+var BORDER = { top: THIN, left: THIN, bottom: THIN, right: THIN };
+var EN = { near: 'P/N read differs from list', bysn: 'P/N taken from system S/N', extra: 'NOT IN COUNT LIST', dup: 'DUPLICATE S/N', unclear_sn: 'S/N unclear', unclear_pn: 'P/N unclear', nosn: 'no S/N visible', snnotinsys: 'S/N NOT IN SYSTEM', snwrongpn: 'S/N registered to another material', pattern: 'S/N format differs', snconf: 'S/N also on another P/N', nopn: 'no P/N on label', visual: 'pieces counted in photo', countunsure: 'count uncertain', multisrc: 'same part counted in several photos – check for double count', split: 'P/N + S/N printed together (split)' };
+function cloneStyle(st){ return JSON.parse(JSON.stringify(st || {})); }
+function setStyle(cell, patch){ var st = cloneStyle(cell.style); for (var k in patch) st[k] = patch[k]; cell.style = st; }
+function cellText(c){ var v = c.value; if (v == null) return ''; if (v instanceof Date) return v.toISOString(); if (typeof v === 'object'){ if (v.richText) return v.richText.map(function(t){ return t.text; }).join(''); if (v.text != null) return String(v.text); if (v.result != null) return String(v.result); } return String(v); }
+function enFlag(r, f){ if (f === 'unclear_sn' && r.sugg) return EN[f] + ' (probably ' + r.sugg + ')'; if (f === 'snwrongpn') return EN[f] + ' (' + r.refMat + ')'; if (f === 'snnotinsys' && r.sugg) return EN[f] + ' (close to ' + r.sugg + ')'; if (f === 'near' && r.row) return EN[f] + ' (' + r.row.pn + ')'; return EN[f]; }
+function snCell(u){ return u.s.cnt === 'visual' && !u.s.sn ? ('counted in photo x' + u.s.qty + (u.s.cntSure === false ? ' (approx.)' : '')) : ((u.s.sn || 'no S/N') + (u.s.qty > 1 ? ' x' + u.s.qty : '')); }
+var CNT_EN = { unit: 'per unit', label: 'qty on label', visual: 'counted in photo' };
+
+function rowNotesEN(o){
+  var n = [];
+  if (o.st === 'short') n.push('SHORTAGE ' + (-o.diff) + ' (expected ' + o.exp + (o.expUser ? '' : ' per SN list') + ')');
+  else if (o.st === 'over') n.push('EXCESS ' + o.diff + ' (expected ' + o.exp + (o.expUser ? '' : ' per SN list') + ')');
+  else if (o.st === 'match') n.push('OK – matches expected ' + o.exp);
+  else if (o.st === 'missing') n.push('NOT FOUND' + (o.sys ? ' – all ' + o.sys + ' system S/N missing' : '') + (o.expUser ? ' (expected ' + o.exp + ')' : ''));
+  else if (o.st === 'found') n.push('FOUND');
+  if (o.found > 0 && o.missingSN.length) n.push('Missing system S/N: ' + o.missingSN.map(function(x){ return x.sn; }).join(', '));
+  if (o.unknownSN.length) n.push('S/N not in system: ' + o.unknownSN.map(function(r){ return r.s.sn; }).join(', '));
+  var fl = {};
+  o.units.forEach(function(r){ r.flags.forEach(function(f){ if (f !== 'snnotinsys') fl[f] = (fl[f] || 0) + 1; }); });
+  Object.keys(fl).forEach(function(f){ if (EN[f]) n.push(fl[f] + '× ' + EN[f]); });
+  return n.join('; ');
+}
+
+/* ================= المقارنة مع اللستة القديمة ================= */
+var CMP = {
+  EXIST_FOUND:     { o: 1, f: 'ok',   ar: 'موجود سابقاً — انلقى',              en: 'EXISTING – FOUND' },
+  EXIST_MISSING:   { o: 2, f: 'bad',  ar: 'موجود سابقاً — ما انلقى',           en: 'EXISTING – NOT FOUND' },
+  NEWLIST_FOUND:   { o: 3, f: 'info', ar: 'جديد انضاف للقائمة — انلقى',         en: 'NEW IN LIST – FOUND' },
+  NEWLIST_MISSING: { o: 4, f: 'bad',  ar: 'جديد انضاف للقائمة — ما انلقى',      en: 'NEW IN LIST – NOT FOUND' },
+  NEW_FOUND:       { o: 5, f: 'ext',  ar: 'جديد — انلقى بالجرد ومو مسجل',       en: 'NEW – FOUND IN COUNT, NOT IN LIST' },
+  REMOVED_FOUND:   { o: 6, f: 'warn', ar: 'انشال من القائمة — بس موجود بالمخزن', en: 'REMOVED FROM LIST – STILL FOUND' },
+  REMOVED:         { o: 7, f: 'grey', ar: 'انشال من القائمة',                    en: 'REMOVED FROM LIST' }
+};
+function cmpOrder(a, b){ return a < b ? -1 : a > b ? 1 : 0; }
+function compareData(A){
+  var hasOld = !!(S.old && S.old.rows), m = {}, list = [];
+  function get(sn, mat){
+    var k = normSN(sn);
+    if (!m[k]){ m[k] = { k: k, sn: String(sn).trim(), mat: mat || '', oldMat: '', curMat: '', batch: '', gr: '', inOld: false, inCur: false, found: null }; list.push(m[k]); }
+    return m[k];
+  }
+  if (hasOld) (S.old.sns || []).forEach(function(x){ var e = get(x.sn, x.mat); e.inOld = true; e.oldMat = x.mat; if (x.batch) e.batch = x.batch; if (x.gr) e.gr = x.gr; });
+  (S.snList || []).forEach(function(x){ var e = get(x.sn, x.mat); e.inCur = true; e.curMat = x.mat; e.mat = x.mat; if (x.batch) e.batch = x.batch; if (x.gr) e.gr = x.gr; });
+  A.res.forEach(function(r){
+    if (!r.counted || !r.snk) return;
+    var e = get(r.refx ? r.refx.sn : r.s.sn, r.row ? r.row.pn : r.s.pn);
+    if (!e.found) e.found = r;
+    if (!e.inCur && !e.inOld) e.mat = r.row ? r.row.pn : (r.s.pn || '');
+  });
+  list.forEach(function(e){
+    var f = !!e.found;
+    if (hasOld){
+      if (e.inOld && e.inCur) e.code = f ? 'EXIST_FOUND' : 'EXIST_MISSING';
+      else if (e.inCur) e.code = f ? 'NEWLIST_FOUND' : 'NEWLIST_MISSING';
+      else if (e.inOld) e.code = f ? 'REMOVED_FOUND' : 'REMOVED';
+      else e.code = 'NEW_FOUND';
+    } else e.code = e.inCur ? (f ? 'EXIST_FOUND' : 'EXIST_MISSING') : 'NEW_FOUND';
+    e.matChanged = hasOld && e.inOld && e.inCur && normPN(e.oldMat) !== normPN(e.curMat);
+  });
+  list.sort(function(a, b){ return (CMP[a.code].o - CMP[b.code].o) || cmpOrder(a.mat, b.mat) || cmpOrder(a.k, b.k); });
+  // الأصناف
+  var mats = {}, mo = [];
+  function gm(pn){ var k = normPN(pn); if (!mats[k]){ mats[k] = { pn: pn, desc: '', type: '', plant: '', sloc: '', inOld: false, inCur: false, oldSys: 0, curSys: 0, oldCount: null, now: 0, row: null, extra: false }; mo.push(mats[k]); } return mats[k]; }
+  A.rows.forEach(function(o){ var x = gm(o.pn); x.inCur = true; x.desc = o.desc; x.type = o.type; x.plant = o.plant; x.sloc = o.sloc; x.now = o.found; x.row = o; x.curSys = o.sys; });
+  if (hasOld){
+    S.old.rows.forEach(function(r){ var x = gm(r.pn); x.inOld = true; x.desc = x.desc || r.desc; x.type = x.type || r.type; x.plant = x.plant || r.plant; x.sloc = x.sloc || r.sloc; if (r.count != null) x.oldCount = r.count; });
+    (S.old.sns || []).forEach(function(sx){ var x = gm(sx.mat); x.inOld = true; x.oldSys++; });
+  }
+  A.extras.forEach(function(e){ var x = gm(e.pn); x.now += e.qty; x.desc = x.desc || e.desc || ''; if (!x.inCur) x.extra = true; });
+  mo.forEach(function(x){
+    if (hasOld){
+      if (x.inOld && x.inCur) x.code = 'EXIST';
+      else if (x.inCur) x.code = 'NEWLIST';
+      else if (x.inOld) x.code = x.now > 0 ? 'REMOVED_FOUND' : 'REMOVED';
+      else x.code = 'NEW_FOUND';
+    } else x.code = x.inCur ? 'EXIST' : 'NEW_FOUND';
+  });
+  var MAT = { EXIST: 'EXISTING', NEWLIST: 'NEW IN LIST', REMOVED_FOUND: 'REMOVED FROM LIST – STILL FOUND', REMOVED: 'REMOVED FROM LIST', NEW_FOUND: 'NEW – FOUND IN COUNT, NOT IN LIST' };
+  var MAT_AR = { EXIST: 'موجود سابقاً', NEWLIST: 'جديد انضاف للقائمة', REMOVED_FOUND: 'انشال من القائمة — بس موجود', REMOVED: 'انشال من القائمة', NEW_FOUND: 'جديد — مو بالقائمة' };
+  mo.forEach(function(x){ x.en = MAT[x.code]; x.ar = MAT_AR[x.code]; });
+  var cnt = {}; Object.keys(CMP).forEach(function(k){ cnt[k] = 0; }); list.forEach(function(e){ cnt[e.code]++; });
+  return { hasOld: hasOld, sns: list, bySN: m, mats: mo, byMat: mats, cnt: cnt };
+}
+function matChangeEN(x, C){
+  var p = [x.en];
+  if (C.hasOld){
+    if (x.oldSys || x.curSys) p.push('S/N in list: old ' + x.oldSys + ' → now ' + x.curSys + (x.curSys - x.oldSys ? ' (' + (x.curSys - x.oldSys > 0 ? '+' : '') + (x.curSys - x.oldSys) + ')' : ''));
+    if (x.oldCount != null) p.push('count: old ' + x.oldCount + ' → now ' + x.now + (x.now - x.oldCount ? ' (' + (x.now - x.oldCount > 0 ? '+' : '') + (x.now - x.oldCount) + ')' : ''));
+  }
+  return p.join('; ');
+}
+
+/* ================= ملف الجرد / الملف المحدث ================= */
+async function buildCountWB(A, C, updated){
+  var wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(b64ToBytes(S.templateB64 || INV_DATA.templateB64).buffer);
+  var ws = wb.worksheets.filter(function(w){ return /material/i.test(cellText(w.getCell('A1'))) && !/serial/i.test(cellText(w.getCell('B1'))); })[0] || wb.worksheets[0];
+  var dateTxt = dmy(S.countDate, '.', true);
+
+  /* ---- ورقة Count ---- */
+  var f1 = ws.getCell('F1'), hv = cellText(f1);
+  if (/ENTER\s*DATE/i.test(hv)) f1.value = hv.replace(/ENTER\s*DATE/i, dateTxt);
+  else if (!hv) f1.value = 'Physical Count ' + dateTxt;
+  var lastC = updated ? 9 : 8;
+  var g1 = ws.getCell('G1'), h1 = ws.getCell('H1');
+  g1.value = 'Serial Numbers (counted)'; h1.value = 'Count Status / Notes';
+  g1.style = cloneStyle(f1.style); h1.style = cloneStyle(f1.style);
+  ws.getColumn(7).width = 46; ws.getColumn(8).width = 60;
+  if (updated){ var i1 = ws.getCell('I1'); i1.value = C.hasOld ? 'Change vs old list (' + (S.old.name || '') + ')' : 'List status'; i1.style = cloneStyle(f1.style); ws.getColumn(9).width = 52; }
+  var byPN = {}; A.rows.forEach(function(o){ byPN[normPN(o.pn)] = o; });
+  var last = 1, n = ws.rowCount, gs0 = null;
+  for (var r = 2; r <= n; r++){
+    var row = ws.getRow(r), pn = cellText(row.getCell(1)).trim();
+    if (!pn) continue;
+    last = r;
+    var o = byPN[normPN(pn)]; if (!o) continue;
+    row.getCell(6).value = o.found;
+    row.getCell(7).value = o.units.filter(function(u){ return u.counted; }).map(snCell).join(', ');
+    row.getCell(8).value = rowNotesEN(o);
+    var gs = cloneStyle(row.getCell(2).style); gs.alignment = { wrapText: true, vertical: 'top' }; gs0 = gs0 || gs;
+    for (var c0 = 7; c0 <= lastC; c0++) row.getCell(c0).style = cloneStyle(gs);
+    if (updated){ var mx = C.byMat[normPN(o.pn)]; row.getCell(9).value = mx ? matChangeEN(mx, C) : ''; }
+    var st = rowStatus(o).c;
+    if (A.hasScans && st !== 'idle' && st !== 'ok') for (var c = 1; c <= lastC; c++) setStyle(row.getCell(c), { fill: FILL[st] || FILL.warn });
+  }
+  var rr = last + 1, ref = ws.getRow(2);
+  function addRow(vals, fill){
+    var row = ws.getRow(rr++);
+    vals.forEach(function(v, i){ row.getCell(i + 1).value = v; });
+    for (var c = 1; c <= lastC; c++){ var st = cloneStyle(ref.getCell(Math.min(c, 6)).style); st.fill = fill; if (c >= 7) st.alignment = { wrapText: true, vertical: 'top' }; row.getCell(c).style = st; }
+  }
+  var plant0 = S.list[0] ? S.list[0].plant : '', sloc0 = S.list[0] ? S.list[0].sloc : '';
+  A.extras.forEach(function(x){
+    var mx = C.byMat[normPN(x.pn)];
+    addRow([x.pn, x.desc || '', plant0, '', sloc0, x.qty, x.units.filter(function(u){ return u.counted; }).map(snCell).join(', '), 'EXTRA – NOT IN COUNT LIST'].concat(updated ? [mx ? matChangeEN(mx, C) : ''] : []), FILL.ext);
+  });
+  if (updated && C.hasOld){
+    C.mats.forEach(function(x){
+      if (x.inCur || x.extra || !x.inOld) return;
+      addRow([x.pn, x.desc, x.plant || plant0, x.type, x.sloc || sloc0, x.now, '', 'NOT IN CURRENT LIST (was in old list)', matChangeEN(x, C)], x.now > 0 ? FILL.warn : FILL.grey);
+    });
+  }
+  ws.autoFilter = 'A1:' + String.fromCharCode(64 + lastC) + Math.max(rr - 1, last);
+
+  /* ---- ورقة SN list ---- */
+  var wsn = wb.worksheets.filter(function(w){ return w !== ws && (/sn|serial/i.test(w.name) || /serial/i.test(cellText(w.getCell('B1')))); })[0];
+  if (!wsn){ wsn = wb.addWorksheet('SN list'); wsn.getRow(1).values = ['Material', 'Serial Number', 'Batch', 'Goods receipt date', 'Customer', 'Plant', 'Storage Location', 'Stock batch', 'Changed by', 'Changed on', 'System status']; styleRow(wsn.getRow(1)); }
+  var lastCol = 2;
+  for (var cc = 1; cc <= 20; cc++){ if (cellText(wsn.getRow(1).getCell(cc))) lastCol = cc; }
+  var cRes = lastCol + 1, cWhere = lastCol + 2, cChg = lastCol + 3, endCol = updated ? cChg : cWhere;
+  var hdrStyle = cloneStyle(wsn.getRow(1).getCell(lastCol).style);
+  wsn.getRow(1).getCell(cRes).value = 'Count Result ' + dateTxt;
+  wsn.getRow(1).getCell(cWhere).value = 'Found in photo / page';
+  if (updated) wsn.getRow(1).getCell(cChg).value = C.hasOld ? 'Change vs old list' : 'List status';
+  for (var hc = cRes; hc <= endCol; hc++) wsn.getRow(1).getCell(hc).style = cloneStyle(hdrStyle);
+  wsn.getColumn(cRes).width = 32; wsn.getColumn(cWhere).width = 34; if (updated) wsn.getColumn(cChg).width = 40;
+  var lastSN = 1, done = {};
+  for (var r2 = 2; r2 <= wsn.rowCount; r2++){
+    var row2 = wsn.getRow(r2), mat = cellText(row2.getCell(1)).trim(), sn = cellText(row2.getCell(2)).trim();
+    if (!mat && !sn) continue;
+    lastSN = r2;
+    var e = C.bySN[normSN(sn)]; done[normSN(sn)] = 1;
+    if (updated && e) row2.getCell(cChg).value = CMP[e.code].en + (e.matChanged ? ' (old list P/N ' + e.oldMat + ')' : '');
+    if (!A.hasScans) continue;
+    var hit = e && e.found;
+    row2.getCell(cRes).value = hit ? (hit.flags.indexOf('snwrongpn') >= 0 ? 'FOUND – label P/N ' + hit.s.pn : hit.probable ? 'PROBABLY FOUND – S/N read as ' + hit.s.sn : 'FOUND') : 'NOT FOUND';
+    row2.getCell(cWhere).value = hit && hit.src ? hit.src.label : '';
+    var fl2 = hit ? ((hit.flags.indexOf('snwrongpn') >= 0 || hit.probable) ? FILL.warn : FILL.ok) : FILL.bad;
+    for (var c2 = 1; c2 <= endCol; c2++) setStyle(row2.getCell(c2), { fill: fl2 });
+  }
+  var rs = lastSN + 1, refS = wsn.getRow(2);
+  function addSN(vals, res, where, chg, fill){
+    var row3 = wsn.getRow(rs++);
+    vals.forEach(function(v, i){ if (v !== undefined) row3.getCell(i + 1).value = v; });
+    row3.getCell(cRes).value = res; row3.getCell(cWhere).value = where; if (updated) row3.getCell(cChg).value = chg;
+    for (var c3 = 1; c3 <= endCol; c3++){ var s3 = cloneStyle(refS.getCell(Math.min(c3, lastCol)).style); s3.fill = fill; row3.getCell(c3).style = s3; }
+  }
+  // كل سيريال انلقى بالجرد ومو بالقائمة الحالية ينضاف تحت
+  C.sns.forEach(function(e){
+    if (done[e.k] || e.inCur || !e.found) return;
+    var u = e.found;
+    done[e.k] = 1;
+    var res3 = !u.row ? 'NOT IN SN LIST – P/N not in count list' : (!u.row.sys ? 'FOUND – material has no S/N in SN list' : ('NOT IN SN LIST' + (u.sugg ? ' (close to ' + u.sugg + ')' : '')));
+    addSN([e.mat, e.sn, e.batch || undefined, e.gr || undefined, undefined, plant0, sloc0], res3, u.src ? u.src.label : '', CMP[e.code].en,
+      e.inOld ? FILL.warn : (u.row && !u.row.sys ? FILL.info : FILL.ext));
+  });
+  // الملف المحدث: سيريالات اللستة القديمة اللي انشالت
+  if (updated && C.hasOld){
+    C.sns.forEach(function(e){
+      if (done[e.k] || e.inCur || !e.inOld) return;
+      done[e.k] = 1;
+      addSN([e.oldMat || e.mat, e.sn, e.batch || undefined, e.gr || undefined, undefined, plant0, sloc0], A.hasScans ? 'NOT FOUND' : '', '', CMP[e.code].en, FILL.grey);
+    });
+  }
+
+  /* ---- ورقة القطع المقروءة ---- */
+  var w2 = wb.addWorksheet('Scanned Items');
+  w2.columns = [
+    { header: '#', key: 'n', width: 5 }, { header: 'Photo / Page', key: 'src', width: 30 },
+    { header: 'P/N as read', key: 'pn', width: 20 }, { header: 'Matched Material', key: 'mat', width: 20 },
+    { header: 'Description', key: 'desc', width: 38 }, { header: 'Serial Number', key: 'sn', width: 16 },
+    { header: 'In SN list', key: 'insys', width: 12 }, { header: 'Qty', key: 'qty', width: 6 }, { header: 'Count method', key: 'cm', width: 16 },
+    { header: 'Counted', key: 'cnt', width: 9 }, { header: 'Flags / Notes', key: 'fl', width: 60 }
+  ];
+  A.res.slice().sort(function(a, b){
+    var ka = a.row ? '0' + a.row.pn : '1' + (a.s.pn || ''), kb = b.row ? '0' + b.row.pn : '1' + (b.s.pn || '');
+    return cmpOrder(ka, kb);
+  }).forEach(function(r, i){
+    var insys = !r.snk ? '' : (r.refx ? (r.row && r.refx.mat !== r.row.pn ? 'Other P/N' : 'Yes') : (r.row && r.row.sys ? 'NO' : 'n/a'));
+    var row = w2.addRow({ n: i + 1, src: r.src ? r.src.label : '', pn: r.s.pn, mat: r.row ? r.row.pn : '', desc: r.row ? r.row.desc : (r.s.desc || ''), sn: r.s.sn, insys: insys, qty: r.s.qty, cm: (CNT_EN[r.s.cnt] || 'per unit') + (r.s.cntSure === false ? ' (approx.)' : ''),
+      cnt: r.counted && r.row ? 'Yes' : (r.counted ? 'Extra' : 'No'),
+      fl: r.flags.map(function(f){ return enFlag(r, f); }).concat(r.s.note && r.s.note !== 'manual' ? ['label note: ' + r.s.note] : []).concat(r.s.note === 'manual' ? ['manual entry'] : []).join('; ') });
+    var f = (r.flags.indexOf('dup') >= 0 || r.flags.indexOf('snnotinsys') >= 0 || r.flags.indexOf('snwrongpn') >= 0) ? FILL.bad : r.flags.indexOf('extra') >= 0 ? FILL.ext : r.flags.some(function(f){ return !INFO_F[f]; }) ? FILL.warn : null;
+    row.eachCell({ includeEmpty: true }, function(c){ c.border = BORDER; c.font = { name: 'Arial', size: 10 }; c.alignment = { vertical: 'top', wrapText: true }; if (f) c.fill = f; });
+  });
+  styleHead(w2);
+
+  /* ---- ورقة الملخص ---- */
+  summarySheet(wb, A, C, updated);
+  return wb;
+}
+function summarySheet(wb, A, C, withCmp){
+  var w3 = wb.addWorksheet('Summary');
+  w3.columns = [{ width: 46 }, { width: 16 }, { width: 90 }];
+  var add = function(a, b, c, fill){ var row = w3.addRow([a, b, c || '']); row.eachCell({ includeEmpty: true }, function(x){ x.font = { name: 'Arial', size: 10 }; x.border = BORDER; x.alignment = { wrapText: true, vertical: 'top' }; if (fill) x.fill = fill; }); return row; };
+  var t = w3.addRow(['Inventory Count Summary — Plant 2046']); t.font = { name: 'Arial', size: 13, bold: true };
+  w3.addRow(['Count date: ' + dmy(S.countDate, '.', false) + '    |    List: ' + S.listName + (C.hasOld ? '    |    Old list: ' + S.old.name : '')]).font = { name: 'Arial', size: 10, italic: true };
+  w3.addRow([]);
+  styleRow(w3.addRow(['Item', 'Value', 'Details']));
+  add('Materials in count list', S.list.length);
+  add('Materials found', A.found.length, '', FILL.ok);
+  add('Materials NOT found', A.missing.length, A.missing.map(function(o){ return o.pn + (o.sys ? ' (' + o.sys + ' S/N)' : ''); }).join(', '), A.missing.length ? FILL.bad : null);
+  add('Materials with SHORTAGE (partial)', A.short.length, A.short.map(function(o){ return o.pn + ' (-' + (-o.diff) + ')'; }).join(', '), A.short.length ? FILL.bad : null);
+  add('Materials with EXCESS', A.over.length, A.over.map(function(o){ return o.pn + ' (+' + o.diff + ')'; }).join(', '), A.over.length ? FILL.info : null);
+  add('Total units counted (in list)', A.totalUnits);
+  add('Extra units – P/N not in count list', A.extraUnits, A.extras.map(function(x){ return x.pn + ' (' + x.qty + ')'; }).join(', '), A.extras.length ? FILL.ext : null);
+  if (A.sysTotal){
+    add('System serial numbers found', A.sysFound + ' of ' + A.sysTotal, '', FILL.ok);
+    add('System serial numbers NOT found', A.snMissingCount, 'See sheet "SN list" (red rows)', A.snMissingCount ? FILL.bad : null);
+    add('Counted S/N not in system', A.snUnknown.length, A.snUnknown.map(function(r){ return r.row.pn + ' / ' + r.s.sn + (r.sugg ? ' (close to ' + r.sugg + ')' : ''); }).join(', '), A.snUnknown.length ? FILL.bad : null);
+    add('S/N registered to another material', A.snWrong.length, A.snWrong.map(function(r){ return r.s.pn + ' / ' + r.s.sn + ' → ' + r.refMat; }).join(', '), A.snWrong.length ? FILL.bad : null);
+  }
+  add('Duplicate serial numbers (counted once)', A.dups.length, A.dups.map(function(r){ return (r.row ? r.row.pn : r.s.pn) + ' / ' + r.s.sn; }).join(', '), A.dups.length ? FILL.warn : null);
+  add('Unclear / missing S/N or P/N', A.unclear.length, A.unclear.map(function(r){ return (r.s.pn || '?') + ' / ' + (r.s.sn || 'no S/N'); }).join(', '), A.unclear.length ? FILL.warn : null);
+  add('P/N read differs from list', A.near.length, A.near.map(function(r){ return r.s.pn + ' → ' + r.row.pn; }).join(', '), A.near.length ? FILL.warn : null);
+  add('Pieces counted visually in photos', A.visual.reduce(function(a, r){ return a + r.s.qty; }, 0), A.visual.map(function(r){ return (r.row ? r.row.pn : r.s.pn) + ' x' + r.s.qty + (r.s.cntSure === false ? ' (approx.)' : ''); }).join(', '), null);
+  add('Photos / pages read', S.sources.filter(function(s){ return s.status === 'ok'; }).length + ' of ' + S.sources.length, A.failedSrc.length ? ('Not read: ' + A.failedSrc.map(function(s){ return s.label; }).join(', ')) : '', A.failedSrc.length ? FILL.bad : null);
+  if (withCmp){
+    w3.addRow([]);
+    styleRow(w3.addRow([C.hasOld ? 'Comparison with old list: ' + S.old.name : 'Comparison with current list (no old list uploaded)', 'S/N', '']));
+    Object.keys(CMP).forEach(function(k){ if (C.hasOld || C.cnt[k]) add(CMP[k].en + ' — ' + CMP[k].ar, C.cnt[k], '', C.cnt[k] ? FILL[CMP[k].f] : null); });
+  }
+  w3.addRow([]);
+  w3.addRow(['Colour legend']).font = { name: 'Arial', size: 10, bold: true };
+  add('Red', '', 'Not found / shortage / S/N not found or not in system', FILL.bad);
+  add('Yellow', '', 'Needs review (P/N or S/N unclear, duplicate, S/N mismatch, removed but still found)', FILL.warn);
+  add('Blue', '', 'Excess vs expected / new in list and found', FILL.info);
+  add('Green', '', 'S/N found', FILL.ok);
+  add('Orange', '', 'Extra – not in count list / not in SN list', FILL.ext);
+  add('Grey', '', 'Removed from list (was in old list)', FILL.grey);
+  add('Expected qty', '', 'Serialized materials: number of S/N in "SN list". Non-serialized: only if typed in the app.');
+}
+
+/* ================= ملف المقارنة ================= */
+function buildCompareWB(A, C){
+  var wb = new ExcelJS.Workbook();
+  var dateTxt = dmy(S.countDate, '.', false);
+  var head = ['Material', 'Serial Number', 'Batch', 'Goods receipt date'].concat(C.hasOld ? ['In old list'] : []).concat(['In current list', 'Found in count', 'Photo / page', 'Status', 'الحالة']);
+  var widths = [20, 16, 12, 16].concat(C.hasOld ? [12] : []).concat([14, 14, 30, 36, 34]);
+  function snSheet(name, rows){
+    var w = wb.addWorksheet(name);
+    w.columns = head.map(function(h, i){ return { header: h, width: widths[i] }; });
+    rows.forEach(function(e){
+      var u = e.found;
+      var vals = [e.mat || e.oldMat, e.sn, e.batch, e.gr].concat(C.hasOld ? [e.inOld ? 'Yes' + (e.matChanged ? ' (' + e.oldMat + ')' : '') : 'No'] : []).concat([e.inCur ? 'Yes' : 'No', A.hasScans ? (u ? (u.probable ? 'Probably' : 'Yes') : 'No') : '', u && u.src ? u.src.label : '', CMP[e.code].en, CMP[e.code].ar]);
+      var row = w.addRow(vals), fill = FILL[CMP[e.code].f];
+      row.eachCell({ includeEmpty: true }, function(c){ c.border = BORDER; c.font = { name: 'Arial', size: 10 }; c.alignment = { vertical: 'top', wrapText: true }; if (fill) c.fill = fill; });
+    });
+    if (!rows.length){ var r0 = w.addRow(['— لا يوجد —']); r0.font = { name: 'Arial', size: 10, italic: true }; }
+    styleHead(w);
+    return w;
+  }
+  // ملخص
+  var s = wb.addWorksheet('Summary');
+  s.columns = [{ width: 52 }, { width: 14 }, { width: 70 }];
+  var t = s.addRow(['Old vs New Comparison — Plant 2046']); t.font = { name: 'Arial', size: 13, bold: true };
+  s.addRow(['Count date: ' + dateTxt + '    |    Current list: ' + S.listName + '    |    Old list: ' + (C.hasOld ? S.old.name : 'not uploaded — baseline is the current list')]).font = { name: 'Arial', size: 10, italic: true };
+  s.addRow([]);
+  styleRow(s.addRow(['Serial numbers', 'Count', 'Sheet']));
+  var add = function(a, b, c, fill){ var row = s.addRow([a, b, c || '']); row.eachCell({ includeEmpty: true }, function(x){ x.font = { name: 'Arial', size: 10 }; x.border = BORDER; x.alignment = { wrapText: true, vertical: 'top' }; if (fill) x.fill = fill; }); };
+  Object.keys(CMP).forEach(function(k){
+    if (!C.hasOld && /NEWLIST|REMOVED/.test(k)) return;
+    var sheet = /^EXIST/.test(k) ? 'Previously Existing' : /^REMOVED/.test(k) ? 'Removed' : 'New Added';
+    add(CMP[k].en + ' — ' + CMP[k].ar, C.cnt[k], sheet, C.cnt[k] ? FILL[CMP[k].f] : null);
+  });
+  add('Total serial numbers (all lists + count)', C.sns.length, 'All Serials');
+  s.addRow([]);
+  styleRow(s.addRow(['Materials', 'Count', '']));
+  var mc = {}; C.mats.forEach(function(x){ mc[x.en] = (mc[x.en] || 0) + 1; });
+  Object.keys(mc).forEach(function(k){ add(k, mc[k], 'Materials'); });
+
+  var exist = C.sns.filter(function(e){ return /^EXIST/.test(e.code); });
+  var neu = C.sns.filter(function(e){ return /^NEW/.test(e.code); });
+  snSheet('Previously Existing', exist);
+  snSheet('New Added', neu);
+  if (C.hasOld) snSheet('Removed', C.sns.filter(function(e){ return /^REMOVED/.test(e.code); }));
+  snSheet('All Serials', C.sns);
+
+  // الأصناف
+  var w = wb.addWorksheet('Materials');
+  var mh = ['Material', 'Description', 'Type'].concat(C.hasOld ? ['In old list'] : []).concat(['In current list']).concat(C.hasOld ? ['S/N old list'] : []).concat(['S/N current list']).concat(C.hasOld ? ['Old count'] : []).concat(['Counted now', 'Status', 'الحالة', 'Details']);
+  var mw = [20, 40, 8].concat(C.hasOld ? [11] : []).concat([13]).concat(C.hasOld ? [11] : []).concat([14]).concat(C.hasOld ? [10] : []).concat([12, 30, 24, 50]);
+  w.columns = mh.map(function(h, i){ return { header: h, width: mw[i] }; });
+  C.mats.slice().sort(function(a, b){ return cmpOrder(a.pn, b.pn); }).forEach(function(x){
+    var vals = [x.pn, x.desc, x.type].concat(C.hasOld ? [x.inOld ? 'Yes' : 'No'] : []).concat([x.inCur ? 'Yes' : 'No']).concat(C.hasOld ? [x.oldSys] : []).concat([x.curSys]).concat(C.hasOld ? [x.oldCount == null ? '' : x.oldCount] : []).concat([x.now, x.en, x.ar, matChangeEN(x, C)]);
+    var row = w.addRow(vals);
+    var fill = x.code === 'NEWLIST' ? FILL.info : x.code === 'REMOVED' ? FILL.grey : x.code === 'REMOVED_FOUND' ? FILL.warn : x.code === 'NEW_FOUND' ? FILL.ext : null;
+    row.eachCell({ includeEmpty: true }, function(c){ c.border = BORDER; c.font = { name: 'Arial', size: 10 }; c.alignment = { vertical: 'top', wrapText: true }; if (fill) c.fill = fill; });
+  });
+  styleHead(w);
+  return wb;
+}
+
+/* ================= التصدير ================= */
+function fileBase(){ return S.listName.replace(/\.xlsx?$/i, '').replace(/_sent$/i, ''); }
+async function exportKind(kind){
+  if (!window.ExcelJS){ toast('مكتبة Excel ما تحمّلت — تأكد من النت وحدّث الصفحة', 4500); return; }
+  var A = analyze();
+  if (!A.hasScans && kind !== 'compare'){
+    var go = await dialog('ما في نتائج قراءة', 'ما رفعت صور للحين. تبي تطلع الملف فاضي (العدد صفر لكل الأصناف)؟', [{ t: 'إلغاء', v: false }, { t: 'طلّعه', v: true, cls: 'primary' }]);
+    if (!go) return;
+  }
+  var C = compareData(A), dateTxt = dmy(S.countDate, '.', true), wb, name;
+  if (kind === 'count'){ wb = await buildCountWB(A, C, false); name = fileBase() + '_COUNT_' + dateTxt + '.xlsx'; }
+  else if (kind === 'updated'){ wb = await buildCountWB(A, C, true); name = fileBase() + '_UPDATED_' + dateTxt + '.xlsx'; }
+  else { wb = buildCompareWB(A, C); name = fileBase() + '_COMPARE_' + dateTxt + '.xlsx'; }
+  var buf = await wb.xlsx.writeBuffer();
+  await saveFile(name, buf);
+}
+async function exportMenu(){
+  var v = await dialog('ملفات Excel', 'كل ملف ينزل لحاله:', [
+    { t: '① ملف الجرد — نفس الملف + كل السيريالات', v: 'count', cls: 'primary blk' },
+    { t: '② ملف المقارنة — الموجود سابقاً والجديد اللي انضاف' + (S.old ? '' : ' (بدون لستة قديمة: يقارن مع القائمة الحالية)'), v: 'compare', cls: 'blk' },
+    { t: '③ الملف المحدث — كل شي', v: 'updated', cls: 'blk' },
+    { t: 'إلغاء', v: null, cls: 'blk ghost' }
+  ]);
+  if (!v) return;
+  try{ await exportKind(v); }
+  catch(e){ console.error(e); toast('خطأ بإنشاء الملف: ' + (e && e.message || e), 6000); }
+}
+function styleRow(row){ row.eachCell({ includeEmpty: true }, function(c){ c.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } }; c.fill = FILL.head; c.border = BORDER; c.alignment = { vertical: 'middle', wrapText: true }; }); }
+function styleHead(ws){ styleRow(ws.getRow(1)); ws.views = [{ state: 'frozen', ySplit: 1 }]; ws.autoFilter = { from: 'A1', to: { row: 1, column: ws.columnCount } }; }
+async function saveFile(name, buf){
+  var blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  if (DOWNLOADS){
+    try{ await DOWNLOADS.save({ filename: name, data: blob }); toast('تم: ' + name); return; }
+    catch(e){ if (e && e.code === 'declined') { toast('انلغى التنزيل'); return; } }
+  } else if (CAPS){ await CAPS; if (DOWNLOADS) return saveFile(name, buf); }
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 5000);
+  toast('تم: ' + name);
+}
+
+/* ================= تحميل قائمة جديدة ================= */
+function fmtD(v){ if (v instanceof Date) return pad(v.getUTCDate()) + '.' + pad(v.getUTCMonth() + 1) + '.' + v.getUTCFullYear(); return v == null ? '' : String(v); }
+function cellNum(c){ var v = c.value; if (typeof v === 'number') return v; if (v && typeof v === 'object' && typeof v.result === 'number') return v.result; return null; }
+async function parseListWorkbook(buf){
+  var wb = new ExcelJS.Workbook(); await wb.xlsx.load(buf.slice(0));
+  var ws = wb.worksheets.filter(function(w){ return /material/i.test(cellText(w.getCell('A1'))) && !/serial/i.test(cellText(w.getCell('B1'))); })[0];
+  if (!ws) throw new Error('ما لقيت ورقة أول عمود فيها Material Number');
+  var rows = [], seen = {};
+  for (var r = 2; r <= ws.rowCount; r++){
+    var row = ws.getRow(r), pn = cellText(row.getCell(1)).trim(); if (!pn || seen[normPN(pn)]) continue;
+    seen[normPN(pn)] = 1;
+    rows.push({ pn: pn, desc: cellText(row.getCell(2)).trim(), plant: cellText(row.getCell(3)).trim(), type: cellText(row.getCell(4)).trim(), sloc: cellText(row.getCell(5)).trim(), count: cellNum(row.getCell(6)) });
+  }
+  if (!rows.length) throw new Error('ما لقيت أصناف بالملف');
+  var sns = [], snSeen = {}, wsn = wb.worksheets.filter(function(w){ return w !== ws && (/sn|serial/i.test(w.name) || /serial/i.test(cellText(w.getCell('B1')))); })[0];
+  if (wsn){
+    for (var r2 = 2; r2 <= wsn.rowCount; r2++){
+      var rw = wsn.getRow(r2), m = cellText(rw.getCell(1)).trim(), sn = cellText(rw.getCell(2)).trim();
+      if (!m || !sn || snSeen[normSN(sn)]) continue;
+      snSeen[normSN(sn)] = 1;
+      sns.push({ mat: m, sn: sn, batch: cellText(rw.getCell(3)).trim(), gr: fmtD(rw.getCell(4).value) });
+    }
+  }
+  return { rows: rows, sns: sns };
+}
+async function loadOldList(file){
+  try{
+    if (!/\.xlsx$/i.test(file.name)) throw new Error('لازم يكون ملف Excel (.xlsx)');
+    var P = await parseListWorkbook(await file.arrayBuffer());
+    S.old = { name: file.name, rows: P.rows, sns: P.sns };
+    save(); renderAll(); toast('تم تحميل اللستة القديمة: ' + P.rows.length + ' صنف و' + P.sns.length + ' سيريال', 3500);
+  }catch(e){ toast('ما قدرت أقرأ اللستة القديمة: ' + (e.message || e), 5000); }
+}
+function renderOld(){
+  var b = $('#oldBox');
+  if (!S.old){
+    b.innerHTML = '<div class="ob"><div class="ot"><b>اللستة القديمة للمقارنة</b><div class="hint">ارفع ملف الجرد القديم (Excel) عشان يقارن: ايش كان موجود سابقاً وايش الجديد اللي انضاف.</div></div><button class="btn" data-old="up">📂 ارفع اللستة القديمة</button></div>';
+    return;
+  }
+  var C = compareData(analyze());
+  b.innerHTML = '<div class="ob"><div class="ot"><b>اللستة القديمة:</b> <span class="ltr">' + esc(S.old.name) + '</span><div class="hint">' + S.old.rows.length + ' صنف · ' + S.old.sns.length + ' سيريال — ' +
+    'موجود سابقاً ' + (C.cnt.EXIST_FOUND + C.cnt.EXIST_MISSING) + ' · جديد انضاف ' + (C.cnt.NEWLIST_FOUND + C.cnt.NEWLIST_MISSING + C.cnt.NEW_FOUND) + ' · انشال ' + (C.cnt.REMOVED + C.cnt.REMOVED_FOUND) + '</div></div>' +
+    '<div class="bar" style="gap:6px"><button class="btn sm" data-old="up">تغيير</button><button class="btn sm" data-old="rm">شيل</button></div></div>';
+}
+async function loadNewList(file){
+  try{
+    var buf = await file.arrayBuffer();
+    var P = await parseListWorkbook(buf), rows = P.rows.map(function(r){ return { pn: r.pn, desc: r.desc, plant: r.plant, type: r.type, sloc: r.sloc }; }), sns = P.sns;
+    var ok = await dialog('قائمة جديدة', 'الملف ' + esc(file.name) + ' فيه ' + rows.length + ' صنف' + (sns.length ? (' و' + sns.length + ' سيريال') : ' (بدون ورقة سيريالات)') + '. تحميلها يمسح نتائج الجرد الحالية. أكمل؟', [{ t: 'إلغاء', v: false }, { t: 'حمّل القائمة', v: true, cls: 'primary' }]);
+    if (!ok) return;
+    S.list = rows; S.snList = sns; S.listName = file.name; S.templateB64 = bytesToB64(new Uint8Array(buf));
+    S.expected = {}; S.scans = []; S.sources = []; S.files = []; BLOBS = {};
+    save(); renderAll(); toast('تم تحميل القائمة: ' + rows.length + ' صنف');
+  }catch(e){ toast('ما قدرت أقرأ الملف: ' + (e.message || e), 4500); }
+}
+
+/* ================= الأحداث ================= */
+function bind(){
+  $('#fileIn').addEventListener('change', function(e){ var f = e.target.files; handleFiles(f).finally(function(){ e.target.value = ''; }); });
+  $('#btnExport').addEventListener('click', function(){ exportMenu(); });
+  $('#oldBox').addEventListener('click', function(e){
+    var b = e.target.closest('[data-old]'); if (!b) return;
+    if (b.dataset.old === 'up') $('#oldIn').click();
+    else { S.old = null; save(); renderAll(); }
+  });
+  $('#oldIn').addEventListener('change', function(e){ var f = e.target.files[0]; if (f) loadOldList(f); e.target.value = ''; });
+  $('#cDate').addEventListener('change', function(e){ S.countDate = e.target.value || todayISO(); save(); renderBrief(); });
+  $('#btnMore').addEventListener('click', function(e){
+    var m = $('#menu'), r = e.currentTarget.getBoundingClientRect();
+    m.style.top = (r.bottom + window.scrollY + 6) + 'px'; m.style.left = Math.max(8, r.left + window.scrollX) + 'px';
+    m.classList.toggle('on'); e.stopPropagation();
+  });
+  document.addEventListener('click', function(e){ if (!e.target.closest('#menu')) $('#menu').classList.remove('on'); });
+  $('#menu').addEventListener('click', async function(e){
+    var b = e.target.closest('[data-act]'); if (!b) return; $('#menu').classList.remove('on');
+    var act = b.dataset.act;
+    if (act === 'copy'){
+      var txt = briefText();
+      try{ await navigator.clipboard.writeText(txt); toast('انسخ الملخص'); }
+      catch(err){ await dialog('الملخص', '<textarea style="width:100%;height:240px;direction:rtl" readonly>' + esc(txt) + '</textarea>', [{ t: 'تم', v: 1 }]); }
+    } else if (act === 'newlist'){ $('#listIn').click(); }
+    else if (act === 'origlist'){
+      var ok = await dialog('القائمة الأصلية', 'ترجع لقائمة ' + esc(INV_DATA.fileName) + ' (' + INV_DATA.rows.length + ' صنف) وتمسح نتائج الجرد الحالية؟', [{ t: 'إلغاء', v: false }, { t: 'ارجع', v: true, cls: 'primary' }]);
+      if (ok){ S.list = INV_DATA.rows; S.snList = INV_DATA.snList || []; S.listName = INV_DATA.fileName; S.templateB64 = null; S.expected = {}; S.scans = []; S.sources = []; S.files = []; BLOBS = {}; save(); renderAll(); }
+    } else if (act === 'clear'){
+      var ok2 = await dialog('مسح نتائج الجرد', 'يمسح كل الصور والقطع المقروءة (القائمة والأعداد المتوقعة تبقى). أكمل؟', [{ t: 'إلغاء', v: false }, { t: 'امسح', v: true, cls: 'primary' }]);
+      if (ok2){ S.scans = []; S.sources = []; S.files = []; BLOBS = {}; save(); renderAll(); $('#prog').hidden = true; }
+    }
+  });
+  $('#listIn').addEventListener('change', function(e){ var f = e.target.files[0]; if (f) loadNewList(f); e.target.value = ''; });
+  $('#viewSw').addEventListener('click', function(e){ var b = e.target.closest('[data-v]'); if (!b) return; UI.view = b.dataset.v; renderSources(); });
+  $('#filesBox').addEventListener('click', async function(e){
+    var k = e.target.dataset && e.target.dataset.rmfile; if (!k) return;
+    var f = S.files.filter(function(x){ return x.key === k; })[0]; if (!f) return;
+    var ok = await dialog('حذف الملف', 'ينحذف <b class="ltr">' + esc(f.name) + '</b> وكل الصور والقطع المقروءة منه. أكمل؟', [{ t: 'إلغاء', v: false }, { t: 'احذف', v: true, cls: 'primary' }]);
+    if (!ok) return;
+    var ids = S.sources.filter(function(x){ return x.fileKey === k; }).map(function(x){ return x.id; });
+    S.sources = S.sources.filter(function(x){ return x.fileKey !== k; });
+    S.scans = S.scans.filter(function(x){ return ids.indexOf(x.srcId) < 0; });
+    ids.forEach(function(id){ delete BLOBS[id]; });
+    S.files = S.files.filter(function(x){ return x.key !== k; });
+    save(); renderAll();
+  });
+  $$('.tab').forEach(function(t){ t.addEventListener('click', function(){ UI.tab = t.dataset.tab; renderTabs(); }); });
+  $('#filters').addEventListener('click', function(e){ var b = e.target.closest('[data-f]'); if (!b) return; UI.filter = b.dataset.f; renderList(); });
+  $('#q').addEventListener('input', function(e){ UI.q = e.target.value; renderList(); });
+  $('#rows').addEventListener('click', function(e){
+    if (e.target.closest('input')) return;
+    var r = e.target.closest('.lr[data-pn]'); if (!r) return;
+    var pn = r.dataset.pn; UI.open[pn] = !UI.open[pn]; renderList();
+  });
+  $('#rows').addEventListener('change', function(e){
+    var el = e.target; if (!el.dataset.exp) return;
+    var v = el.value.trim();
+    var sysN = (refIndex().byMat[el.dataset.exp] || []).length;
+    if (v === '' || !isFinite(+v) || +v < 0 || (sysN && Math.round(+v) === sysN)) delete S.expected[el.dataset.exp]; else S.expected[el.dataset.exp] = Math.round(+v);
+    save(); renderBrief(); renderList();
+  });
+  var srcs = $('#srcs');
+  srcs.addEventListener('input', function(e){
+    var k = e.target.dataset.k; if (!k) return;
+    var p = k.split(':'), it = S.scans.filter(function(s){ return s.id === p[1]; })[0]; if (!it) return;
+    if (p[0] === 'qty'){ var q = parseInt(e.target.value, 10); if (!(q > 0)) return; it.qty = q; }
+    else { it[p[0]] = e.target.value.trim(); if (p[0] === 'pn'){ it.pnClear = true; it.match = ''; } if (p[0] === 'sn') it.snClear = true; }
+    clearTimeout(srcs._t); srcs._t = setTimeout(function(){ save(); renderAll(); }, 450);
+  });
+  srcs.addEventListener('click', async function(e){
+    var t = e.target, id;
+    if ((id = t.dataset.view)){ var s = findSrc(id); $('#vimg').src = BLOBS[id] ? ('data:image/jpeg;base64,' + BLOBS[id]) : s.thumb; $('#viewer').classList.add('on'); return; }
+    if ((id = t.dataset.del)){ S.scans = S.scans.filter(function(s){ return s.id !== id; }); save(); renderAll(); return; }
+    if ((id = t.dataset.add)){ S.scans.push({ id: uid(), srcId: id, pn: '', sn: '', qty: 1, desc: '', match: '', pnClear: true, snClear: true, note: 'manual' }); save(); renderAll(); return; }
+    if ((id = t.dataset.retry)){ var s2 = findSrc(id); s2.status = 'pending'; s2.err = ''; enqueue(id); renderSources(); return; }
+    if ((id = t.dataset.rmsrc)){
+      var ok = await dialog('حذف الصورة', 'تنحذف الصورة وكل القطع المقروءة منها. أكمل؟', [{ t: 'إلغاء', v: false }, { t: 'احذف', v: true, cls: 'primary' }]);
+      if (ok){ S.sources = S.sources.filter(function(s){ return s.id !== id; }); S.scans = S.scans.filter(function(s){ return s.srcId !== id; }); delete BLOBS[id]; save(); renderAll(); }
+    }
+  });
+  $('#viewer').addEventListener('click', function(){ $('#viewer').classList.remove('on'); $('#vimg').src = ''; });
+}
+
+load(); initCaps(); bind(); renderAll();
+window.__INV = { S: S, analyze: analyze, briefText: briefText, compareData: compareData, buildCompareWB: buildCompareWB };
+})();
+</script>
+</body>
+</html>

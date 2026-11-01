@@ -732,10 +732,10 @@ function devLinkView() {
   const L = S.devLink || {};
   const reqs = (S.devRequests || []).map((r) => `<li><p>${esc(r.request)}<small>${ago(r.t)}${r.url ? ` · <a href="${esc(r.url)}" target="_blank" rel="noopener">تابعه</a>` : ''}</small></p></li>`).join('');
   const head = `<h2>ربط راصد بـClaude</h2>
-  <p class="lead">${L.ready ? 'مربوط. أي تعديل على البرنامج تطلبه من «كلّم راصد» يروح لـClaude Code: يسويه ويختبره وينشره، وراصد يحدّث نفسه خلال دقايق.' : 'مو مربوط بعد. لما تربطه، أي تعديل على البرنامج تطلبه من «كلّم راصد» يروح لـClaude Code يسويه وينشره بدون ما تسوي شي.'}</p>`;
+  <p class="lead">أي تعديل على البرنامج تطلبه من «كلّم راصد» يسويه Claude Code ويختبره وينشره، وراصد يحدّث نفسه خلال دقايق، والنتيجة ترجع لك في المحادثة. ${L.ready ? 'مربوط بالسحابة: الشغل يصير هناك.' : 'الشغل يصير على جهازك. أول مرة ينشر، GitHub يفتح لك نافذة تسجيل دخول مرة وحدة.'}</p>`;
   if (ACCT !== 'main') return head + (reqs ? `<ul class="need">${reqs}</ul>` : '');
   return `${head}
-  ${L.ready ? '' : `<p class="note">مرة وحدة بس: افتح claude.ai/code/routines، افتح «راصد · طلبات التعديل»، اضغط Add another trigger واختار API، بعدها Generate token. انسخ الرابط والمفتاح والصقهم هنا.</p>`}
+  <p class="note">اختياري: لو حسابك في Claude يعطيك تشغيل API للـRoutine، الصق الرابط والمفتاح هنا والشغل يصير في السحابة بدل جهازك.</p>
   <label>رابط التشغيل<input id="s_devUrl" dir="ltr" value="${esc(L.url || '')}" placeholder="https://api.anthropic.com/v1/claude_code/routines/trig_.../fire" autocomplete="off"></label>
   <label>المفتاح <small>${L.hasToken ? 'محفوظ — الصق واحد جديد لو تبغى تغيّره' : 'ما انحفظ بعد'}</small><input id="s_devToken" type="password" dir="ltr" placeholder="sk-ant-oat01-..." autocomplete="new-password"></label>
   <div class="acts" style="margin-bottom:1rem"><button class="btn ghost sm" id="saveDev">احفظ الربط</button></div>

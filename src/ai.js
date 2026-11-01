@@ -38,7 +38,13 @@ const unsupported = new Set();
 const SYSTEM = 'You are the engine of a personal job-application assistant. Follow the instructions in the user message exactly and reply only in the format it asks for. Use only the tools you are given.';
 
 // model: 'haiku' (الأخف والأرخص) أو 'sonnet'. effort: low | medium | high (كل ما قل، قل التفكير وقل الاستهلاك).
-function buildArgs({ tools, fast, model, effort, stream, mcpConfig, mcpTools }, lvl) {
+function buildArgs({ tools, fast, model, effort, stream, mcpConfig, mcpTools, dev }, lvl) {
+  // dev = المطوّر على جهازك: تعليمات Claude Code العادية (عشان يقرا CLAUDE.md ويبرمج صح) وأدوات محصورة في التعديل وgit وnpm وnode
+  if (dev) {
+    const a = ['-p', '--output-format', 'json', '--allowedTools', (tools || []).join(','), '--permission-mode', 'dontAsk', '--strict-mcp-config'];
+    if (model && !unsupported.has('--model')) a.push('--model', model);
+    return a;
+  }
   // stream: الرد يوصل كلمة كلمة (للمحادثة) بدل ما ننتظر لين يخلص
   const args = stream && lvl < 2 ? ['-p', '--output-format', 'stream-json', '--verbose', '--include-partial-messages'] : ['-p', '--output-format', 'json'];
   const list = tools && tools.length ? tools.join(',') : '';
@@ -72,13 +78,14 @@ function stopAll() {
   }
 }
 
-function spawnClaude(prompt, { tools, timeoutMs, cwd, fast, model, effort, onText, onTool, mcpConfig, mcpTools }, lvl) {
-  if (stopFlag) return Promise.reject(new Error('CLAUDE_STOPPED: أوقفته أنت'));
+// keep = ما يوقفه زر «وقّف» ولا التحديث (شغل المطوّر في مجلده الخاص؛ لو انقطع راصد يكمّل لحاله)
+function spawnClaude(prompt, { tools, timeoutMs, cwd, fast, model, effort, onText, onTool, mcpConfig, mcpTools, dev, keep }, lvl) {
+  if (stopFlag && !keep) return Promise.reject(new Error('CLAUDE_STOPPED: أوقفته أنت'));
   const cfg = store.load().config;
   const dir = cwd || SANDBOX;
   fs.mkdirSync(dir, { recursive: true });
   const streaming = !!onText && lvl < 2;
-  const args = buildArgs({ tools, fast, model, effort, stream: streaming, mcpConfig, mcpTools }, lvl);
+  const args = buildArgs({ tools, fast, model, effort, stream: streaming, mcpConfig, mcpTools, dev }, lvl);
 
   return new Promise((resolve, reject) => {
     let child;
@@ -95,10 +102,12 @@ function spawnClaude(prompt, { tools, timeoutMs, cwd, fast, model, effort, onTex
     } catch (e) {
       return reject(new Error('CLAUDE_NOT_FOUND: ' + e.message));
     }
-    active.set(child, () => {
-      clearTimeout(timer);
-      reject(new Error('CLAUDE_STOPPED: أوقفته أنت'));
-    });
+    if (!keep) {
+      active.set(child, () => {
+        clearTimeout(timer);
+        reject(new Error('CLAUDE_STOPPED: أوقفته أنت'));
+      });
+    }
     let out = '';
     let err = '';
     const timer = setTimeout(() => {
@@ -147,7 +156,7 @@ function spawnClaude(prompt, { tools, timeoutMs, cwd, fast, model, effort, onTex
     child.on('close', (code) => {
       clearTimeout(timer);
       active.delete(child);
-      if (stopFlag) return reject(new Error('CLAUDE_STOPPED: أوقفته أنت'));
+      if (stopFlag && !keep) return reject(new Error('CLAUDE_STOPPED: أوقفته أنت'));
       if (/is not recognized|command not found|not found/i.test(err) && !out.trim()) {
         return reject(new Error('CLAUDE_NOT_FOUND: ' + err.trim().slice(0, 200)));
       }
@@ -240,6 +249,21 @@ async function askJson(prompt, { tools = [], timeoutMs = 5 * 60 * 1000, mockKey,
   }
 }
 
+// المطوّر على جهازك: Claude Code يعدّل نسخة المستودع في cwd ويختبر وينشر، ويرجّع JSON بالنتيجة.
+const DEV_TOOLS = ['Read', 'Edit', 'Write', 'Glob', 'Grep', 'Bash(git:*)', 'Bash(npm:*)', 'Bash(node:*)'];
+async function runDev(prompt, { cwd, timeoutMs = 40 * 60 * 1000, model = 'sonnet' } = {}) {
+  if (paused()) throw pausedError();
+  if (process.env.RASID_MOCK) return require('../test/mock').reply('dev', prompt, { model });
+  for (;;) {
+    try {
+      return extractJson(await spawnClaude(prompt, { tools: DEV_TOOLS, timeoutMs, cwd, model, dev: true, keep: true }, 0));
+    } catch (e) {
+      if (dropOptional(e.message)) continue;
+      throw e;
+    }
+  }
+}
+
 // وكيل بأدوات: Claude يشتغل على الطلب، يستخدم أدوات راصد والويب قد ما يحتاج، ويرجّع الرد النهائي نص.
 async function runAgent(prompt, { tools = [], mcpConfig, mcpTools = [], timeoutMs = 10 * 60 * 1000, model, effort, onText, onTool, mock } = {}) {
   if (stopFlag) throw new Error('CLAUDE_STOPPED: أوقفته أنت');
@@ -308,4 +332,4 @@ function clearClaudeProblems() {
   for (const k of ['claude-missing', 'claude-auth', 'claude-limit', 'claude-error']) store.clearProblem(k, true);
 }
 
-module.exports = { stopAll, stopRequested, clearStop, paused, resume, limitUntil, askJson, runAgent, extractJson, reportAiError, selfTest, clearClaudeProblems, buildArgs, getLevel: () => level, setLevel: (n) => (level = n), unsupported };
+module.exports = { stopAll, stopRequested, clearStop, paused, resume, limitUntil, askJson, runAgent, runDev, DEV_TOOLS, extractJson, reportAiError, selfTest, clearClaudeProblems, buildArgs, getLevel: () => level, setLevel: (n) => (level = n), unsupported };

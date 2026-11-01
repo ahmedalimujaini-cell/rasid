@@ -59,7 +59,7 @@ module.exports = [
     description:
       "Send his request to Rasid's developer (Claude Code in the cloud) when it needs a change to the PROGRAM ITSELF that do_action cannot make: what the email summary or the spoken brief contain, the screens, how the search or the letters work, a new feature, a bug. " +
       'The developer implements it, tests it and publishes an update; Rasid installs it by itself within minutes and the update note says what changed. ' +
-      'Use it at once instead of saying you cannot. Do not use it for settings, profile, letters or jobs (do_action does those). Returns a follow link.',
+      'Use it at once instead of saying you cannot. Do not use it for settings, profile, letters or jobs (do_action does those). Returns who is doing it and a follow link when there is one.',
     inputSchema: { type: 'object', properties: { request: str('What he wants changed, complete and clear, in Arabic: the current behaviour, the wanted behaviour, and any example he gave.') }, required: ['request'] },
   },
 ];

@@ -101,7 +101,18 @@ const ok = (name, cond) => {
 
   // طلبات تعديل البرنامج: تروح لـClaude Code (Routine بتشغيل API) بالرابط والمفتاح المحليين، والمفتاح ما يطلع أبداً
   const devlink = require('../src/devlink');
-  ok('change request: refused with the setup steps until the link is saved', /ربط راصد بـClaude مو مفعّل/.test(String((await chat.callTool('request_change', { request: 'خلّ الملخص يعرض التقديمات بس' })).error || '')));
+  const devlocal = require('../src/devlocal');
+  let localStarted = null;
+  const viaPc = await devlink.requestChange('خلّ الملخص يعرض الرابط لكل وظيفة', 'ابغى الرابط في الملخص', undefined, (rq, sd) => (localStarted = { rq, sd }));
+  ok('change request without a cloud link: Claude Code on this PC takes it, with his own words', viaPc.started && viaPc.where === 'this PC' && localStarted.sd === 'ابغى الرابط في الملخص');
+  let prepped = '';
+  const chatLen0 = d.chat.length;
+  const devJob = devlocal.start('خلّ الملخص يعرض الرابط لكل وظيفة', 'ابغى الرابط في الملخص', { prep: async (dir) => (prepped = dir), ask: async (pr, o) => (/CLAUDE\.md/.test(pr) && /ابغى الرابط في الملخص/.test(pr) && o.cwd === prepped ? { changed: true, build: 31, summary: 'صار الرابط في الملخص.' } : { changed: false }) });
+  ok('only one change at a time on this PC', devlocal.busy() && (() => { try { devlocal.start('ثاني', 'ثاني', { prep: async () => {}, ask: async () => ({}) }); return false; } catch (_) { return true; } })());
+  const doneMsg = await devJob.job;
+  ok('the PC developer works in its own clone, follows CLAUDE.md, and its result comes back into the chat', !devlocal.busy() && prepped.endsWith(path.join('dev', 'rasid')) && doneMsg.includes('النسخة 31') && d.chat.length === chatLen0 + 1 && d.chat[d.chat.length - 1].text.includes('صار الرابط في الملخص') && !store.load(store.MAIN).state.devJob);
+  ok('developer mode: Claude Code keeps its own coding instructions and only edits, git, npm and node', ai.buildArgs({ tools: ai.DEV_TOOLS, dev: true, model: 'sonnet' }, 0).join(' ') === '-p --output-format json --allowedTools Read,Edit,Write,Glob,Grep,Bash(git:*),Bash(npm:*),Bash(node:*) --permission-mode dontAsk --strict-mcp-config --model sonnet');
+  d.chat.pop();
   assert.throws(() => devlink.save('https://evil.example.com/v1/claude_code/routines/trig_01ABCDEFGH/fire', 'sk-ant-oat01-' + 'y'.repeat(40)));
   assert.throws(() => devlink.save('https://api.anthropic.com/v1/claude_code/routines/trig_01ABCDEFGH/fire', 'not-a-token'));
   const DEV_TOKEN = 'sk-ant-oat01-' + 'x'.repeat(40);
@@ -109,7 +120,7 @@ const ok = (name, cond) => {
   let fired = null;
   const fakeFire = async (url, token, text) => ((fired = { url, token, text }), { status: 200, json: { type: 'routine_fire', claude_code_session_url: 'https://claude.ai/code/session_01TEST' } });
   const rq = await devlink.requestChange('خلّ ملخص الإيميل يعرض التقديمات بس', 'ابغى الملخص بس اللي قدّمت عليه', fakeFire);
-  ok('change request: goes to the routine with his own words, the key stays out of the text, a follow link comes back and is recorded', rq.sent && rq.follow_link === 'https://claude.ai/code/session_01TEST' && fired.token === DEV_TOKEN && fired.url.endsWith('/trig_01ABCDEFGH/fire') && fired.text.includes('ابغى الملخص بس اللي قدّمت عليه') && !fired.text.includes(DEV_TOKEN) && devlink.recent().length === 1 && devlink.recent()[0].url === 'https://claude.ai/code/session_01TEST');
+  ok('change request: goes to the routine with his own words, the key stays out of the text, a follow link comes back and is recorded', rq.sent && rq.follow_link === 'https://claude.ai/code/session_01TEST' && fired.token === DEV_TOKEN && fired.url.endsWith('/trig_01ABCDEFGH/fire') && fired.text.includes('ابغى الملخص بس اللي قدّمت عليه') && !fired.text.includes(DEV_TOKEN) && devlink.recent().length === 2 && devlink.recent()[0].url === 'https://claude.ai/code/session_01TEST');
   await assert.rejects(devlink.requestChange('طلب ما جا من رسالته هو', '', fakeFire), /رسالتك/);
   await assert.rejects(devlink.requestChange('طلب والمفتاح انلغى من الموقع', 'سوها', async () => ({ status: 401, json: null })), /المفتاح/);
   ok('change request: no request without his own message, and a revoked key gives a clear reason', true);

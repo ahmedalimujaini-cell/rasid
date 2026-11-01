@@ -1,5 +1,5 @@
-// ربط راصد بـClaude Code في السحابة (Routine بتشغيل API).
-// لما تطلب من «كلّم راصد» تعديل على البرنامج نفسه، الطلب يروح لجلسة Claude Code تسويه وتختبره وتنشره، وراصد يحدّث نفسه لحاله.
+// طلبات تعديل البرنامج من «كلّم راصد»: تروح لـClaude Code يسويها ويختبرها وينشرها، وراصد يحدّث نفسه لحاله.
+// من الأساس يشتغل عليها Claude Code على جهازك (devlocal.js). ولو ربطته بـRoutine في السحابة (تشغيل API)، تروح للسحابة بدل جهازك.
 // الرابط والمفتاح محليين في data/ للحساب الرئيسي (مثل كلمة سر الجيميل): المفتاح ما يطلع للواجهة ولا لـClaude ولا للسجل.
 const https = require('https');
 const store = require('./store');
@@ -52,18 +52,26 @@ function post(url, token, text) {
   });
 }
 
-// يرسل طلب التعديل. said = رسالة المستخدم نفسها (الطلب لازم يجي منه). send قابل للتبديل في الاختبار.
-async function requestChange(request, said, send = post) {
+// يرسل طلب التعديل. said = رسالة المستخدم نفسها (الطلب لازم يجي منه). send وlocal قابلين للتبديل في الاختبار.
+async function requestChange(request, said, send = post, local = null) {
   request = String(request || '').trim().slice(0, 4000);
   said = String(said || '').trim().slice(0, 2000);
   if (!said) throw new Error('طلب التعديل لازم يكون من رسالتك أنت');
   if (request.length < 10) throw new Error('اكتب الطلب بوضوح أكثر');
-  if (!ready()) throw new Error('ربط راصد بـClaude مو مفعّل. من الإعدادات في الحساب الرئيسي، قسم «ربط راصد بـClaude»، حط الرابط والمفتاح مرة وحدة.');
   const main = store.load(store.MAIN);
   const day = new Date().toISOString().slice(0, 10);
   if (!Array.isArray(main.state.devRequests)) main.state.devRequests = [];
   const list = main.state.devRequests;
   if (list.filter((r) => r.day === day).length >= PER_DAY) throw new Error(`وصلت حد ${PER_DAY} طلبات تعديل في اليوم. كمّل بكرة.`);
+  if (!ready()) {
+    // بدون ربط بالسحابة: Claude Code على جهازك يسويه، والنتيجة ترجع في المحادثة
+    (local || require('./devlocal').start)(request, said);
+    list.unshift({ day, t: Date.now(), account: store.current(), request: request.slice(0, 300), url: '' });
+    if (list.length > 30) list.length = 30;
+    store.save();
+    store.event('info', 'بدأ Claude Code على جهازك يشتغل على طلب التعديل: ' + request.slice(0, 140));
+    return { started: true, where: 'this PC', next: 'Claude Code on his own PC is now implementing, testing and publishing it (it can take 10 to 30 minutes). The result is posted in this chat when it is done, and Rasid installs the update by itself. The first time it publishes, GitHub may open a sign-in window on his screen: he signs in once. Tell him that in one or two sentences.' };
+  }
   let build = '';
   try { build = require('./update').local().build; } catch (_) {}
   const text = [

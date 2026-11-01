@@ -21,6 +21,7 @@ exports.models = {}; // آخر موديل/مستوى تفكير طُلب لكل 
 exports.reply = (key, prompt, opts = {}) => {
   exports.calls[key] = (exports.calls[key] || 0) + 1;
   exports.models[key] = [opts.model, opts.effort].filter(Boolean).join('/') || 'default';
+  if (key === 'dev') return { changed: true, build: 99, summary: 'زدت الرابط في الملخص (تجربة)' };
   if (key === 'directory')
     return {
       companies: [

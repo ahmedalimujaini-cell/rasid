@@ -73,7 +73,7 @@ async function call(name, args, ctx) {
     }
     case 'request_change': {
       const out = await require('./devlink').requestChange(args.request, ctx.said || '');
-      ctx.done && ctx.done.push('أرسلت طلب التعديل للمطوّر');
+      ctx.done && ctx.done.push(out.started ? 'بدأ Claude Code على جهازك يشتغل على التعديل' : 'أرسلت طلب التعديل للمطوّر');
       return out;
     }
     default:

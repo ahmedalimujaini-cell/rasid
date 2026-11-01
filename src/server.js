@@ -402,6 +402,7 @@ if (require.main === module) {
   server.listen(PORT, '127.0.0.1', () => {
     console.log('\n  Rasid is running:  http://127.0.0.1:' + PORT + '\n  Stop with Ctrl+C.\n');
     pipeline.startScheduler();
+    require('./devlocal').recover();
     // يشيّك على التحديثات عند التشغيل وكل ٥ دقايق. التحديث إجباري: يوقف اللي شغّال، يركّب، ويرجع يشتغل في ثواني
     const upd = () => update.auto(updateHooks).catch((e) => console.error(new Date().toISOString(), 'update', e.message));
     setTimeout(upd, 8000);

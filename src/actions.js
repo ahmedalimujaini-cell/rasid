@@ -105,6 +105,11 @@ async function execute(a, d, deps, said = '') {
       if (a.what === 'inbox') {
         const n = await deps.run.inbox();
         return n ? `فحصت الإيميل: وصل ${n === 1 ? 'رد جديد' : n + ' ردود جديدة'} — تلقاها في صفحة الردود` : 'فحصت الإيميل: ما في ردود جديدة';
+      } else if (a.what === 'digest') {
+        // يرسل الملخص لإيميله هو بس (نفس زر «أرسل لي ملخص الحين»)، ولازم يطلبه في رسالته
+        if (!/(أرسل|ارسل|ارسال|إرسال|راسل|ابعث|إيميل|ايميل|الإيميل|الايميل|email|e-mail|mail|send)/i.test(said)) throw new Error('قل لي في رسالتك «أرسلها لي على الإيميل» وأرسلها');
+        if (!(await deps.run.digest())) throw new Error('ما قدرت أرسل الإيميل. شيّك على كلمة مرور التطبيقات في الإعدادات');
+        return 'أرسلت لك على الإيميل التقديمات الجديدة وكل الوظائف اللي تحتاج تقدّم عليها بنفسك، مع الرابط والمطلوب';
       } else if (a.what === 'search' || a.what === 'news') {
         if (deps.busy()) throw new Error('مشغول الحين: ' + deps.busy());
         deps.run[a.what]();

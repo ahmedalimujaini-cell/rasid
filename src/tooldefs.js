@@ -50,7 +50,7 @@ module.exports = [
       'settings {values:{mode:"auto"|"review", minFit, dailyCap (daily target: the search stops once this many email applications are ready, and at most this many are sent per day), searchHour (0-23, the hour of the once-a-day search), inboxEveryMinutes, followUpDays, letterLanguage:"auto"|"en"|"ar", voice (spoken brief when the app opens), chatVoice (true = read chat replies aloud when he talks by microphone; false = text only), digestEveryHours, autoAI (true = search by itself once a day at searchHour; false = search only when he asks, to save his Claude usage)}}; ' +
       'profile {values:{nickname, birthDate, phone, location, linkedin, headline, summary, targets, avoid, noticePeriod, extra}}; ' +
       'letter_notes {text} standing instruction for all future application emails; ' +
-      'run {what:"search"|"inbox"|"news"} start a job search, check for new replies now, or refresh news. ' +
+      'run {what:"search"|"inbox"|"news"|"digest"} start a job search, check for new replies now, refresh news, or (digest) email him now, at his own address only, the applications sent since the last summary and EVERY job he must apply for himself with its link and what the site asks for (use it when he asks to get those by email). ' +
       'Returns what was done, or the reason it was refused.',
     inputSchema: { type: 'object', properties: { action: { type: 'object', description: 'The action object, with its type field.' } }, required: ['action'] },
   },

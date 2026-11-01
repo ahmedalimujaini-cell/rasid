@@ -1,5 +1,5 @@
 // ملخص دوري على الإيميل كل N ساعة، عشان يوصلك تنبيه على الجوال من تطبيق الإيميل.
-// فيه بس: الوظائف اللي قدّم عليها، ومسميات الوظائف اللي تحتاج تقدّم عليها بنفسك من مواقعها. بدون مشاكل ولا ردود ولا أي شي ثاني.
+// فيه بس: الوظائف اللي قدّم عليها، والوظائف اللي تحتاج تقدّم عليها بنفسك من مواقعها (مع الرابط والمطلوب). بدون مشاكل ولا ردود ولا أي شي ثاني.
 const nodemailer = require('nodemailer');
 const store = require('./store');
 const brief = require('./brief');
@@ -16,11 +16,19 @@ function due() {
 const clean = (s) => String(s || '').replace(/\s+/g, ' ').trim();
 const more = (n) => (n > 0 ? [`و${n} غيرها.`] : []);
 
+const link = (u) => (/^https?:\/\/\S+$/i.test(clean(u)) ? clean(u) : '');
+
 // نص الرسالة من تاريخ معيّن. يرجّع { text, subject, nothing }.
-function compose(d, since) {
+// allManual = كل الوظائف اللي تنتظر تقدّم عليها بنفسك، مو بس الجديدة (لما يطلبها من المحادثة)
+function compose(d, since, { allManual = false } = {}) {
   const name = brief.callName(d.config);
   const sent = d.jobs.filter((j) => j.status === 'sent' && j.sentAt > since).sort((a, b) => a.sentAt - b.sentAt);
-  const titles = [...new Set(d.jobs.filter((j) => j.status === 'manual' && (j.foundAt || 0) > since).map((j) => clean(j.title)).filter(Boolean))];
+  const seen = new Set();
+  const manual = d.jobs.filter((j) => j.status === 'manual' && (allManual || (j.foundAt || 0) > since) && clean(j.title)).filter((j) => {
+    const k = (clean(j.title) + '|' + link(j.url)).toLowerCase();
+    return seen.has(k) ? false : seen.add(k);
+  });
+  const titles = manual;
   const lines = [];
   if (sent.length) {
     lines.push(`${name ? name + '، ' : ''}قدّمت لك على:`);
@@ -30,7 +38,12 @@ function compose(d, since) {
   if (titles.length) {
     if (lines.length) lines.push('');
     lines.push(`${!lines.length && name ? name + '، ' : ''}هذي المواقع تحتاج تقدّم عليها بنفسك:`);
-    for (const t of titles.slice(0, MAX_LINES)) lines.push(`- ${t}`);
+    for (const j of titles.slice(0, MAX_LINES)) {
+      lines.push(`- ${clean(j.title)}${clean(j.company) ? ' — ' + clean(j.company) : ''}`);
+      if (link(j.url)) lines.push(`  الرابط: ${link(j.url)}`);
+      const steps = String(j.applySteps || '').split(/\n+/).map(clean).filter(Boolean).join('، ');
+      if (steps) lines.push(`  المطلوب: ${steps.slice(0, 600)}`);
+    }
     lines.push(...more(titles.length - MAX_LINES));
   }
   const nothing = !sent.length && !titles.length;
@@ -40,14 +53,15 @@ function compose(d, since) {
 }
 
 // يرسل الملخص لو في جديد. يرجّع true لو انرسل.
-async function run(force) {
+// opts.allManual = كل الوظائف اللي تنتظر تقدّم عليها بنفسك (طلبها من المحادثة)
+async function run(force, opts = {}) {
   if (busy) return false;
   busy = true;
   try {
     const d = store.load();
     const cfg = d.config;
     const since = d.state.lastDigest || 0;
-    const { text, subject, nothing } = compose(d, since);
+    const { text, subject, nothing } = compose(d, since, opts);
     d.state.lastDigest = Date.now();
     store.save();
     if (nothing && !force) return false; // ما في تقديم جديد: ما نزعجك برسالة

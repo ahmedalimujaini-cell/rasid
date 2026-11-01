@@ -103,6 +103,7 @@ function chatDeps() {
       search: () => pipeline.cycle(true).catch((e) => store.event('error', String(e.message).slice(0, 200))),
       news: () => pipeline.news().catch((e) => store.event('error', String(e.message).slice(0, 200))),
       inbox: () => pipeline.checkInbox(),
+      digest: () => require('./digest').run(true, { allManual: true }),
     },
     // يكتب رسالة الوظيفة المضافة الحين (وفي الوضع التلقائي يرسلها)؛ لو مشغول تنكتب في الدورة الجاية
     draftNow: () => {
